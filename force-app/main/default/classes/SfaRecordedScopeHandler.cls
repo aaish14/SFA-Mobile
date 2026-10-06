@@ -10,6 +10,7 @@ public with sharing class SfaRecordedScopeHandler {
             SELECT Geography__c FROM Beat__c WHERE Id IN :beatIds
         ]);
         for (Retailer__c outlet : outlets) {
+            if (outlet.Beat__c == null) continue;
             Beat__c beat = beats.get(outlet.Beat__c);
             outlet.Geography__c = beat == null ? null : beat.Geography__c;
         }

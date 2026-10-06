@@ -1,0 +1,43 @@
+<template>
+    <lightning-quick-action-panel header="Select Outlets">
+        <template lwc:if={isLoading}>
+            <lightning-spinner alternative-text="Loading outlets"></lightning-spinner>
+        </template>
+
+        <template lwc:else>
+            <p class="slds-m-bottom_small">
+                <strong>{beatName}</strong> · {geographyName}
+            </p>
+            <p class="slds-m-bottom_medium slds-text-color_weak">
+                Select up to 10 outlets. Only active outlets from this geography are shown.
+            </p>
+
+            <lightning-dual-listbox
+                name="outlets"
+                label="Outlet Names"
+                source-label="Available Outlets"
+                selected-label="Selected Outlets"
+                options={outletOptions}
+                value={selectedOutletIds}
+                max="10"
+                onchange={handleSelectionChange}>
+            </lightning-dual-listbox>
+
+            <div class="count-card slds-m-top_medium">
+                <span>Outlet Count</span>
+                <strong>{selectedCount} / 10</strong>
+            </div>
+        </template>
+
+        <div slot="footer">
+            <lightning-button label="Cancel" onclick={closeAction}></lightning-button>
+            <lightning-button
+                class="slds-m-left_small"
+                variant="brand"
+                label="Save Outlets"
+                disabled={isLoading}
+                onclick={saveOutlets}>
+            </lightning-button>
+        </div>
+    </lightning-quick-action-panel>
+</template>
