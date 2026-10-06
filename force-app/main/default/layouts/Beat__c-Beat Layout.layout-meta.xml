@@ -48,12 +48,10 @@
         <detailHeading>false</detailHeading>
         <editHeading>false</editHeading>
         <layoutColumns/>
+        <layoutColumns/>
+        <layoutColumns/>
         <style>CustomLinks</style>
     </layoutSections>
-    <relatedLists>
-        <fields>NAME</fields>
-        <relatedList>Retailer__c.Beat__c</relatedList>
-    </relatedLists>
     <platformActionList>
         <actionListContext>Record</actionListContext>
         <platformActionListItems>
@@ -62,6 +60,10 @@
             <sortOrder>0</sortOrder>
         </platformActionListItems>
     </platformActionList>
+    <relatedLists>
+        <fields>NAME</fields>
+        <relatedList>Retailer__c.Beat__c</relatedList>
+    </relatedLists>
     <showEmailCheckbox>false</showEmailCheckbox>
     <showHighlightsPanel>true</showHighlightsPanel>
     <showInteractionLogPanel>false</showInteractionLogPanel>
