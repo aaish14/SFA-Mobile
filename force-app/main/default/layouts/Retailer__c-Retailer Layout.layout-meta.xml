@@ -33,7 +33,7 @@
         </layoutColumns>
         <layoutColumns>
             <layoutItems>
-                <behavior>Edit</behavior>
+                <behavior>Required</behavior>
                 <field>Beat__c</field>
             </layoutItems>
             <layoutItems>
