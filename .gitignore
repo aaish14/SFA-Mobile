@@ -1,0 +1,17 @@
+# Salesforce local authentication and runtime files
+.sf/
+.sfdx/
+*.log
+
+# Local dependencies and generated output
+node_modules/
+coverage/
+dist/
+work/
+
+# Editor and operating-system files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+

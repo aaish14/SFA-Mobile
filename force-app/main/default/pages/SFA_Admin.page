@@ -1,0 +1,9 @@
+<apex:page lightningStylesheets="true" showHeader="true" sidebar="false" docType="html-5.0">
+    <apex:includeLightning />
+    <div id="sfaAdminPortal"></div>
+    <script>
+        $Lightning.use("c:SfaAdminOut", function() {
+            $Lightning.createComponent("c:sfaAdminPortal", {}, "sfaAdminPortal");
+        });
+    </script>
+</apex:page>

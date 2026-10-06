@@ -1,0 +1,147 @@
+<template>
+    <div class="mobile-shell">
+        <header class="hero">
+            <div>
+                <p class="eyebrow">FIELD SALES</p>
+                <h1>Good {greeting}, {salesRepName}</h1>
+                <p>{todayLabel}</p>
+            </div>
+            <lightning-icon icon-name="utility:trail" size="large" alternative-text="Route"></lightning-icon>
+        </header>
+
+        <template if:true={isLoading}>
+            <lightning-spinner alternative-text="Loading SFA data"></lightning-spinner>
+        </template>
+
+        <template if:true={showStartCard}>
+            <section class="start-card">
+                <lightning-icon icon-name="utility:clock" size="large"></lightning-icon>
+                <h2>Ready for today's route?</h2>
+                <p>Start the day to load your beat, retailers, products and active schemes.</p>
+                <lightning-button variant="brand" label="Start My Day" onclick={handleStartDay}></lightning-button>
+            </section>
+        </template>
+
+        <template if:true={dayStarted}>
+            <section class="attendance-strip">
+                <lightning-icon icon-name="utility:checkin" size="small"></lightning-icon>
+                <div><strong>Logged in</strong><span>{loginTime}</span><small>{loginLocation}</small></div>
+            </section>
+            <section class="summary-grid" aria-label="Daily summary">
+                <article><strong>{totalVisits}</strong><span>Planned</span></article>
+                <article><strong>{completedVisits}</strong><span>Completed</span></article>
+                <article><strong>{remainingVisits}</strong><span>Remaining</span></article>
+            </section>
+
+            <nav class="section-tabs" aria-label="SFA sections">
+                <button class={routeTabClass} data-section="route" onclick={showSection}>My Route</button>
+                <button class={productsTabClass} data-section="products" onclick={showSection}>Products</button>
+                <button class={schemesTabClass} data-section="schemes" onclick={showSection}>Schemes</button>
+            </nav>
+
+            <template if:true={showRoute}>
+                <section>
+                    <div class="section-heading">
+                        <div><p class="eyebrow">TODAY'S BEAT</p><h2>{beatName}</h2></div>
+                        <lightning-button-icon icon-name="utility:refresh" alternative-text="Refresh" onclick={loadDashboard}></lightning-button-icon>
+                    </div>
+                    <template for:each={visits} for:item="visit">
+                        <article class="visit-card" key={visit.id}>
+                            <div class="visit-order">{visit.sequence}</div>
+                            <div class="visit-content">
+                                <div class="row-between">
+                                    <h3>{visit.retailerName}</h3>
+                                    <span class={visit.statusClass}>{visit.status}</span>
+                                </div>
+                                <p>{visit.address}</p>
+                                <div class="actions">
+                                    <template if:true={visit.canCheckIn}>
+                                        <lightning-button variant="brand" label="Check In" data-id={visit.id} onclick={handleCheckIn}></lightning-button>
+                                    </template>
+                                    <template if:true={visit.canOrder}>
+                                        <lightning-button label="Take Order" data-id={visit.id} onclick={openOrder}></lightning-button>
+                                        <lightning-button label="Complete" data-id={visit.id} onclick={handleComplete}></lightning-button>
+                                    </template>
+                                    <template if:true={visit.canMiss}>
+                                        <lightning-button variant="destructive-text" label="Mark Missed" data-id={visit.id} onclick={openMissedDialog}></lightning-button>
+                                    </template>
+                                </div>
+                            </div>
+                        </article>
+                    </template>
+                </section>
+            </template>
+
+            <template if:true={showProducts}>
+                <section>
+                    <div class="section-heading"><h2>Product catalogue</h2><span>{products.length} products</span></div>
+                    <template for:each={products} for:item="product">
+                        <article class="product-card" key={product.id}>
+                            <div><h3>{product.name}</h3><p>{product.code} · {product.brand}</p></div>
+                            <div class="product-numbers"><strong>{product.formattedPrice}</strong><span>{product.stock} pieces</span><small>1 case = {product.unitsPerCase} pieces</small></div>
+                        </article>
+                    </template>
+                </section>
+            </template>
+
+            <template if:true={showSchemes}>
+                <section>
+                    <div class="section-heading"><h2>Active schemes</h2><span>{schemes.length} available</span></div>
+                    <template for:each={schemes} for:item="scheme">
+                        <article class="scheme-card" key={scheme.id}>
+                            <lightning-icon icon-name="utility:discounts" size="small"></lightning-icon>
+                            <div><p class="eyebrow">{scheme.type}</p><h3>{scheme.name}</h3><p>{scheme.description}</p><small>Valid through {scheme.endDate}</small></div>
+                        </article>
+                    </template>
+                </section>
+            </template>
+
+            <footer>
+                <lightning-button variant="neutral" label="End My Day" onclick={handleEndDay}></lightning-button>
+            </footer>
+        </template>
+
+        <template if:true={dayEnded}>
+            <section class="end-summary">
+                <div class="summary-title">
+                    <lightning-icon icon-name="utility:success" variant="success" size="medium"></lightning-icon>
+                    <div><p class="eyebrow">END DAY SUMMARY</p><h2>Great work today, {salesRepName}</h2></div>
+                </div>
+                <div class="time-grid">
+                    <article><span>Login</span><strong>{loginTime}</strong><small>{loginLocation}</small></article>
+                    <article><span>Logout</span><strong>{logoutTime}</strong><small>{logoutLocation}</small></article>
+                </div>
+                <template if:true={endDaySummary}>
+                    <div class="result-grid">
+                        <article><strong>{endDaySummary.completedVisits}/{endDaySummary.plannedVisits}</strong><span>Visits completed</span></article>
+                        <article><strong>{endDaySummary.ordersCaptured}</strong><span>Orders captured</span></article>
+                        <article><strong>{endDaySummary.formattedSales}</strong><span>Sales value</span></article>
+                        <article><strong>{endDaySummary.durationMinutes} min</strong><span>Working duration</span></article>
+                    </div>
+                </template>
+            </section>
+        </template>
+    </div>
+
+    <template if:true={orderOpen}>
+        <section role="dialog" tabindex="-1" aria-modal="true" class="slds-modal slds-fade-in-open">
+            <div class="slds-modal__container">
+                <header class="slds-modal__header"><h2 class="slds-text-heading_medium">Capture Secondary Order</h2></header>
+                <div class="slds-modal__content slds-p-around_medium">
+                    <template for:each={orderLines} for:item="line">
+                        <div class="order-line" key={line.productId}>
+                            <span>{line.productName}</span>
+                            <lightning-input type="number" min="0" label="Cases" value={line.cases} data-id={line.productId} data-field="cases" onchange={updateOrderLine}></lightning-input>
+                            <lightning-input type="number" min="0" label="Pieces" value={line.pieces} data-id={line.productId} data-field="pieces" onchange={updateOrderLine}></lightning-input>
+                        </div>
+                    </template>
+                </div>
+                <footer class="slds-modal__footer">
+                    <lightning-button label="Cancel" onclick={closeOrder}></lightning-button>
+                    <lightning-button variant="brand" label="Submit Order" onclick={submitOrder}></lightning-button>
+                </footer>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+    </template>
+</template>

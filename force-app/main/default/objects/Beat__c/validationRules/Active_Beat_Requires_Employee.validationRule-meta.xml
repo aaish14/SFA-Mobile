@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ValidationRule xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Active_Beat_Requires_Employee</fullName>
+    <active>true</active>
+    <errorConditionFormula>AND(Active__c, ISBLANK(Assigned_Employee__c))</errorConditionFormula>
+    <errorDisplayField>Assigned_Employee__c</errorDisplayField>
+    <errorMessage>An active Beat must have an assigned employee.</errorMessage>
+</ValidationRule>

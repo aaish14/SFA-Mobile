@@ -1,0 +1,36 @@
+<template>
+    <div class="portal">
+        <header>
+            <div><p class="eyebrow">SFA DISTRIBUTOR CONTROL CENTRE</p><h1>Admin Portal</h1><p>Attendance, field execution and daily commercial summary</p></div>
+            <lightning-button-icon icon-name="utility:refresh" alternative-text="Refresh" onclick={load}></lightning-button-icon>
+        </header>
+        <template if:true={loading}><lightning-spinner alternative-text="Loading admin data"></lightning-spinner></template>
+        <template if:true={dashboard}>
+            <section class="metrics">
+                <article><span>Representatives logged in</span><strong>{dashboard.representativesLoggedIn}</strong><small>{dashboard.representativesLoggedOut} ended the day</small></article>
+                <article><span>Visits completed</span><strong>{dashboard.visitsCompleted}/{dashboard.visitsPlanned}</strong><small>{dashboard.completionRate}% productivity</small></article>
+                <article><span>Orders captured</span><strong>{dashboard.ordersCaptured}</strong><small>Secondary orders today</small></article>
+                <article><span>Distributor sales</span><strong>{dashboard.formattedSales}</strong><small>Today's order value</small></article>
+            </section>
+            <section class="panel">
+                <div class="panel-title"><div><p class="eyebrow">LIVE ATTENDANCE</p><h2>Login and logout audit</h2></div><span>{dashboard.businessDate}</span></div>
+                <div class="table-wrap">
+                    <table>
+                        <thead><tr><th>Sales representative</th><th>Login time & location</th><th>Logout time & location</th><th>Visits</th><th>Orders</th><th>Sales</th><th>Status</th></tr></thead>
+                        <tbody>
+                            <template for:each={attendance} for:item="row">
+                                <tr key={row.id}>
+                                    <td><strong>{row.salesRepresentative}</strong></td>
+                                    <td><span>{row.loginLabel}</span><a href={row.loginMapUrl} target="_blank">{row.loginLocation}</a></td>
+                                    <td><span>{row.logoutLabel}</span><a href={row.logoutMapUrl} target="_blank">{row.logoutLocation}</a></td>
+                                    <td>{row.completedVisits}</td><td>{row.ordersCaptured}</td><td>{row.formattedSales}</td>
+                                    <td><span class={row.statusClass}>{row.status}</span></td>
+                                </tr>
+                            </template>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </template>
+    </div>
+</template>

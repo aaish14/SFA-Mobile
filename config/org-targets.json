@@ -1,0 +1,15 @@
+{
+  "activeTarget": {
+    "alias": "sfaNewOrg",
+    "username": "aishwaryahs142003.6d2fd18ea3e1@agentforce.com",
+    "orgId": "00DjV000004opjNUAQ",
+    "instanceUrl": "https://orgfarm-33ef5eba22-dev-ed.develop.my.salesforce.com"
+  },
+  "previousTarget": {
+    "alias": "org1",
+    "username": "aishwaryahs14123.bba780a27606@agentforce.com",
+    "orgId": "00Dg500000F3JiEEAV",
+    "instanceUrl": "https://orgfarm-b60461f024-dev-ed.develop.my.salesforce.com"
+  },
+  "note": "This file contains org identifiers only. It never stores passwords or access tokens."
+}

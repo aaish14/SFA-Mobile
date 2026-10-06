@@ -1,0 +1,11 @@
+<template>
+    <lightning-quick-action-panel header="Upload Profile Picture">
+        <div class="slds-p-around_medium">
+            <p class="slds-m-bottom_medium">Select a JPG, JPEG or PNG profile picture for this employee.</p>
+            <lightning-file-upload label="Profile Picture" name="profilePicture"
+                accept={acceptedFormats} record-id={recordId}
+                onuploadfinished={handleUploadFinished} multiple={allowSingleFile}>
+            </lightning-file-upload>
+        </div>
+    </lightning-quick-action-panel>
+</template>

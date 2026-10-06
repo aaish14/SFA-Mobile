@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ListView xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>All_Employees</fullName>
+    <columns>NAME</columns>
+    <columns>Employee_Code__c</columns>
+    <columns>Salesforce_User__c</columns>
+    <columns>Reporting_Manager__c</columns>
+    <columns>Hierarchy_Level__c</columns>
+    <columns>Geography__c</columns>
+    <columns>Active__c</columns>
+    <filterScope>Everything</filterScope>
+    <label>All Employees</label>
+</ListView>

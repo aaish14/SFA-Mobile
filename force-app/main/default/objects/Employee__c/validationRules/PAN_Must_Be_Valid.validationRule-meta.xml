@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ValidationRule xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>PAN_Must_Be_Valid</fullName>
+    <active>true</active>
+    <errorConditionFormula>AND(NOT(ISBLANK(PAN_Number__c)), NOT(REGEX(UPPER(PAN_Number__c), &quot;^[A-Z]{5}[0-9]{4}[A-Z]$&quot;)))</errorConditionFormula>
+    <errorDisplayField>PAN_Number__c</errorDisplayField>
+    <errorMessage>PAN must use the standard format: five letters, four digits and one letter.</errorMessage>
+</ValidationRule>

@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Scheme_Type__c</fullName>
+    <label>Scheme Type</label>
+    <required>true</required>
+    <trackTrending>false</trackTrending>
+    <type>Picklist</type>
+    <valueSet>
+        <restricted>true</restricted>
+        <valueSetDefinition>
+            <sorted>false</sorted>
+            <value>
+                <fullName>Same Product Free</fullName>
+                <default>false</default>
+                <label>Same Product Free</label>
+            </value>
+            <value>
+                <fullName>Non-listed Product Free</fullName>
+                <default>false</default>
+                <label>Non-listed Product Free</label>
+            </value>
+            <value>
+                <fullName>Different Listed Product Free</fullName>
+                <default>false</default>
+                <label>Different Listed Product Free</label>
+            </value>
+            <value>
+                <fullName>Slab Discount</fullName>
+                <default>false</default>
+                <label>Slab Discount</label>
+            </value>
+            <value>
+                <fullName>Bundle</fullName>
+                <default>false</default>
+                <label>Bundle</label>
+            </value>
+            <value>
+                <fullName>Amount Discount</fullName>
+                <default>false</default>
+                <isActive>false</isActive>
+                <label>Amount Discount</label>
+            </value>
+            <value>
+                <fullName>Different Product Free</fullName>
+                <default>false</default>
+                <isActive>false</isActive>
+                <label>Different Product Free</label>
+            </value>
+            <value>
+                <fullName>Percentage Discount</fullName>
+                <default>false</default>
+                <isActive>false</isActive>
+                <label>Percentage Discount</label>
+            </value>
+            <value>
+                <fullName>Slab</fullName>
+                <default>false</default>
+                <isActive>false</isActive>
+                <label>Slab</label>
+            </value>
+        </valueSetDefinition>
+    </valueSet>
+</CustomField>

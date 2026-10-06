@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>District__c</fullName>
+    <label>District</label>
+    <required>true</required>
+    <trackTrending>false</trackTrending>
+    <type>Picklist</type>
+    <valueSet>
+        <controllingField>State__c</controllingField>
+        <restricted>true</restricted>
+        <valueSetDefinition>
+            <sorted>true</sorted>
+            <value>
+                <fullName>Bengaluru Rural</fullName>
+                <default>false</default>
+                <label>Bengaluru Rural</label>
+            </value>
+            <value>
+                <fullName>Bengaluru Urban</fullName>
+                <default>false</default>
+                <label>Bengaluru Urban</label>
+            </value>
+            <value>
+                <fullName>Mysuru</fullName>
+                <default>false</default>
+                <label>Mysuru</label>
+            </value>
+            <value>
+                <fullName>Tumakuru</fullName>
+                <default>false</default>
+                <label>Tumakuru</label>
+            </value>
+        </valueSetDefinition>
+        <valueSettings>
+            <controllingFieldValue>Karnataka</controllingFieldValue>
+            <valueName>Bengaluru Rural</valueName>
+        </valueSettings>
+        <valueSettings>
+            <controllingFieldValue>Karnataka</controllingFieldValue>
+            <valueName>Bengaluru Urban</valueName>
+        </valueSettings>
+        <valueSettings>
+            <controllingFieldValue>Karnataka</controllingFieldValue>
+            <valueName>Mysuru</valueName>
+        </valueSettings>
+        <valueSettings>
+            <controllingFieldValue>Karnataka</controllingFieldValue>
+            <valueName>Tumakuru</valueName>
+        </valueSettings>
+    </valueSet>
+</CustomField>

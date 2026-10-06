@@ -1,0 +1,47 @@
+<template>
+    <lightning-card title="My Permanent Journey Plan" icon-name="standard:date_input">
+        <div class="slds-p-around_medium">
+            <template if:true={context}>
+                <div class="summary"><strong>Employee:</strong> {context.employeeName}<br/><strong>Approver:</strong> {context.managerName}</div>
+                <div class="form-grid slds-m-top_medium">
+                    <lightning-input type="date" label="Planning Start Date" value={startDate} onchange={handleStart}></lightning-input>
+                    <lightning-input type="date" label="Planning End Date" value={endDate} onchange={handleEnd}></lightning-input>
+                </div>
+                <lightning-dual-listbox class="slds-m-top_medium" name="beats" label="Select Beats"
+                    source-label="Authorized Beats" selected-label="Selected Beats" options={beatOptions}
+                    value={selectedBeatIds} onchange={handleBeats}></lightning-dual-listbox>
+                <div class="actions slds-m-top_medium">
+                    <lightning-button label="Cancel" onclick={resetForm}></lightning-button>
+                    <lightning-button label="Save Draft" onclick={saveDraft}></lightning-button>
+                    <lightning-button variant="brand" label="Submit for Approval" onclick={submitForApproval}></lightning-button>
+                </div>
+            </template>
+        </div>
+    </lightning-card>
+    <lightning-card title="My PJPs" icon-name="standard:orders" class="slds-m-top_medium">
+        <div class="slds-p-around_medium">
+            <template for:each={myPjps} for:item="plan">
+                <section key={plan.id} class="plan-row">
+                    <div><strong>{plan.name}</strong><br/>{plan.startDate} to {plan.endDate}<br/>Beats: {plan.beatList}<br/>Approver: {plan.approverName}</div>
+                    <div><lightning-badge label={plan.status}></lightning-badge><template if:true={plan.rejectionReason}><p class="rejected">{plan.rejectionReason}</p></template></div>
+                </section>
+            </template>
+            <template if:false={hasMyPjps}><p>No Phase 1 PJP has been created yet.</p></template>
+        </div>
+    </lightning-card>
+    <lightning-card title="PJP Approvals" icon-name="standard:approval" class="slds-m-top_medium">
+        <div class="slds-p-around_medium">
+            <template for:each={approvals} for:item="plan">
+                <section key={plan.id} class="plan-row">
+                    <div><strong>{plan.name}</strong><br/>Employee: {plan.employeeName}<br/>{plan.startDate} to {plan.endDate}<br/>Beats ({plan.beatCount}): {plan.beatList}<br/>Submitted: {plan.submittedDate}</div>
+                    <div class="decision">
+                        <lightning-textarea data-id={plan.id} label="Rejection Reason" onchange={handleReason}></lightning-textarea>
+                        <lightning-button data-id={plan.id} variant="success" label="Approve" onclick={approve}></lightning-button>
+                        <lightning-button data-id={plan.id} variant="destructive-text" label="Reject" onclick={reject}></lightning-button>
+                    </div>
+                </section>
+            </template>
+            <template if:false={hasApprovals}><p>No submitted PJPs are waiting for your approval.</p></template>
+        </div>
+    </lightning-card>
+</template>

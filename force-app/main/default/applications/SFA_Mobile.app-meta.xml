@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomApplication xmlns="http://soap.sforce.com/2006/04/metadata">
+    <brand>
+        <headerColor>#0B5CAB</headerColor>
+        <shouldOverrideOrgTheme>true</shouldOverrideOrgTheme>
+    </brand>
+    <description>Mobile-first Sales Force Automation application for attendance, route visits, orders and schemes.</description>
+    <formFactors>Small</formFactors>
+    <formFactors>Large</formFactors>
+    <isNavAutoTempTabsDisabled>false</isNavAutoTempTabsDisabled>
+    <isNavPersonalizationDisabled>false</isNavPersonalizationDisabled>
+    <isNavTabPersistenceDisabled>false</isNavTabPersistenceDisabled>
+    <isOmniPinnedViewEnabled>false</isOmniPinnedViewEnabled>
+    <label>SFA Mobile</label>
+    <navType>Standard</navType>
+    <tabs>SFA_Mobile_Home</tabs>
+    <tabs>SFA_Admin</tabs>
+    <tabs>Employee__c</tabs>
+    <tabs>Geography__c</tabs>
+    <tabs>Attendance__c</tabs>
+    <tabs>Beat__c</tabs>
+    <tabs>Permanent_Journey_Plan__c</tabs>
+    <tabs>PJP_Planner</tabs>
+    <tabs>Retailer__c</tabs>
+    <tabs>Visit__c</tabs>
+    <tabs>Product__c</tabs>
+    <tabs>Scheme__c</tabs>
+    <tabs>Sales_Order__c</tabs>
+    <tabs>Order_Item__c</tabs>
+    <uiType>Lightning</uiType>
+</CustomApplication>

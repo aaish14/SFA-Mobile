@@ -1,0 +1,1 @@
+SfaDemoDataFactory.seed();

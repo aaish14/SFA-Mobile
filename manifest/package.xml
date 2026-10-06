@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Package xmlns="http://soap.sforce.com/2006/04/metadata">
+    <types><members>SfaAdminController</members><members>SfaAdminControllerTest</members><members>SfaDemoDataFactory</members><members>SfaMobileController</members><members>SfaMobileControllerTest</members><name>ApexClass</name></types>
+    <types><members>SfaAdminOut</members><name>AuraDefinitionBundle</name></types>
+    <types><members>SFA_Admin</members><name>ApexPage</name></types>
+    <types><members>SFA_Mobile</members><name>CustomApplication</name></types>
+    <types><members>SFA_Admin</members><members>SFA_Mobile_Home</members><members>Attendance__c</members><members>Beat__c</members><members>Permanent_Journey_Plan__c</members><members>Retailer__c</members><members>Visit__c</members><members>Product__c</members><members>Scheme__c</members><members>Sales_Order__c</members><members>Order_Item__c</members><name>CustomTab</name></types>
+    <types><members>Attendance__c</members><members>Beat__c</members><members>Permanent_Journey_Plan__c</members><members>Retailer__c</members><members>Visit__c</members><members>Product__c</members><members>Scheme__c</members><members>Sales_Order__c</members><members>Order_Item__c</members><name>CustomObject</name></types>
+    <types><members>sfaAdminPortal</members><members>sfaMobileApp</members><name>LightningComponentBundle</name></types>
+    <types><members>Attendance__c-Attendance Layout</members><members>Beat__c-Beat Layout</members><members>Order_Item__c-Order Item Layout</members><members>Permanent_Journey_Plan__c-Permanent Journey Plan Layout</members><members>Product__c-Product Layout</members><members>Retailer__c-Retailer Layout</members><members>Sales_Order__c-Sales Order Layout</members><members>Scheme__c-Scheme Layout</members><members>Visit__c-Visit Layout</members><name>Layout</name></types>
+    <types><members>SFA_Mobile_User</members><name>PermissionSet</name></types>
+    <version>65.0</version>
+</Package>
