@@ -23,6 +23,9 @@
     <fieldPermissions><editable>true</editable><field>Sales_Order__c.Gross_Amount__c</field><readable>true</readable></fieldPermissions>
     <fieldPermissions><editable>true</editable><field>Sales_Order__c.Total_Quantity__c</field><readable>true</readable></fieldPermissions>
     <fieldPermissions><editable>true</editable><field>Sales_Order__c.Scheme_Applied__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>Sales_Order__c.Product__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>false</editable><field>Sales_Order__c.SKU__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>Sales_Order__c.Scheme_Details__c</field><readable>true</readable></fieldPermissions>
     <hasActivationRequired>false</hasActivationRequired><label>SFA Phase Two User</label>
     <objectPermissions><allowCreate>true</allowCreate><allowDelete>false</allowDelete><allowEdit>true</allowEdit><allowRead>true</allowRead><modifyAllRecords>false</modifyAllRecords><object>Asset_Survey__c</object><viewAllFields>true</viewAllFields><viewAllRecords>false</viewAllRecords></objectPermissions>
     <objectPermissions><allowCreate>true</allowCreate><allowDelete>false</allowDelete><allowEdit>true</allowEdit><allowRead>true</allowRead><modifyAllRecords>false</modifyAllRecords><object>Competitor_Activity__c</object><viewAllFields>true</viewAllFields><viewAllRecords>false</viewAllRecords></objectPermissions>
