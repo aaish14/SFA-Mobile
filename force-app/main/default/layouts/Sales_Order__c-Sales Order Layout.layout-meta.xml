@@ -18,9 +18,18 @@
                 <behavior>Required</behavior>
                 <field>Visit__c</field>
             </layoutItems>
-            <layoutItems><behavior>Edit</behavior><field>Product__c</field></layoutItems>
-            <layoutItems><behavior>Readonly</behavior><field>SKU__c</field></layoutItems>
-            <layoutItems><behavior>Edit</behavior><field>Scheme_Details__c</field></layoutItems>
+            <layoutItems>
+                <behavior>Edit</behavior>
+                <field>Product__c</field>
+            </layoutItems>
+            <layoutItems>
+                <behavior>Readonly</behavior>
+                <field>SKU__c</field>
+            </layoutItems>
+            <layoutItems>
+                <behavior>Edit</behavior>
+                <field>Scheme_Details__c</field>
+            </layoutItems>
         </layoutColumns>
         <layoutColumns>
             <layoutItems>
@@ -31,10 +40,22 @@
                 <behavior>Edit</behavior>
                 <field>Total_Amount__c</field>
             </layoutItems>
-            <layoutItems><behavior>Edit</behavior><field>Tax_Amount__c</field></layoutItems>
-            <layoutItems><behavior>Edit</behavior><field>Gross_Amount__c</field></layoutItems>
-            <layoutItems><behavior>Edit</behavior><field>Total_Quantity__c</field></layoutItems>
-            <layoutItems><behavior>Edit</behavior><field>Scheme_Applied__c</field></layoutItems>
+            <layoutItems>
+                <behavior>Edit</behavior>
+                <field>Tax_Amount__c</field>
+            </layoutItems>
+            <layoutItems>
+                <behavior>Edit</behavior>
+                <field>Gross_Amount__c</field>
+            </layoutItems>
+            <layoutItems>
+                <behavior>Edit</behavior>
+                <field>Total_Quantity__c</field>
+            </layoutItems>
+            <layoutItems>
+                <behavior>Edit</behavior>
+                <field>Scheme_Applied__c</field>
+            </layoutItems>
         </layoutColumns>
         <style>TwoColumnsTopToBottom</style>
     </layoutSections>
@@ -42,6 +63,8 @@
         <customLabel>false</customLabel>
         <detailHeading>false</detailHeading>
         <editHeading>false</editHeading>
+        <layoutColumns/>
+        <layoutColumns/>
         <layoutColumns/>
         <style>CustomLinks</style>
     </layoutSections>
