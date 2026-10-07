@@ -7,6 +7,8 @@ import completeVisit from '@salesforce/apex/SfaMobileController.completeVisit';
 import markVisitMissed from '@salesforce/apex/SfaMobileController.markVisitMissed';
 import saveOrder from '@salesforce/apex/SfaMobileController.saveOrder';
 import endDay from '@salesforce/apex/SfaMobileController.endDay';
+import saveVisitAction from '@salesforce/apex/SfaVisitActionsController.saveVisitAction';
+import submitLeave from '@salesforce/apex/SfaVisitActionsController.submitLeave';
 
 export default class SfaMobileApp extends LightningElement {
     isLoading = true;
@@ -21,12 +23,18 @@ export default class SfaMobileApp extends LightningElement {
     activeSection = 'route';
     orderOpen = false;
     selectedVisitId;
+    selectedSchemeId;
     orderLines = [];
     loginTime;
     logoutTime;
     loginLocation;
     logoutLocation;
     endDaySummary;
+    actionMenuOpen = false;
+    actionFormOpen = false;
+    actionType;
+    actionData = {};
+    selectedOutletName;
 
     connectedCallback() {
         this.loadDashboard();
@@ -120,6 +128,48 @@ export default class SfaMobileApp extends LightningElement {
     closeOrder() {
         this.orderOpen = false;
         this.selectedVisitId = null;
+        this.selectedSchemeId = null;
+    }
+
+    openActionMenu(event) {
+        this.selectedVisitId = event.currentTarget.dataset.id;
+        this.selectedOutletName = event.currentTarget.dataset.outlet;
+        this.actionMenuOpen = true;
+    }
+
+    openStandaloneAction(event) {
+        this.selectedOutletName = '';
+        this.actionType = event.currentTarget.dataset.action;
+        this.actionData = {};
+        this.actionFormOpen = true;
+    }
+
+    selectAction(event) {
+        this.actionType = event.currentTarget.dataset.action;
+        this.actionData = {};
+        this.actionMenuOpen = false;
+        this.actionFormOpen = true;
+    }
+
+    closeAction() {
+        this.actionMenuOpen = false;
+        this.actionFormOpen = false;
+        this.actionData = {};
+    }
+
+    updateActionField(event) {
+        this.actionData = { ...this.actionData, [event.currentTarget.dataset.field]: event.detail.value };
+    }
+
+    async saveAction() {
+        const fields = [...this.template.querySelectorAll('.form-stack lightning-input, .form-stack lightning-combobox, .form-stack lightning-textarea')];
+        if (!fields.reduce((valid, field) => field.reportValidity() && valid, true)) return;
+        await this.runAction(async () => {
+            if (this.isLeave) await submitLeave({ payloadJson: JSON.stringify(this.actionData) });
+            else await saveVisitAction({ actionType: this.actionType, visitId: this.selectedVisitId, payloadJson: JSON.stringify(this.actionData) });
+            this.notify('Saved', `${this.actionTitle} was added successfully.`, 'success');
+            this.closeAction();
+        });
     }
 
     updateOrderLine(event) {
@@ -129,6 +179,8 @@ export default class SfaMobileApp extends LightningElement {
         this.orderLines = this.orderLines.map(line => line.productId === productId ? { ...line, [field]: value } : line);
     }
 
+    updateSelectedScheme(event) { this.selectedSchemeId = event.detail.value; }
+
     async submitOrder() {
         const selectedLines = this.orderLines.filter(line => line.cases > 0 || line.pieces > 0);
         if (!selectedLines.length) {
@@ -136,7 +188,7 @@ export default class SfaMobileApp extends LightningElement {
             return;
         }
         await this.runAction(async () => {
-            await saveOrder({ visitId: this.selectedVisitId, lineJson: JSON.stringify(selectedLines) });
+            await saveOrder({ visitId: this.selectedVisitId, schemeId: this.selectedSchemeId || null, lineJson: JSON.stringify(selectedLines) });
             this.closeOrder();
             this.notify('Order saved', 'The secondary order has been sent to Salesforce.', 'success');
         });
@@ -168,6 +220,22 @@ export default class SfaMobileApp extends LightningElement {
     get todayLabel() { return new Intl.DateTimeFormat('en-IN', { weekday: 'long', day: 'numeric', month: 'long' }).format(new Date()); }
     get greeting() { return new Date().getHours() < 12 ? 'morning' : new Date().getHours() < 17 ? 'afternoon' : 'evening'; }
     get showStartCard() { return !this.dayStarted && !this.dayEnded; }
+    get productOptions() { return this.products.map(product => ({ label: `${product.name} (${product.code})`, value: product.id })); }
+    get schemeOptions() { return this.schemes.map(scheme => ({ label: scheme.name, value: scheme.id })); }
+    get assetStatusOptions() { return ['Working', 'Needs Service', 'Damaged', 'Missing'].map(value => ({ label: value, value })); }
+    get returnReasonOptions() { return ['Expired', 'Damaged', 'Near Expiry', 'Wrong Supply', 'Quality Issue', 'Other'].map(value => ({ label: value, value })); }
+    get leaveTypeOptions() { return ['Casual Leave', 'Sick Leave', 'Earned Leave', 'Unpaid Leave'].map(value => ({ label: value, value })); }
+    get isAsset() { return this.actionType === 'asset'; }
+    get isCompetitor() { return this.actionType === 'competitor'; }
+    get isStock() { return this.actionType === 'stock'; }
+    get isTicket() { return this.actionType === 'ticket'; }
+    get isReturn() { return this.actionType === 'return'; }
+    get isLeave() { return this.actionType === 'leave'; }
+    get needsProduct() { return this.isStock || this.isReturn; }
+    get needsDate() { return this.isAsset || this.isStock || this.isReturn || this.isLeave; }
+    get acceptsImage() { return this.isAsset || this.isCompetitor || this.isTicket; }
+    get dateLabel() { return this.isLeave ? 'Leave Date' : this.isAsset ? 'Given Date' : 'Manufacturing Date'; }
+    get actionTitle() { return ({ asset: 'Asset Survey', competitor: 'Competitor Activity', stock: 'Stock Check', ticket: 'Raise Ticket', return: 'Product Return', leave: 'Apply Leave' })[this.actionType] || 'Visit Action'; }
 
     getCurrentLocation() {
         return new Promise((resolve, reject) => {

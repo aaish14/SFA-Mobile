@@ -18,7 +18,7 @@ export default class PjpMonthlyPlanner extends LightningElement {
             this.setDefaultDates(); await this.refreshLists();
         } catch (error) { this.showError(error); }
     }
-    get beatOptions() { return this.beats.map(beat => ({ label: `${beat.Name} — ${beat.Geography__r?.Name || ''}`, value: beat.Id })); }
+    get beatOptions() { return this.beats.map(beat => ({ label: beat.Geography__r?.Name ? `${beat.Name} — ${beat.Geography__r.Name}` : beat.Name, value: beat.Id })); }
     get hasMyPjps() { return this.myPjps.length > 0; }
     get hasApprovals() { return this.approvals.length > 0; }
     handleStart(event) { this.startDate = event.target.value; }

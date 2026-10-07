@@ -162,7 +162,7 @@ public with sharing class SfaMobileController {
     }
 
     @AuraEnabled
-    public static Id saveOrder(Id visitId, String lineJson) {
+    public static Id saveOrder(Id visitId, Id schemeId, String lineJson) {
         Visit__c visit = [SELECT Id, Retailer__c, Status__c FROM Visit__c WHERE Id = :visitId LIMIT 1];
         if (visit.Status__c != 'Checked In') throw new AuraHandledException('An order can only be captured during a checked-in visit.');
         List<IncomingOrderLine> incoming = (List<IncomingOrderLine>) JSON.deserialize(lineJson, List<IncomingOrderLine>.class);
@@ -171,13 +171,15 @@ public with sharing class SfaMobileController {
         Set<Id> productIds = new Set<Id>();
         for (IncomingOrderLine line : incoming) productIds.add(line.productId);
         Map<Id, Product__c> products = new Map<Id, Product__c>([
-            SELECT Id, Retailer_Base_Price__c, Units_Per_Case__c FROM Product__c WHERE Id IN :productIds
+            SELECT Id, Retailer_Base_Price__c, Units_Per_Case__c, GST_Percent__c FROM Product__c WHERE Id IN :productIds
         ]);
 
-        Sales_Order__c order = new Sales_Order__c(Visit__c = visit.Id, Retailer__c = visit.Retailer__c, Order_Date__c = Date.today(), Status__c = 'Submitted');
+        Sales_Order__c order = new Sales_Order__c(Visit__c = visit.Id, Retailer__c = visit.Retailer__c, Order_Date__c = Date.today(), Status__c = 'Submitted', Scheme_Applied__c = schemeId);
         insert order;
         List<Order_Item__c> items = new List<Order_Item__c>();
         Decimal orderTotal = 0;
+        Decimal taxTotal = 0;
+        Decimal totalQuantity = 0;
         for (IncomingOrderLine line : incoming) {
             Product__c product = products.get(line.productId);
             Decimal cases = line.cases == null ? 0 : line.cases;
@@ -185,10 +187,16 @@ public with sharing class SfaMobileController {
             Decimal totalPieces = cases * product.Units_Per_Case__c + pieces;
             Decimal amount = totalPieces * product.Retailer_Base_Price__c;
             orderTotal += amount;
+            totalQuantity += totalPieces;
+            taxTotal += amount * (product.GST_Percent__c == null ? 0 : product.GST_Percent__c) / 100;
             items.add(new Order_Item__c(Sales_Order__c = order.Id, Product__c = product.Id, Case_Quantity__c = cases, Piece_Quantity__c = pieces, Total_Pieces__c = totalPieces, Unit_Price__c = product.Retailer_Base_Price__c, Line_Amount__c = amount));
         }
         insert items;
-        order.Total_Amount__c = orderTotal; update order;
+        order.Total_Amount__c = orderTotal;
+        order.Tax_Amount__c = taxTotal.setScale(2);
+        order.Gross_Amount__c = (orderTotal + taxTotal).setScale(2);
+        order.Total_Quantity__c = totalQuantity;
+        update order;
         return order.Id;
     }
 

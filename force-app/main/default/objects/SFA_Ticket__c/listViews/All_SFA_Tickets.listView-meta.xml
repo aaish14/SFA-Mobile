@@ -1,0 +1,1 @@
+<?xml version="1.0" encoding="UTF-8"?><ListView xmlns="http://soap.sforce.com/2006/04/metadata"><fullName>All_SFA_Tickets</fullName><columns>NAME</columns><columns>Subject__c</columns><columns>Status__c</columns><columns>Outlet__c</columns><filterScope>Everything</filterScope><label>All SFA Tickets</label></ListView>

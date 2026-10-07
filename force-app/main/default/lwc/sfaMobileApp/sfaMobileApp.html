@@ -60,6 +60,7 @@
                                     </template>
                                     <template if:true={visit.canOrder}>
                                         <lightning-button label="Take Order" data-id={visit.id} onclick={openOrder}></lightning-button>
+                                        <lightning-button label="Visit Actions" icon-name="utility:add" data-id={visit.id} data-outlet={visit.retailerName} onclick={openActionMenu}></lightning-button>
                                         <lightning-button label="Complete" data-id={visit.id} onclick={handleComplete}></lightning-button>
                                     </template>
                                     <template if:true={visit.canMiss}>
@@ -97,6 +98,7 @@
             </template>
 
             <footer>
+                <lightning-button variant="neutral" label="Apply Leave" icon-name="utility:event" data-action="leave" onclick={openStandaloneAction}></lightning-button>
                 <lightning-button variant="neutral" label="End My Day" onclick={handleEndDay}></lightning-button>
             </footer>
         </template>
@@ -128,6 +130,7 @@
             <div class="slds-modal__container">
                 <header class="slds-modal__header"><h2 class="slds-text-heading_medium">Capture Secondary Order</h2></header>
                 <div class="slds-modal__content slds-p-around_medium">
+                    <lightning-combobox label="Apply Scheme (optional)" value={selectedSchemeId} options={schemeOptions} onchange={updateSelectedScheme}></lightning-combobox>
                     <template for:each={orderLines} for:item="line">
                         <div class="order-line" key={line.productId}>
                             <span>{line.productName}</span>
@@ -143,5 +146,60 @@
             </div>
         </section>
         <div class="slds-backdrop slds-backdrop_open"></div>
+    </template>
+
+    <template if:true={actionMenuOpen}>
+        <section role="dialog" tabindex="-1" aria-modal="true" class="slds-modal slds-fade-in-open">
+            <div class="slds-modal__container action-dialog">
+                <header class="slds-modal__header"><h2 class="slds-text-heading_medium">In-Visit Actions</h2><p>{selectedOutletName}</p></header>
+                <div class="slds-modal__content slds-p-around_medium action-grid">
+                    <button data-action="asset" onclick={selectAction}><lightning-icon icon-name="utility:product" size="small"></lightning-icon><span>Asset Survey</span></button>
+                    <button data-action="competitor" onclick={selectAction}><lightning-icon icon-name="utility:chart" size="small"></lightning-icon><span>Competitor</span></button>
+                    <button data-action="stock" onclick={selectAction}><lightning-icon icon-name="utility:inventory" size="small"></lightning-icon><span>Stock Check</span></button>
+                    <button data-action="ticket" onclick={selectAction}><lightning-icon icon-name="utility:case" size="small"></lightning-icon><span>Ticket</span></button>
+                    <button data-action="return" onclick={selectAction}><lightning-icon icon-name="utility:back" size="small"></lightning-icon><span>Product Return</span></button>
+                </div>
+                <footer class="slds-modal__footer"><lightning-button label="Close" onclick={closeAction}></lightning-button></footer>
+            </div>
+        </section><div class="slds-backdrop slds-backdrop_open"></div>
+    </template>
+
+    <template if:true={actionFormOpen}>
+        <section role="dialog" tabindex="-1" aria-modal="true" class="slds-modal slds-fade-in-open">
+            <div class="slds-modal__container action-dialog">
+                <header class="slds-modal__header"><h2 class="slds-text-heading_medium">{actionTitle}</h2><p>{selectedOutletName}</p></header>
+                <div class="slds-modal__content slds-p-around_medium form-stack">
+                    <template if:true={isAsset}>
+                        <lightning-input label="Asset Name" data-field="assetName" onchange={updateActionField} required></lightning-input>
+                        <lightning-input label="Asset Code" data-field="assetCode" onchange={updateActionField} required></lightning-input>
+                        <lightning-combobox label="Status" data-field="status" options={assetStatusOptions} onchange={updateActionField} required></lightning-combobox>
+                    </template>
+                    <template if:true={isCompetitor}>
+                        <lightning-input label="Competitor Name" data-field="competitorName" onchange={updateActionField} required></lightning-input>
+                        <lightning-input label="Company" data-field="company" onchange={updateActionField}></lightning-input>
+                        <div class="two-column"><lightning-input type="number" label="MRP (₹)" data-field="mrp" onchange={updateActionField}></lightning-input><lightning-input type="number" label="RBP (₹)" data-field="rbp" onchange={updateActionField}></lightning-input></div>
+                        <lightning-textarea label="Competitor Scheme" data-field="schemeDetails" onchange={updateActionField}></lightning-textarea>
+                    </template>
+                    <template if:true={needsProduct}>
+                        <lightning-combobox label="Product" data-field="productId" options={productOptions} onchange={updateActionField} required></lightning-combobox>
+                        <lightning-input type="number" min="1" label="Quantity" data-field="quantity" onchange={updateActionField} required></lightning-input>
+                    </template>
+                    <template if:true={isTicket}>
+                        <lightning-input label="Ticket Subject" data-field="subject" onchange={updateActionField} required></lightning-input>
+                        <lightning-textarea label="Description" data-field="description" onchange={updateActionField}></lightning-textarea>
+                    </template>
+                    <template if:true={isReturn}>
+                        <lightning-combobox label="Return Reason" data-field="returnReason" options={returnReasonOptions} onchange={updateActionField} required></lightning-combobox>
+                    </template>
+                    <template if:true={isLeave}>
+                        <lightning-combobox label="Leave Type" data-field="leaveType" options={leaveTypeOptions} onchange={updateActionField} required></lightning-combobox>
+                        <lightning-textarea label="Reason" data-field="description" onchange={updateActionField}></lightning-textarea>
+                    </template>
+                    <template if:true={needsDate}><lightning-input type="date" label={dateLabel} data-field="dateValue" onchange={updateActionField}></lightning-input></template>
+                    <template if:true={acceptsImage}><lightning-input type="url" label="Evidence Image URL" data-field="imageUrl" onchange={updateActionField}></lightning-input></template>
+                </div>
+                <footer class="slds-modal__footer"><lightning-button label="Cancel" onclick={closeAction}></lightning-button><lightning-button variant="brand" label="Save" onclick={saveAction}></lightning-button></footer>
+            </div>
+        </section><div class="slds-backdrop slds-backdrop_open"></div>
     </template>
 </template>

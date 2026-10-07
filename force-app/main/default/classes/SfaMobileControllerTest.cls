@@ -27,7 +27,7 @@ private class SfaMobileControllerTest {
         Product__c product = [SELECT Id FROM Product__c LIMIT 1];
         SfaMobileController.checkIn(visit.Id);
         String lines = JSON.serialize(new List<Map<String, Object>>{ new Map<String, Object>{ 'productId' => product.Id, 'cases' => 1, 'pieces' => 2 } });
-        Id orderId = SfaMobileController.saveOrder(visit.Id, lines);
+        Id orderId = SfaMobileController.saveOrder(visit.Id, null, lines);
         System.assertNotEquals(null, orderId);
         SfaMobileController.completeVisit(visit.Id);
         SfaMobileController.EndDaySummary summary = SfaMobileController.endDay(attendanceId, 12.9720, 77.5950);
