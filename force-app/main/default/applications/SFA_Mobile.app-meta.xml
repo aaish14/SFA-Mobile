@@ -23,15 +23,15 @@
     <tabs>PJP_Planner</tabs>
     <tabs>Retailer__c</tabs>
     <tabs>Visit__c</tabs>
+    <tabs>Asset_Survey__c</tabs>
+    <tabs>Competitor_Activity__c</tabs>
+    <tabs>SFA_Ticket__c</tabs>
+    <tabs>Stock_Check__c</tabs>
+    <tabs>Product_Return__c</tabs>
+    <tabs>Leave_Request__c</tabs>
     <tabs>Product__c</tabs>
     <tabs>Scheme__c</tabs>
     <tabs>Sales_Order__c</tabs>
     <tabs>Order_Item__c</tabs>
-    <tabs>Asset_Survey__c</tabs>
-    <tabs>Competitor_Activity__c</tabs>
-    <tabs>Stock_Check__c</tabs>
-    <tabs>SFA_Ticket__c</tabs>
-    <tabs>Product_Return__c</tabs>
-    <tabs>Leave_Request__c</tabs>
     <uiType>Lightning</uiType>
 </CustomApplication>
