@@ -32,6 +32,18 @@ export default function LoginScreen({ navigation }: NativeStackScreenProps<RootS
     }
   };
 
+  const showCodeEntry = () => {
+    const normalizedEmail = email.trim().toLowerCase();
+    if (!/^\S+@\S+\.\S+$/.test(normalizedEmail)) {
+      Alert.alert("Email required", "Enter the distributor email address first.");
+      return;
+    }
+    setDelivery({
+      maskedEmail: normalizedEmail.replace(/^(.{2}).*(@.*)$/, "$1***$2"),
+      expiresInMinutes: 10,
+    });
+  };
+
   const verifyCode = async () => {
     try {
       setBusy(true);
@@ -97,7 +109,10 @@ export default function LoginScreen({ navigation }: NativeStackScreenProps<RootS
               <Text onPress={() => setDelivery(undefined)} style={styles.link}>Use a different email</Text>
             </>
           ) : (
-            <Button title={busy ? "SENDING…" : "EMAIL MY SIGN-IN CODE"} onPress={requestCode} disabled={busy || !email.trim().includes("@")} />
+            <>
+              <Button title={busy ? "SENDING…" : "EMAIL MY SIGN-IN CODE"} onPress={requestCode} disabled={busy || !email.trim().includes("@")} />
+              <Text onPress={showCodeEntry} style={styles.link}>I already received a code</Text>
+            </>
           )}
           <Text style={styles.securityNote}>🔒 Your login determines exactly which beat and outlets you can access. Passwords are never stored in this application.</Text>
         </View>
