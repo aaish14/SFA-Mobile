@@ -31,23 +31,11 @@
                 <behavior>Edit</behavior>
                 <field>Credit_Limit__c</field>
             </layoutItems>
-            <layoutItems>
-                <behavior>Edit</behavior>
-                <field>Outlet_Type__c</field>
-            </layoutItems>
-            <layoutItems>
-                <behavior>Edit</behavior>
-                <field>Credit_Limit__c</field>
-            </layoutItems>
         </layoutColumns>
         <layoutColumns>
             <layoutItems>
                 <behavior>Edit</behavior>
                 <field>Beat__c</field>
-            </layoutItems>
-            <layoutItems>
-                <behavior>Edit</behavior>
-                <field>Distributor__c</field>
             </layoutItems>
             <layoutItems>
                 <behavior>Readonly</behavior>

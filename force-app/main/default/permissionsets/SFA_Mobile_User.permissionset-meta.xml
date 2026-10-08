@@ -254,66 +254,6 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>true</editable>
-        <field>Permanent_Journey_Plan__c.Employee__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
-        <field>Permanent_Journey_Plan__c.Approver__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
-        <field>Permanent_Journey_Plan__c.Plan_Date__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
-        <field>Permanent_Journey_Plan__c.Planning_Start_Date__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
-        <field>Permanent_Journey_Plan__c.Planning_End_Date__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
-        <field>Permanent_Journey_Plan__c.Rejection_Reason__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>false</editable>
-        <field>Permanent_Journey_Plan__c.Submitted_By__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>false</editable>
-        <field>Permanent_Journey_Plan__c.Submitted_Date__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>false</editable>
-        <field>Permanent_Journey_Plan__c.Approved_By__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>false</editable>
-        <field>Permanent_Journey_Plan__c.Approved_Date__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>false</editable>
-        <field>Permanent_Journey_Plan__c.Rejected_By__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>false</editable>
-        <field>Permanent_Journey_Plan__c.Rejected_Date__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
         <field>Product__c.Active__c</field>
         <readable>true</readable>
     </fieldPermissions>
@@ -399,11 +339,6 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>true</editable>
-        <field>Retailer__c.Distributor__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
         <field>Retailer__c.Address__c</field>
         <readable>true</readable>
     </fieldPermissions>
@@ -475,41 +410,6 @@
     <fieldPermissions>
         <editable>true</editable>
         <field>Retailer__c.Phone__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
-        <field>Retailer__c.Aadhaar_Number__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
-        <field>Retailer__c.Beat__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
-        <field>Retailer__c.Email__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
-        <field>Retailer__c.Geo_Location__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>false</editable>
-        <field>Retailer__c.Geography__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
-        <field>Retailer__c.Outlet_Owner_Name__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
-        <field>Retailer__c.PAN_Number__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
@@ -672,17 +572,6 @@
         <field>Visit__c.Visit_Number__c</field>
         <readable>true</readable>
     </fieldPermissions>
-    <fieldPermissions><editable>false</editable><field>Distributor__c.Distributor_ID__c</field><readable>true</readable></fieldPermissions>
-    <fieldPermissions><editable>true</editable><field>Distributor__c.Email__c</field><readable>true</readable></fieldPermissions>
-    <fieldPermissions><editable>true</editable><field>Distributor__c.Phone__c</field><readable>true</readable></fieldPermissions>
-    <fieldPermissions><editable>true</editable><field>Distributor__c.Alternate_Phone__c</field><readable>true</readable></fieldPermissions>
-    <fieldPermissions><editable>true</editable><field>Distributor__c.Address__c</field><readable>true</readable></fieldPermissions>
-    <fieldPermissions><editable>true</editable><field>Distributor__c.Joining_Date__c</field><readable>true</readable></fieldPermissions>
-    <fieldPermissions><editable>true</editable><field>Distributor__c.Login_Email__c</field><readable>true</readable></fieldPermissions>
-    <fieldPermissions><editable>true</editable><field>Distributor__c.User__c</field><readable>true</readable></fieldPermissions>
-    <fieldPermissions><editable>false</editable><field>Distributor__c.User_Status__c</field><readable>true</readable></fieldPermissions>
-    <fieldPermissions><editable>true</editable><field>Distributor__c.Remarks__c</field><readable>true</readable></fieldPermissions>
-    <fieldPermissions><editable>true</editable><field>Distributor_Outlet_Allocation__c.Remarks__c</field><readable>true</readable></fieldPermissions>
     <hasActivationRequired>false</hasActivationRequired>
     <label>SFA Mobile User</label>
     <objectPermissions>
@@ -755,8 +644,6 @@
         <viewAllFields>true</viewAllFields>
         <viewAllRecords>true</viewAllRecords>
     </objectPermissions>
-    <objectPermissions><allowCreate>true</allowCreate><allowDelete>false</allowDelete><allowEdit>true</allowEdit><allowRead>true</allowRead><modifyAllRecords>false</modifyAllRecords><object>Distributor__c</object><viewAllFields>false</viewAllFields><viewAllRecords>false</viewAllRecords></objectPermissions>
-    <objectPermissions><allowCreate>true</allowCreate><allowDelete>false</allowDelete><allowEdit>true</allowEdit><allowRead>true</allowRead><modifyAllRecords>false</modifyAllRecords><object>Distributor_Outlet_Allocation__c</object><viewAllFields>false</viewAllFields><viewAllRecords>false</viewAllRecords></objectPermissions>
     <objectPermissions>
         <allowCreate>true</allowCreate>
         <allowDelete>false</allowDelete>
@@ -909,8 +796,6 @@
         <tab>Employee__c</tab>
         <visibility>Visible</visibility>
     </tabSettings>
-    <tabSettings><tab>Distributor__c</tab><visibility>Visible</visibility></tabSettings>
-    <tabSettings><tab>Distributor_Outlet_Allocation__c</tab><visibility>Visible</visibility></tabSettings>
     <tabSettings>
         <tab>Geography__c</tab>
         <visibility>Visible</visibility>
