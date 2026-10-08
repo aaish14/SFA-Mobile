@@ -736,7 +736,7 @@ for (const [path, key] of [
           `SELECT Id, Name, Product_Code__c, Selling_Price__c, GST_Percent__c, Available_Stock__c, Units_Per_Case__c, Active__c, Sellable__c FROM ${objectMap.product} WHERE Id IN (${safeIds})`,
         );
         const productById = new Map(productRows.map((product) => [product.Id, product]));
-        const lines: Array<{ product: any; quantity: number; unitPrice: number; grossAmount: number; taxAmount: number; totalAmount: number }> = requestedItems.map((item: any) => {
+        const lines: Array<{ product: any; quantity: number; unitPrice: number; discount: number; grossAmount: number; taxAmount: number; totalAmount: number; schemeId?: string; schemeName?: string }> = requestedItems.map((item: any) => {
           const product = productById.get(String(item.productId));
           const quantity = Number(item.quantity || 0);
           if (!product || !product.Active__c || !product.Sellable__c)
@@ -746,9 +746,11 @@ for (const [path, key] of [
           if (quantity > Number(product.Available_Stock__c || 0))
             throw new Error(`Insufficient stock for ${product.Name}`);
           const unitPrice = Number(product.Selling_Price__c || 0);
-          const grossAmount = quantity * unitPrice;
+          const baseAmount = quantity * unitPrice;
+          const discount = Math.max(0, Math.min(baseAmount, Number(item.discount || 0)));
+          const grossAmount = baseAmount - discount;
           const taxAmount = grossAmount * Number(product.GST_Percent__c || 0) / 100;
-          return { product, quantity, unitPrice, grossAmount, taxAmount, totalAmount: grossAmount + taxAmount };
+          return { product, quantity, unitPrice, discount, grossAmount, taxAmount, totalAmount: grossAmount + taxAmount, schemeId: item.schemeId, schemeName: item.schemeName };
         });
         const totalQuantity = lines.reduce((sum, line) => sum + line.quantity, 0);
         const grossAmount = lines.reduce((sum, line) => sum + line.grossAmount, 0);
@@ -765,6 +767,7 @@ for (const [path, key] of [
           Gross_Amount__c: grossAmount,
           Tax_Amount__c: taxAmount,
           Total_Amount__c: totalAmount,
+          Product__c: lines[0].product.Id,
           Scheme_Applied__c: appliedSchemeId,
           Scheme_Details__c: appliedSchemeNames.length ? [...new Set(appliedSchemeNames)].join(", ") : null,
         });
