@@ -30,6 +30,7 @@ const schema = z.object({
     .string()
     .default("false")
     .transform((value) => value === "true"),
+  APP_PUBLIC_URL: z.string().url().default("http://localhost:8081"),
   SMTP_HOST: z.string().optional(),
   SMTP_PORT: z.coerce.number().default(587),
   SMTP_SECURE: z

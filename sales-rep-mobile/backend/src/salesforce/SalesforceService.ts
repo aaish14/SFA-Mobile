@@ -130,6 +130,13 @@ export class SalesforceService {
     return this.request(`/sobjects/${objectName}/${id}`);
   }
 
+  invokeStandardAction(actionName: string, inputs: unknown[]) {
+    return this.request(`/actions/standard/${encodeURIComponent(actionName)}`, {
+      method: "POST",
+      body: JSON.stringify({ inputs }),
+    });
+  }
+
   clearCachedSession() {
     this.token = undefined;
   }

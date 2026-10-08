@@ -13,7 +13,7 @@ xcopy "%PROJECT_ROOT%mobile\src\*" "%RUNTIME_ROOT%\mobile\src\" /E /I /Y /Q >nul
 copy /Y "%PROJECT_ROOT%mobile\App.tsx" "%RUNTIME_ROOT%\mobile\App.tsx" >nul
 
 echo Starting the Salesforce integration API on http://localhost:4000...
-start "SFA API - keep open" /D "%RUNTIME_ROOT%\backend" cmd /k "node node_modules\tsx\dist\cli.mjs watch src\server.ts"
+start "SFA API - keep open" /D "%RUNTIME_ROOT%\backend" cmd /k "node node_modules\tsx\dist\cli.mjs src\localServer.ts"
 
 echo Starting the external mobile application on http://localhost:8081...
 start "SFA Mobile - keep open" /D "%RUNTIME_ROOT%\mobile" cmd /k "set EXPO_PUBLIC_API_URL=http://localhost:4000/api&& node node_modules\expo\bin\cli start --web --port 8081 --offline"
