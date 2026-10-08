@@ -18,14 +18,17 @@ export default function LoginScreen({ navigation }: NativeStackScreenProps<RootS
   const [code, setCode] = useState("");
   const [delivery, setDelivery] = useState<CodeDelivery>();
   const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
 
   const requestCode = async () => {
     try {
       setBusy(true);
+      setError("");
       const result = await post<CodeDelivery>("/auth/request-code", { email: email.trim() });
       setDelivery(result);
       setCode(result.testCode || "");
     } catch (error: any) {
+      setError(error.message || "Unable to send the code. Please try again.");
       Alert.alert("Unable to send code", error.message);
     } finally {
       setBusy(false);
@@ -47,6 +50,7 @@ export default function LoginScreen({ navigation }: NativeStackScreenProps<RootS
   const verifyCode = async () => {
     try {
       setBusy(true);
+      setError("");
       const result = await post<LoginResult>("/auth/verify-code", {
         email: email.trim(),
         code: code.trim(),
@@ -57,6 +61,7 @@ export default function LoginScreen({ navigation }: NativeStackScreenProps<RootS
       ]);
       navigation.replace("Main");
     } catch (error: any) {
+      setError(error.message || "The code could not be verified.");
       Alert.alert("Sign-in failed", error.message);
     } finally {
       setBusy(false);
@@ -105,12 +110,15 @@ export default function LoginScreen({ navigation }: NativeStackScreenProps<RootS
                 textContentType="oneTimeCode"
               />
               {delivery.testCode ? <Text style={styles.testNote}>Local preview code: {delivery.testCode}</Text> : null}
+              {!!error && <Text style={styles.errorText}>{error}</Text>}
               <Button title={busy ? "VERIFYING…" : "VERIFY & SIGN IN"} onPress={verifyCode} disabled={busy || code.length !== 6} />
+              <Text onPress={requestCode} style={styles.link}>Send a fresh code</Text>
               <Text onPress={() => setDelivery(undefined)} style={styles.link}>Use a different email</Text>
             </>
           ) : (
             <>
               <Button title={busy ? "SENDING…" : "EMAIL MY SIGN-IN CODE"} onPress={requestCode} disabled={busy || !email.trim().includes("@")} />
+              {!!error && <Text style={styles.errorText}>{error}</Text>}
               <Text onPress={showCodeEntry} style={styles.link}>I already received a code</Text>
             </>
           )}
@@ -139,5 +147,6 @@ const styles = StyleSheet.create({
   codeInput: { borderWidth: 1.5, borderColor: "#2478DD", borderRadius: 12, padding: 14, marginBottom: 14, textAlign: "center", fontSize: 24, fontWeight: "800", letterSpacing: 8 },
   link: { textAlign: "center", color: "#1769C2", fontWeight: "700", marginTop: 16 },
   testNote: { color: "#805900", backgroundColor: "#FFF6D8", padding: 10, borderRadius: 8, marginBottom: 12 },
+  errorText: { color: "#B42318", backgroundColor: "#FFF1F0", padding: 10, borderRadius: 8, marginBottom: 12, textAlign: "center", fontWeight: "700" },
   securityNote: { color: "#607087", textAlign: "center", fontSize: 12, lineHeight: 18, marginTop: 18 },
 });
