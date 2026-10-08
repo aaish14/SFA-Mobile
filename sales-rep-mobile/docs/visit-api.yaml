@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: SFA External Mobile API
-  version: 1.2.0
+  version: 1.3.0
   description: Backend contract for the distributor-isolated SFA mobile application.
 servers:
   - url: http://localhost:4000/api
@@ -63,7 +63,7 @@ paths:
     get:
       summary: Load distributor dashboard and active schemes
       responses:
-        "200": { description: Distributor-scoped dashboard }
+        "200": { description: Distributor identity, login email, assigned beat, metrics, and active schemes }
   /schemes:
     get:
       summary: List active Salesforce schemes
@@ -78,7 +78,7 @@ paths:
     get:
       summary: List outlets belonging to the authenticated distributor
       responses:
-        "200": { description: Distributor outlets }
+        "200": { description: Allocated outlets with visit count, last visit time/location, and five recent visits }
   /orders:
     get:
       summary: List orders belonging to the authenticated distributor
@@ -118,7 +118,7 @@ paths:
     get:
       summary: List distributor-authorized visits
       responses:
-        "200": { description: Visit list }
+        "200": { description: Visit list with check-in/check-out time, duration, and captured coordinates }
     post:
       summary: Create a visit against an approved journey plan
       responses:

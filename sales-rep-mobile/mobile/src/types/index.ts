@@ -20,6 +20,19 @@ export type Store = {
   active?: boolean;
   outstandingAmount?: number;
   locationStatus?: string;
+  visitCount?: number;
+  lastVisitLocation?: { latitude: number; longitude: number } | null;
+  recentVisits?: Array<{
+    id: string;
+    visitNumber?: string;
+    date?: string;
+    status?: string;
+    checkInTime?: string;
+    checkOutTime?: string;
+    durationMinutes?: number;
+    checkInLocation?: { latitude: number; longitude: number } | null;
+    checkOutLocation?: { latitude: number; longitude: number } | null;
+  }>;
 };
 export type Beat = {
   id: string;

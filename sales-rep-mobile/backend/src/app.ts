@@ -165,6 +165,8 @@ app.get("/api/dashboard", async (request, res) => {
   ok(res, {
     distributorName: req.auth?.distributorName,
     userName: req.auth?.displayName || users[0]?.Name,
+    loginEmail: req.auth?.sub,
+    beatName: req.auth?.beatName,
     pendingOrders: Number(pendingOrders[0]?.total || 0),
     todayVisits: Number(todayVisits[0]?.total || 0),
     completedVisits: Number(completedVisits[0]?.total || 0),
@@ -177,13 +179,24 @@ app.get("/api/visits", async (request, res) => {
   if (env.USE_MOCK_DATA) return ok(res, []);
   const req = request as AuthenticatedRequest;
   const distributorId = escapeSoqlLiteral(req.auth!.distributorId);
-  const rows = await sfRecords(`SELECT Id, Name, Visit_Number__c, Visit_Date__c, Status__c, Employee__r.Name, Sales_Representative__r.Name, Retailer__c, Retailer__r.Name, Outlet_Name__c, Outlet_Geo_Location__Latitude__s, Outlet_Geo_Location__Longitude__s, Previous_Order_Date__c, Previous_Order_Value__c, Order_Gross_Amount__c, Order_Tax__c, Order_Total__c, Order_Total_Quantity__c FROM ${objectMap.visit} WHERE Retailer__c IN (${allocatedOutletIds(distributorId)}) ORDER BY Visit_Date__c DESC, CreatedDate DESC LIMIT 200`);
+  const rows = await sfRecords(`SELECT Id, Name, Visit_Number__c, Visit_Date__c, Status__c, Check_In_Time__c, Check_Out_Time__c, Check_In_Latitude__c, Check_In_Longitude__c, Check_Out_Latitude__c, Check_Out_Longitude__c, Duration_Minutes__c, Employee__r.Name, Sales_Representative__r.Name, Retailer__c, Retailer__r.Name, Outlet_Name__c, Outlet_Geo_Location__Latitude__s, Outlet_Geo_Location__Longitude__s, Previous_Order_Date__c, Previous_Order_Value__c, Order_Gross_Amount__c, Order_Tax__c, Order_Total__c, Order_Total_Quantity__c FROM ${objectMap.visit} WHERE Retailer__c IN (${allocatedOutletIds(distributorId)}) ORDER BY Check_In_Time__c DESC NULLS LAST, Visit_Date__c DESC, CreatedDate DESC LIMIT 500`);
   ok(res, rows.map((row) => ({
     id: row.Id,
     visitNumber: row.Visit_Number__c,
     name: row.Name,
     date: row.Visit_Date__c,
     status: row.Status__c,
+    checkInTime: row.Check_In_Time__c,
+    checkOutTime: row.Check_Out_Time__c,
+    durationMinutes: row.Duration_Minutes__c,
+    checkInLocation: row.Check_In_Latitude__c == null ? null : {
+      latitude: row.Check_In_Latitude__c,
+      longitude: row.Check_In_Longitude__c,
+    },
+    checkOutLocation: row.Check_Out_Latitude__c == null ? null : {
+      latitude: row.Check_Out_Latitude__c,
+      longitude: row.Check_Out_Longitude__c,
+    },
     employeeName: row.Employee__r?.Name || row.Sales_Representative__r?.Name,
     outletId: row.Retailer__c,
     outletName: row.Outlet_Name__c || row.Retailer__r?.Name,
@@ -280,12 +293,41 @@ app.get("/api/outlets", async (request, res) => {
   const req = request as AuthenticatedRequest;
   if (env.USE_MOCK_DATA) return ok(res, stores);
   const distributorId = escapeSoqlLiteral(req.auth!.distributorId);
-  const rows = await sfRecords(
-    `SELECT Id, Name, Address__c, Phone__c, Email__c, Outlet_Owner_Name__c, Outlet_Type__c, Outstanding_Amount__c, Active__c, Beat__c, Beat__r.Name, Geography__r.Name, Geo_Location__Latitude__s, Geo_Location__Longitude__s, Latitude__c, Longitude__c FROM ${objectMap.store} WHERE Id IN (${allocatedOutletIds(distributorId)}) ORDER BY Name LIMIT 500`,
-  );
+  const [rows, visitRows] = await Promise.all([
+    sfRecords(
+      `SELECT Id, Name, Address__c, Phone__c, Email__c, Outlet_Owner_Name__c, Outlet_Type__c, Outstanding_Amount__c, Active__c, Beat__c, Beat__r.Name, Geography__r.Name, Geo_Location__Latitude__s, Geo_Location__Longitude__s, Latitude__c, Longitude__c FROM ${objectMap.store} WHERE Id IN (${allocatedOutletIds(distributorId)}) ORDER BY Name LIMIT 500`,
+    ),
+    sfRecords(
+      `SELECT Id, Visit_Number__c, Visit_Date__c, Status__c, Retailer__c, Check_In_Time__c, Check_Out_Time__c, Check_In_Latitude__c, Check_In_Longitude__c, Check_Out_Latitude__c, Check_Out_Longitude__c, Duration_Minutes__c FROM ${objectMap.visit} WHERE Retailer__c IN (${allocatedOutletIds(distributorId)}) ORDER BY Check_In_Time__c DESC NULLS LAST, Visit_Date__c DESC, CreatedDate DESC LIMIT 1000`,
+    ),
+  ]);
+  const visitsByOutlet = new Map<string, any[]>();
+  for (const visit of visitRows) {
+    const outletVisits = visitsByOutlet.get(visit.Retailer__c) || [];
+    outletVisits.push({
+      id: visit.Id,
+      visitNumber: visit.Visit_Number__c,
+      date: visit.Visit_Date__c,
+      status: visit.Status__c,
+      checkInTime: visit.Check_In_Time__c,
+      checkOutTime: visit.Check_Out_Time__c,
+      durationMinutes: visit.Duration_Minutes__c,
+      checkInLocation: visit.Check_In_Latitude__c == null ? null : {
+        latitude: visit.Check_In_Latitude__c,
+        longitude: visit.Check_In_Longitude__c,
+      },
+      checkOutLocation: visit.Check_Out_Latitude__c == null ? null : {
+        latitude: visit.Check_Out_Latitude__c,
+        longitude: visit.Check_Out_Longitude__c,
+      },
+    });
+    visitsByOutlet.set(visit.Retailer__c, outletVisits);
+  }
   ok(
     res,
-    rows.map((row) => ({
+    rows.map((row) => {
+      const outletVisits = visitsByOutlet.get(row.Id) || [];
+      return {
       id: row.Id,
       code: `OUT-${row.Id.slice(-5).toUpperCase()}`,
       name: row.Name,
@@ -306,7 +348,12 @@ app.get("/api/outlets", async (request, res) => {
         (row.Geo_Location__Latitude__s ?? row.Latitude__c) == null
           ? "Location missing"
           : "Location available",
-    })),
+      visitCount: outletVisits.length,
+      lastVisit: outletVisits[0]?.checkInTime || outletVisits[0]?.date || null,
+      lastVisitLocation: outletVisits[0]?.checkInLocation || null,
+      recentVisits: outletVisits.slice(0, 5),
+    };
+    }),
   );
 });
 
