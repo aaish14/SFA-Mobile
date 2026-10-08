@@ -25,6 +25,11 @@ export async function createPdf(visit: VisitPayload) {
           `${l.productName} | ${l.quantity} × INR ${l.unitPrice} | Discount INR ${l.discount} | INR ${l.amount}`,
         ),
     );
+    const appliedSchemes = visit.orderLines.filter((line) => line.schemeName);
+    if (appliedSchemes.length) {
+      doc.moveDown().fontSize(14).text("Applied schemes");
+      appliedSchemes.forEach((line) => doc.fontSize(10).text(`${line.productName}: ${line.schemeName}`));
+    }
     doc
       .moveDown()
       .text(`Total: INR ${visit.orderLines.reduce((s, l) => s + l.amount, 0)}`);
@@ -45,13 +50,14 @@ export async function createExcel(visit: VisitPayload) {
     ["End", visit.checkOut?.timestamp],
   ]);
   const orders = book.addWorksheet("Order Details");
-  orders.addRow(["Product", "Quantity", "Unit Price", "Discount", "Amount"]);
+  orders.addRow(["Product", "Quantity", "Unit Price", "Discount", "Applied Scheme", "Amount"]);
   visit.orderLines.forEach((l) =>
     orders.addRow([
       l.productName,
       l.quantity,
       l.unitPrice,
       l.discount,
+      l.schemeName || "",
       l.amount,
     ]),
   );

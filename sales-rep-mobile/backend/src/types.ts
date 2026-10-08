@@ -11,6 +11,8 @@ export type OrderLine = {
   unitPrice: number;
   discount: number;
   amount: number;
+  schemeId?: string;
+  schemeName?: string;
 };
 export type VisitPayload = {
   id: string;

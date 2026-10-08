@@ -58,6 +58,18 @@ export type Product = {
   gstPercent?: number;
   unitsPerCase?: number;
   active?: boolean;
+  schemes?: ProductScheme[];
+};
+export type ProductScheme = {
+  id: string;
+  name: string;
+  code?: string;
+  type?: string;
+  description?: string;
+  discountPercent: number;
+  minimumQuantity: number;
+  freeQuantity: number;
+  endDate?: string;
 };
 export type OrderLine = {
   productId: string;
@@ -66,6 +78,8 @@ export type OrderLine = {
   unitPrice: number;
   discount: number;
   amount: number;
+  schemeId?: string;
+  schemeName?: string;
 };
 export type RootStack = {
   Login: undefined;

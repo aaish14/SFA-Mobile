@@ -275,9 +275,10 @@ app.get("/api/schemes", async (_, res) => {
 });
 app.get("/api/products", async (_, res) => {
   if (env.USE_MOCK_DATA) return ok(res, products);
-  const rows = await sfRecords(
-    `SELECT Id, Name, Product_Code__c, Brand__c, Package_Type__c, MRP__c, Retailer_Base_Price__c, Selling_Price__c, GST_Percent__c, Available_Stock__c, Units_Per_Case__c, Active__c FROM ${objectMap.product} WHERE Sellable__c = true ORDER BY Name`,
-  );
+  const [rows, schemeRows] = await Promise.all([
+    sfRecords(`SELECT Id, Name, Product_Code__c, Brand__c, Package_Type__c, MRP__c, Retailer_Base_Price__c, Selling_Price__c, GST_Percent__c, Available_Stock__c, Units_Per_Case__c, Active__c FROM ${objectMap.product} WHERE Sellable__c = true ORDER BY Name`),
+    sfRecords(`SELECT Id, Name, Scheme_Code__c, Scheme_Type__c, Description__c, Discount_Percent__c, Minimum_Quantity__c, Free_Quantity__c, Product__c, End_Date__c FROM ${objectMap.scheme} WHERE Active__c = true AND (End_Date__c = NULL OR End_Date__c >= TODAY) ORDER BY End_Date__c`),
+  ]);
   ok(
     res,
     rows.map((row) => ({
@@ -293,6 +294,19 @@ app.get("/api/products", async (_, res) => {
       stock: row.Available_Stock__c || 0,
       unitsPerCase: row.Units_Per_Case__c || 1,
       active: row.Active__c,
+      schemes: schemeRows
+        .filter((scheme) => !scheme.Product__c || scheme.Product__c === row.Id)
+        .map((scheme) => ({
+          id: scheme.Id,
+          name: scheme.Name,
+          code: scheme.Scheme_Code__c,
+          type: scheme.Scheme_Type__c,
+          description: scheme.Description__c,
+          discountPercent: Number(scheme.Discount_Percent__c || 0),
+          minimumQuantity: Number(scheme.Minimum_Quantity__c || 1),
+          freeQuantity: Number(scheme.Free_Quantity__c || 0),
+          endDate: scheme.End_Date__c,
+        })),
     })),
   );
 });
@@ -740,6 +754,8 @@ for (const [path, key] of [
         const grossAmount = lines.reduce((sum, line) => sum + line.grossAmount, 0);
         const taxAmount = lines.reduce((sum, line) => sum + line.taxAmount, 0);
         const totalAmount = grossAmount + taxAmount;
+        const appliedSchemeId = requestedItems.find((item: any) => item.schemeId)?.schemeId || null;
+        const appliedSchemeNames = requestedItems.map((item: any) => item.schemeName).filter(Boolean);
         const createdOrder: any = await salesforce.create(objectMap.order, {
           Order_Date__c: new Date().toISOString().slice(0, 10),
           Status__c: "Submitted",
@@ -749,6 +765,8 @@ for (const [path, key] of [
           Gross_Amount__c: grossAmount,
           Tax_Amount__c: taxAmount,
           Total_Amount__c: totalAmount,
+          Scheme_Applied__c: appliedSchemeId,
+          Scheme_Details__c: appliedSchemeNames.length ? [...new Set(appliedSchemeNames)].join(", ") : null,
         });
         const records = [];
         for (const line of lines) {
@@ -888,6 +906,58 @@ app.post("/api/documents/excel", async (req, res) => {
   res
     .type("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
     .send(buffer);
+});
+async function loadVisitDocument(visitId: string, distributorId: string) {
+  const activeVisit = visits.get(visitId);
+  if (activeVisit?.distributorId === distributorId) return activeVisit;
+  if (env.USE_MOCK_DATA) return undefined;
+
+  const safeVisitId = escapeSoqlLiteral(visitId);
+  const safeDistributorId = escapeSoqlLiteral(distributorId);
+  const visitRows = await sfRecords(
+    `SELECT Id, Name, Status__c, Retailer__c, Retailer__r.Name, Check_In_Time__c, Check_Out_Time__c, Check_In_Latitude__c, Check_In_Longitude__c, Check_Out_Latitude__c, Check_Out_Longitude__c, Permanent_Journey_Plan__r.Beat__r.Name FROM ${objectMap.visit} WHERE Id = '${safeVisitId}' AND Retailer__c IN (${allocatedOutletIds(safeDistributorId)}) LIMIT 1`,
+  );
+  if (!visitRows.length) return undefined;
+  const row = visitRows[0];
+  const itemRows = await sfRecords(
+    `SELECT Product__c, Product__r.Name, Piece_Quantity__c, Unit_Price__c, Line_Amount__c, Sales_Order__r.Scheme_Applied__c, Sales_Order__r.Scheme_Applied__r.Name FROM ${objectMap.orderItem} WHERE Sales_Order__r.Visit__c = '${safeVisitId}' ORDER BY CreatedDate`,
+  );
+  return {
+    id: row.Id,
+    distributorId,
+    storeId: row.Retailer__c,
+    storeName: row.Retailer__r?.Name || row.Name,
+    beatName: row.Permanent_Journey_Plan__r?.Beat__r?.Name || "-",
+    status: row.Status__c,
+    checkIn: row.Check_In_Time__c ? { latitude: Number(row.Check_In_Latitude__c || 0), longitude: Number(row.Check_In_Longitude__c || 0), timestamp: row.Check_In_Time__c } : undefined,
+    checkOut: row.Check_Out_Time__c ? { latitude: Number(row.Check_Out_Latitude__c || 0), longitude: Number(row.Check_Out_Longitude__c || 0), timestamp: row.Check_Out_Time__c } : undefined,
+    orderLines: itemRows.map((item) => ({
+      productId: item.Product__c,
+      productName: item.Product__r?.Name || "Product",
+      quantity: Number(item.Piece_Quantity__c || 0),
+      unitPrice: Number(item.Unit_Price__c || 0),
+      discount: 0,
+      amount: Number(item.Line_Amount__c || 0),
+      schemeId: item.Sales_Order__r?.Scheme_Applied__c,
+      schemeName: item.Sales_Order__r?.Scheme_Applied__r?.Name,
+    })),
+    returns: [],
+    competitors: [],
+    tickets: [],
+  } satisfies VisitPayload;
+}
+app.get("/api/documents/:kind/:visitId", async (request, res) => {
+  const req = request as AuthenticatedRequest;
+  const visit = await loadVisitDocument(String(req.params.visitId), req.auth!.distributorId);
+  if (!visit)
+    return fail(res, 404, "Visit document is no longer available", "VISIT_NOT_FOUND");
+  const kind = String(req.params.kind);
+  if (kind !== "pdf" && kind !== "excel")
+    return fail(res, 400, "Choose PDF or Excel", "DOCUMENT_TYPE_INVALID");
+  const buffer = kind === "pdf" ? await createPdf(visit) : await createExcel(visit);
+  const extension = kind === "pdf" ? "pdf" : "xlsx";
+  res.setHeader("Content-Disposition", `attachment; filename=\"${visit.storeName.replace(/[^a-z0-9]+/gi, "-")}-visit.${extension}\"`);
+  res.type(kind === "pdf" ? "application/pdf" : "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet").send(buffer);
 });
 app.post("/api/email/send", async (req, res) => {
   if (!env.SMTP_HOST)

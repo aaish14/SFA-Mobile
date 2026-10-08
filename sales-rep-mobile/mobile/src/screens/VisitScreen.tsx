@@ -56,6 +56,8 @@ export default function VisitScreen({
     startVisit();
   }, []);
   const total = useMemo(() => lines.reduce((s, l) => s + l.amount, 0), [lines]);
+  const selectedProduct = products.find((product) => product.id === (form.productId || products[0]?.id));
+  const selectedScheme = selectedProduct?.schemes?.find((scheme) => scheme.id === form.schemeId);
   const update = (k: string, v: string) => setForm((x) => ({ ...x, [k]: v }));
   const save = async () => {
     if (!visit) return;
@@ -64,10 +66,15 @@ export default function VisitScreen({
         const product = products.find(
           (p) => p.id === (form.productId || products[0]?.id),
         );
-        const quantity = Number(form.quantity || 0),
-          discount = Number(form.discount || 0);
+        const quantity = Number(form.quantity || 0);
         if (!product || quantity <= 0)
           throw new Error("Select a product and enter a valid quantity.");
+        if (selectedScheme && quantity < selectedScheme.minimumQuantity)
+          throw new Error(`${selectedScheme.name} requires at least ${selectedScheme.minimumQuantity} units.`);
+        const automaticDiscount = selectedScheme
+          ? quantity * product.price * selectedScheme.discountPercent / 100
+          : 0;
+        const discount = automaticDiscount + Number(form.discount || 0);
         const line = {
           productId: product.id,
           productName: product.name,
@@ -75,6 +82,8 @@ export default function VisitScreen({
           unitPrice: product.price,
           discount,
           amount: quantity * product.price - discount,
+          schemeId: selectedScheme?.id,
+          schemeName: selectedScheme?.name,
         };
         const next = [...lines, line];
         setLines(next);
@@ -170,17 +179,32 @@ export default function VisitScreen({
     const token = await import(
       "@react-native-async-storage/async-storage"
     ).then((m) => m.default.getItem("token"));
-    const uri = `${FileSystem.cacheDirectory}${route.params.store.code}-${Date.now()}.${kind === "pdf" ? "pdf" : "xlsx"}`;
-    const result = await FileSystem.downloadAsync(
-      `${process.env.EXPO_PUBLIC_API_URL || "http://localhost:4000/api"}/documents/${kind}`,
-      uri,
-      {
-        headers: { Authorization: `Bearer ${token}` },
-        sessionType: FileSystem.FileSystemSessionType.BACKGROUND,
-        md5: false,
-      },
-    );
-    if (await Sharing.isAvailableAsync()) await Sharing.shareAsync(result.uri);
+    const apiBase = process.env.EXPO_PUBLIC_API_URL || "http://localhost:4000/api";
+    const url = `${apiBase}/documents/${kind}/${visit.id}`;
+    const extension = kind === "pdf" ? "pdf" : "xlsx";
+    const fileName = `${route.params.store.code}-visit-${Date.now()}.${extension}`;
+    try {
+      if (Platform.OS === "web") {
+        const response = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+        if (!response.ok) throw new Error((await response.json().catch(() => null))?.message || "Document generation failed");
+        const objectUrl = URL.createObjectURL(await response.blob());
+        const anchor = document.createElement("a");
+        anchor.href = objectUrl;
+        anchor.download = fileName;
+        anchor.click();
+        URL.revokeObjectURL(objectUrl);
+      } else {
+        const uri = `${FileSystem.cacheDirectory}${fileName}`;
+        const result = await FileSystem.downloadAsync(url, uri, {
+          headers: { Authorization: `Bearer ${token}` },
+          sessionType: FileSystem.FileSystemSessionType.BACKGROUND,
+          md5: false,
+        });
+        if (await Sharing.isAvailableAsync()) await Sharing.shareAsync(result.uri);
+      }
+    } catch (error: any) {
+      Alert.alert("Document unavailable", error.message);
+    }
   };
   if (!visit)
     return (
@@ -238,8 +262,28 @@ export default function VisitScreen({
                     (p) => p.id === (form.productId || products[0]?.id),
                   );
                   update("productId", products[(i + 1) % products.length].id);
+                  update("schemeId", "");
                 }}
               />
+              <Label>AVAILABLE SCHEMES FOR THIS PRODUCT</Label>
+              {!selectedProduct?.schemes?.length ? (
+                <Text style={s.sub}>No active scheme is applicable to this product.</Text>
+              ) : (
+                selectedProduct.schemes.map((scheme) => (
+                  <Text
+                    key={scheme.id}
+                    style={[s.schemeCard, form.schemeId === scheme.id && s.schemeSelected]}
+                    onPress={() => update("schemeId", form.schemeId === scheme.id ? "" : scheme.id)}
+                  >
+                    {form.schemeId === scheme.id ? "✓ " : ""}{scheme.name}{"\n"}
+                    <Text style={s.schemeDetail}>
+                      {scheme.type || "Scheme"} · Min {scheme.minimumQuantity}
+                      {scheme.discountPercent ? ` · ${scheme.discountPercent}% discount` : ""}
+                      {scheme.freeQuantity ? ` · ${scheme.freeQuantity} free` : ""}
+                    </Text>
+                  </Text>
+                ))
+              )}
               <TextInput
                 style={s.input}
                 keyboardType="numeric"
@@ -456,4 +500,7 @@ const s = StyleSheet.create({
     color: colors.brand,
     marginVertical: 10,
   },
+  schemeCard: { borderWidth:1, borderColor:colors.border, borderRadius:12, padding:12, marginVertical:5, color:colors.ink, fontWeight:"800", backgroundColor:"white" },
+  schemeSelected: { borderColor:colors.brand, backgroundColor:"#E7F5F3" },
+  schemeDetail: { color:colors.muted, fontWeight:"500", fontSize:12 },
 });
