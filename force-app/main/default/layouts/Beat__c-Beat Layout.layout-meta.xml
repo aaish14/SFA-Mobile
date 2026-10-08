@@ -19,6 +19,10 @@
                 <field>Assigned_Employee__c</field>
             </layoutItems>
             <layoutItems>
+                <behavior>Edit</behavior>
+                <field>Sales_Representative__c</field>
+            </layoutItems>
+            <layoutItems>
                 <behavior>Readonly</behavior>
                 <field>Outlet_Names__c</field>
             </layoutItems>
