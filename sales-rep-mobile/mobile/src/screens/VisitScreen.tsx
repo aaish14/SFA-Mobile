@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import {
   Alert,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -29,8 +30,10 @@ export default function VisitScreen({
     [returns, setReturns] = useState<any[]>([]),
     [competitors, setCompetitors] = useState<any[]>([]),
     [tickets, setTickets] = useState<any[]>([]),
+    [startError, setStartError] = useState(""),
     [completed, setCompleted] = useState(false);
-  useEffect(() => {
+  const startVisit = () => {
+    setStartError("");
     Promise.all([
       post<any>("/store/visit/start", {
         storeId: route.params.store.id,
@@ -44,7 +47,13 @@ export default function VisitScreen({
         setProducts(p);
         setAction("order");
       })
-      .catch((e) => Alert.alert("Visit could not start", e.message));
+      .catch((e) => {
+        setStartError(e.message || "Visit could not start.");
+        Alert.alert("Visit could not start", e.message);
+      });
+  };
+  useEffect(() => {
+    startVisit();
   }, []);
   const total = useMemo(() => lines.reduce((s, l) => s + l.amount, 0), [lines]);
   const update = (k: string, v: string) => setForm((x) => ({ ...x, [k]: v }));
@@ -131,9 +140,9 @@ export default function VisitScreen({
           requestId: `order-final-${visit.id}`,
         });
       }
-      const loc = await Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.High,
-      });
+      const loc = Platform.OS === "web"
+        ? { coords: { latitude: route.params.location.latitude, longitude: route.params.location.longitude } }
+        : await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
       await post("/store/checkout", {
         visitId: visit.id,
         location: {
@@ -176,7 +185,8 @@ export default function VisitScreen({
   if (!visit)
     return (
       <View style={s.center}>
-        <Text>Starting secure visit…</Text>
+        <Text>{startError || "Starting secure visit…"}</Text>
+        {!!startError && <Button title="TRY AGAIN" onPress={startVisit} />}
       </View>
     );
   return (

@@ -619,17 +619,9 @@ app.post("/api/store/visit/start", async (request, res) => {
     const plans = await sfRecords(
       `SELECT Id FROM ${objectMap.journeyPlan} WHERE Beat__c = '${store.beatId}' AND Status__c = 'Approved' ORDER BY Planned_Date__c DESC LIMIT 1`,
     );
-    if (!plans.length)
-      return fail(
-        res,
-        422,
-        "No approved journey plan exists for this outlet's beat.",
-        "APPROVED_PJP_REQUIRED",
-      );
-    const created: any = await salesforce.create(objectMap.visit, {
+    const visitFields: Record<string, unknown> = {
       Name: `${store.name} ${new Date().toLocaleDateString("en-IN")}`,
       Retailer__c: store.id,
-      Permanent_Journey_Plan__c: plans[0].Id,
       Visit_Date__c: new Date().toISOString().slice(0, 10),
       Status__c: "Checked In",
       Check_In_Time__c: new Date().toISOString(),
@@ -638,7 +630,11 @@ app.post("/api/store/visit/start", async (request, res) => {
       Outlet_Geo_Location__Latitude__s: req.body.location.latitude,
       Outlet_Geo_Location__Longitude__s: req.body.location.longitude,
       Offline_Key__c: id,
-    });
+    };
+    // A field visit must still work when an admin has not yet approved a PJP.
+    // Link the plan when one exists; otherwise Salesforce keeps the visit against the outlet and beat.
+    if (plans[0]?.Id) visitFields.Permanent_Journey_Plan__c = plans[0].Id;
+    const created: any = await salesforce.create(objectMap.visit, visitFields);
     salesforceVisitId = created.id;
   }
   const visit: VisitPayload = {

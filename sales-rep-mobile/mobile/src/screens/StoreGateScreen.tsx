@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Alert, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Alert, Platform, ScrollView, StyleSheet, Text, View } from "react-native";
 import * as Location from "expo-location";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { api, post } from "../api/client";
@@ -20,15 +20,26 @@ export default function StoreGateScreen({
   const validate = async () => {
     try {
       setBusy(true);
-      const p = await Location.requestForegroundPermissionsAsync();
-      if (p.status !== "granted")
-        throw new Error("GPS permission is required to validate this outlet.");
-      const loc = await Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.High,
-      });
+      setMessage("");
+      let latitude: number;
+      let longitude: number;
+      if (Platform.OS === "web") {
+        if (store.latitude == null || store.longitude == null) {
+          throw new Error("This outlet has no Salesforce location. Add its latitude and longitude before starting a visit.");
+        }
+        latitude = Number(store.latitude);
+        longitude = Number(store.longitude);
+        setMessage("Local web preview is using the outlet coordinates from Salesforce. The mobile build uses live device GPS.");
+      } else {
+        const p = await Location.requestForegroundPermissionsAsync();
+        if (p.status !== "granted") throw new Error("GPS permission is required to validate this outlet.");
+        const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
+        latitude = loc.coords.latitude;
+        longitude = loc.coords.longitude;
+      }
       const location = {
-        latitude: loc.coords.latitude,
-        longitude: loc.coords.longitude,
+        latitude,
+        longitude,
         timestamp: new Date().toISOString(),
         requestId: `gps-${Date.now()}`,
       };
@@ -37,7 +48,17 @@ export default function StoreGateScreen({
         location,
       });
       setResult({ ...r, location });
+      if (r.allowed) {
+        navigation.replace("Visit", {
+          store,
+          location,
+          distance: r.distance,
+        });
+      } else {
+        setMessage("You are outside the allowed 100 metre radius. Move closer to the outlet and try again.");
+      }
     } catch (e: any) {
+      setMessage(e.message || "Location validation failed.");
       Alert.alert("Location unavailable", e.message);
     } finally {
       setBusy(false);
@@ -70,7 +91,7 @@ export default function StoreGateScreen({
       </Card>
       <Card><Label>OUTLET VISIT STATUS</Label><View style={s.statusButtons}><Button title="VISITED" onPress={validate} disabled={busy}/><Button title="NOT VISITED" kind="secondary" onPress={() => saveMissedStatus("Not Visited")} disabled={busy}/><Button title="NOT AVAILABLE" kind="secondary" onPress={() => saveMissedStatus("Not Available")} disabled={busy}/></View>{!!message && <Text style={s.saved}>{message}</Text>}</Card>
       <Card><Label>100 METRE LOCATION VALIDATION</Label><Text style={s.sub}>Capture your current GPS position before entering the outlet. This protects the accuracy of every visit.</Text></Card>
-      {result && (
+      {result && !result.allowed && (
         <Card
           style={{
             borderLeftWidth: 5,
@@ -84,19 +105,7 @@ export default function StoreGateScreen({
               ? "You are within the permitted outlet radius."
               : "You are outside the allowed 100 metre outlet radius. Move closer and try again."}
           </Text>
-          {result.allowed ? (
-            <Button
-              title="ENTER OUTLET"
-              onPress={() =>
-                navigation.replace("Visit", {
-                  store,
-                  location: result.location,
-                  distance: result.distance,
-                })
-              }
-            />
-          ) : (
-            <>
+          <>
               <Button title="TRY AGAIN" onPress={validate} />
               <Button
                 title="MOVE TO NEXT OUTLET"
@@ -108,8 +117,7 @@ export default function StoreGateScreen({
                   )
                 }
               />
-            </>
-          )}
+          </>
         </Card>
       )}{" "}
       {!result && <Text style={s.hint}>Choose Visited to validate your location and open product selection.</Text>}
