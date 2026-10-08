@@ -28,6 +28,9 @@ This Salesforce DX project implements the field-sales journey explained in the 3
 - `manifest/package.xml` — deployment manifest.
 - `docs/REQUIREMENTS_FROM_RECORDING.md` — traceability to the trainer's explanation.
 - `docs/DATA_MODEL.md` — object relationships and design notes.
+- `docs/SALESFORCE_CODE_STANDARDS.md` — Apex, trigger, security, naming and testing standards.
+- `sales-rep-mobile/backend` — external mobile API and Salesforce integration.
+- `sales-rep-mobile/mobile` — external React Native/Expo mobile application.
 
 ## Deployment
 
