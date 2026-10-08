@@ -62,4 +62,6 @@ export const objectMap = {
   product: process.env.PRODUCT_OBJECT || "Product__c",
   attendance: process.env.ATTENDANCE_OBJECT || "Attendance__c",
   journeyPlan: process.env.JOURNEY_PLAN_OBJECT || "Permanent_Journey_Plan__c",
+  assetSurvey: process.env.ASSET_SURVEY_OBJECT || "Asset_Survey__c",
+  stockCheck: process.env.STOCK_CHECK_OBJECT || "Stock_Check__c",
 };

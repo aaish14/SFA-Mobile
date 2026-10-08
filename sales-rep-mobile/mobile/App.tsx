@@ -13,6 +13,7 @@ import MoreScreen from "./src/screens/MoreScreen";
 import OutletsScreen from "./src/screens/OutletsScreen";
 import LoginScreen from "./src/screens/LoginScreen";
 import OutletMapScreen from "./src/screens/OutletMapScreen";
+import ModuleListScreen from "./src/screens/ModuleListScreen";
 import type { RootStack } from "./src/types";
 
 const Stack = createNativeStackNavigator<RootStack>();
@@ -34,6 +35,7 @@ export default function App() {
           <Stack.Screen name="More" component={MoreScreen} options={{ headerShown: false }} />
           <Stack.Screen name="Outlets" component={OutletsScreen} options={{ headerShown: false }} />
           <Stack.Screen name="OutletMap" component={OutletMapScreen} options={{ title: "Outlet Map" }} />
+          <Stack.Screen name="ModuleList" component={ModuleListScreen} options={({ route }) => ({ title: route.params.title })} />
         </Stack.Navigator>
       </NavigationContainer>
     </>

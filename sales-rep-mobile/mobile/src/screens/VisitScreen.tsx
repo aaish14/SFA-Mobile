@@ -16,7 +16,7 @@ import { Button, Card, Label, Money } from "../components/ui";
 import { colors } from "../constants/theme";
 import { enqueue } from "../storage/syncQueue";
 import type { OrderLine, Product, RootStack } from "../types";
-type Action = "order" | "return" | "competitor" | "ticket" | "revisit" | null;
+type Action = "order" | "return" | "competitor" | "ticket" | "stock" | "asset" | "revisit" | null;
 export default function VisitScreen({
   route,
   navigation,
@@ -42,6 +42,7 @@ export default function VisitScreen({
       .then(([v, p]) => {
         setVisit(v);
         setProducts(p);
+        setAction("order");
       })
       .catch((e) => Alert.alert("Visit could not start", e.message));
   }, []);
@@ -67,11 +68,6 @@ export default function VisitScreen({
           amount: quantity * product.price - discount,
         };
         const next = [...lines, line];
-        await post("/orders", {
-          visitId: visit.id,
-          items: next,
-          requestId: `order-${visit.id}`,
-        });
         setLines(next);
       } else {
         const payload = {
@@ -85,6 +81,10 @@ export default function VisitScreen({
         const path =
           action === "return"
             ? "/returns"
+            : action === "stock"
+              ? "/stock-checks"
+              : action === "asset"
+                ? "/asset-surveys"
             : action === "competitor"
               ? "/competitor-activities"
               : action === "ticket"
@@ -104,6 +104,10 @@ export default function VisitScreen({
           ? "/orders"
           : action === "return"
             ? "/returns"
+            : action === "stock"
+              ? "/stock-checks"
+              : action === "asset"
+                ? "/asset-surveys"
             : action === "competitor"
               ? "/competitor-activities"
               : action === "ticket"
@@ -120,6 +124,13 @@ export default function VisitScreen({
   };
   const checkout = async () => {
     try {
+      if (lines.length) {
+        await post("/orders", {
+          visitId: visit.id,
+          items: lines,
+          requestId: `order-final-${visit.id}`,
+        });
+      }
       const loc = await Location.getCurrentPositionAsync({
         accuracy: Location.Accuracy.High,
       });
@@ -130,11 +141,17 @@ export default function VisitScreen({
           longitude: loc.coords.longitude,
         },
         remarks: form.remarks,
+        retailerEmail: route.params.store.email,
+        outletName: route.params.store.name,
+        items: lines,
+        totalAmount: total,
       });
       setCompleted(true);
       Alert.alert(
         "Visit completed successfully",
-        "Checkout time and location were saved.",
+        route.params.store.email
+          ? "Checkout was saved in Salesforce and the retailer order email was sent."
+          : "Checkout was saved in Salesforce. Add an email to the outlet record to send order confirmation.",
       );
     } catch (e: any) {
       Alert.alert("Checkout failed", e.message);
@@ -179,12 +196,13 @@ export default function VisitScreen({
               ["1", "Take Order", () => setAction("order")],
               ["2", "Return", () => setAction("return")],
               ["3", "Competitor", () => setAction("competitor")],
-              ["4", "Stock Check", () => Alert.alert("Stock Check", "Select a product and record the shelf quantity.")],
+              ["4", "Stock Check", () => setAction("stock")],
               ["5", "Tickets", () => setAction("ticket")],
               ["6", "Schemes", () => navigation.navigate("Main")],
               ["7", "Navigate", () => Alert.alert("Navigation", route.params.store.address)],
               ["8", "Share Order", () => lines.length ? share("pdf") : Alert.alert("No order", "Create an order before sharing it.")],
               ["9", "Checkout", checkout],
+              ["10", "Asset Survey", () => setAction("asset")],
             ].map(([number, label, handler]) => <Text key={String(label)} style={s.actionTile} onPress={handler as () => void}><Text style={s.actionNumber}>{number as string}</Text>{"\n"}{label as string}</Text>)}
           </View>
         </>
@@ -267,6 +285,23 @@ export default function VisitScreen({
                 placeholder="Manufacturing date (YYYY-MM-DD)"
                 onChangeText={(v) => update("manufacturingDate", v)}
               />
+            </>
+          )}
+          {action === "stock" && (
+            <>
+              <Text style={s.sub}>Product: {products.find((p) => p.id === (form.productId || products[0]?.id))?.name}</Text>
+              <Button title="NEXT PRODUCT" kind="secondary" onPress={() => { const index=products.findIndex((p)=>p.id===(form.productId||products[0]?.id)); update("productId",products[(index+1)%products.length].id); }}/>
+              <TextInput style={s.input} keyboardType="numeric" placeholder="Shelf quantity" onChangeText={(v)=>update("quantity",v)}/>
+              <TextInput style={s.input} placeholder="Manufacturing date (YYYY-MM-DD)" onChangeText={(v)=>update("manufacturingDate",v)}/>
+            </>
+          )}
+          {action === "asset" && (
+            <>
+              <TextInput style={s.input} placeholder="Asset code" onChangeText={(v)=>update("assetCode",v)}/>
+              <TextInput style={s.input} placeholder="Asset name" onChangeText={(v)=>update("assetName",v)}/>
+              <TextInput style={s.input} placeholder="Status: Available / Damaged / Missing" onChangeText={(v)=>update("status",v)}/>
+              <TextInput style={s.input} placeholder="Given date (YYYY-MM-DD)" onChangeText={(v)=>update("givenDate",v)}/>
+              <TextInput style={s.input} placeholder="Picture URL" onChangeText={(v)=>update("pictureUrl",v)}/>
             </>
           )}
           {action === "competitor" && (
@@ -357,7 +392,7 @@ export default function VisitScreen({
           Order total: <Money value={total} />
         </Text>
         {!completed ? (
-          <Button title="CHECK OUT" onPress={checkout} />
+          <Button title="COMPLETE VISIT" onPress={checkout} />
         ) : (
           <>
             <Button title="SHARE PDF" onPress={() => share("pdf")} />

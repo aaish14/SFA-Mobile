@@ -33,6 +33,10 @@ export type Store = {
     checkInLocation?: { latitude: number; longitude: number } | null;
     checkOutLocation?: { latitude: number; longitude: number } | null;
   }>;
+  orderCount?: number;
+  lastOrderDate?: string | null;
+  lastOrderAmount?: number;
+  totalOrderAmount?: number;
 };
 export type Beat = {
   id: string;
@@ -79,4 +83,5 @@ export type RootStack = {
   More: undefined;
   Outlets: undefined;
   OutletMap: undefined;
+  ModuleList: { moduleName: string; title: string };
 };

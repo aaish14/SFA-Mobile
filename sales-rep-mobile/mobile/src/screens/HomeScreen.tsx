@@ -10,7 +10,7 @@ import BottomNav from "../components/BottomNav";
 import BrandHeader from "../components/BrandHeader";
 
 type Scheme = { id: string; name: string; type?: string; product?: string; products?: string[]; benefit?: string; description?: string; endDate?: string };
-type Dashboard = { distributorName?: string; name?: string; userName?: string; loginEmail?: string; beatName?: string; target?: number; achievement?: number; pendingOrders?: number; todayVisits?: number; completedVisits?: number; pendingDeliveries?: number; outstandingAmount?: number; schemes?: Scheme[] };
+type Dashboard = { distributorName?: string; name?: string; userName?: string; loginEmail?: string; beatName?: string; target?: number; achievement?: number; totalOrders?: number; pendingOrders?: number; todayVisits?: number; completedVisits?: number; pendingDeliveries?: number; outstandingAmount?: number; schemes?: Scheme[] };
 
 const displayDate = (value?: string) => {
   if (!value) return "Not specified";
@@ -68,6 +68,7 @@ export default function HomeScreen() {
   };
 
   const metrics = [
+    ["Total Orders", data?.totalOrders, "▤"],
     ["Pending Orders", data?.pendingOrders, "▤"],
     ["Today's Visits", data?.todayVisits, "◉"],
     ["Completed Visits", data?.completedVisits, "✓"],

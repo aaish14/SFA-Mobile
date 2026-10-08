@@ -1,8 +1,8 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Alert, ScrollView, StyleSheet, Text, View } from "react-native";
 import * as Location from "expo-location";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { post } from "../api/client";
+import { api, post } from "../api/client";
 import { Button, Card, Label } from "../components/ui";
 import { colors } from "../constants/theme";
 import type { RootStack } from "../types";
@@ -11,7 +11,12 @@ export default function StoreGateScreen({
   navigation,
 }: NativeStackScreenProps<RootStack, "StoreGate">) {
   const [result, setResult] = useState<any>(),
-    [busy, setBusy] = useState(false);
+    [busy, setBusy] = useState(false),
+    [store, setStore] = useState(route.params.store),
+    [message, setMessage] = useState("");
+  useEffect(() => {
+    api<any>(`/stores/${route.params.store.id}`).then((details) => setStore({ ...route.params.store, ...details })).catch(() => undefined);
+  }, [route.params.store.id]);
   const validate = async () => {
     try {
       setBusy(true);
@@ -38,18 +43,32 @@ export default function StoreGateScreen({
       setBusy(false);
     }
   };
+  const saveMissedStatus = async (status: "Not Visited" | "Not Available") => {
+    try {
+      setBusy(true);
+      await post(`/outlets/${store.id}/visit-status`, { status });
+      setMessage(`${status} saved in Salesforce`);
+      Alert.alert("Saved", `${status} was recorded for ${store.name}.`);
+    } catch (error: any) {
+      Alert.alert("Unable to save", error.message);
+    } finally { setBusy(false); }
+  };
   return (
     <ScrollView style={s.root} contentContainerStyle={s.content}>
       <Card>
         <View style={s.top}><Label>ACTIVE OUTLET</Label><Text style={s.status}>ACTIVE</Text></View>
-        <Text style={s.name}>{route.params.store.name}</Text>
+        <Text style={s.name}>{store.name}</Text>
         <Text style={s.sub}>
-          {route.params.store.code} · {route.params.store.contact}
+          {store.code} · {store.contact || store.phone || "Phone unavailable"}
         </Text>
-        <Text style={s.sub}>{route.params.store.address}</Text>
+        <Text style={s.sub}>{store.address || "Address unavailable"}</Text>
+        <Text style={s.sub}>Owner: {store.owner || "Not specified"} · {store.email || "Email unavailable"}</Text>
         <View style={s.line} />
-        <View style={s.summary}><View><Label>OUTSTANDING</Label><Text style={s.value}>₹{route.params.store.lastOrder.toLocaleString("en-IN")}</Text></View><View><Label>LAST VISIT</Label><Text style={s.value}>{route.params.store.lastVisit}</Text></View><View><Label>LAST ORDER</Label><Text style={s.value}>₹{route.params.store.lastOrder.toLocaleString("en-IN")}</Text></View></View>
+        <View style={s.summary}><View><Label>OUTSTANDING</Label><Text style={s.value}>₹{Number(store.outstandingAmount || 0).toLocaleString("en-IN")}</Text></View><View><Label>VISITS</Label><Text style={s.value}>{store.visitCount || 0}</Text></View><View><Label>ORDERS</Label><Text style={s.value}>{store.orderCount || 0}</Text></View></View>
+        <Text style={s.sub}>Last visit: {store.lastVisit ? new Date(store.lastVisit).toLocaleString("en-IN") : "Not visited"}</Text>
+        <Text style={s.sub}>Last order: {store.lastOrderDate || "No orders"} · ₹{Number(store.lastOrderAmount || 0).toLocaleString("en-IN")}</Text>
       </Card>
+      <Card><Label>OUTLET VISIT STATUS</Label><View style={s.statusButtons}><Button title="VISITED" onPress={validate} disabled={busy}/><Button title="NOT VISITED" kind="secondary" onPress={() => saveMissedStatus("Not Visited")} disabled={busy}/><Button title="NOT AVAILABLE" kind="secondary" onPress={() => saveMissedStatus("Not Available")} disabled={busy}/></View>{!!message && <Text style={s.saved}>{message}</Text>}</Card>
       <Card><Label>100 METRE LOCATION VALIDATION</Label><Text style={s.sub}>Capture your current GPS position before entering the outlet. This protects the accuracy of every visit.</Text></Card>
       {result && (
         <Card
@@ -70,7 +89,7 @@ export default function StoreGateScreen({
               title="ENTER OUTLET"
               onPress={() =>
                 navigation.replace("Visit", {
-                  store: route.params.store,
+                  store,
                   location: result.location,
                   distance: result.distance,
                 })
@@ -93,13 +112,7 @@ export default function StoreGateScreen({
           )}
         </Card>
       )}{" "}
-      {!result && (
-        <Button
-          title={busy ? "CHECKING LOCATION…" : "CAPTURE LOCATION"}
-          onPress={validate}
-          disabled={busy}
-        />
-      )}
+      {!result && <Text style={s.hint}>Choose Visited to validate your location and open product selection.</Text>}
     </ScrollView>
   );
 }
@@ -125,4 +138,5 @@ const s = StyleSheet.create({
     color: colors.brand,
     marginVertical: 8,
   },
+  statusButtons:{marginTop:10},saved:{color:colors.success,fontWeight:"800",marginTop:8},hint:{textAlign:"center",color:colors.muted,marginVertical:10},
 });

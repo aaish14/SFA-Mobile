@@ -19,6 +19,7 @@ import {
 import {
   emailDeliveryIsConfigured,
   sendDistributorLoginCode,
+  sendRetailerOrderSummary,
 } from "./services/emailService.js";
 import { escapeSoqlLiteral } from "./utils/salesforce.js";
 export const app = express();
@@ -142,13 +143,16 @@ app.get("/api/dashboard", async (request, res) => {
       dataState: "LIVE",
     });
   const distributorId = escapeSoqlLiteral(req.auth!.distributorId);
-  const [users, schemeRows, pendingOrders, todayVisits, completedVisits] =
+  const [users, schemeRows, totalOrders, pendingOrders, todayVisits, completedVisits, pendingDeliveries, outstanding] =
     await Promise.all([
       sfRecords("SELECT Name FROM User WHERE IsActive = true ORDER BY LastLoginDate DESC NULLS LAST LIMIT 1"),
       sfRecords(`SELECT Id, Name, Scheme_Code__c, Scheme_Type__c, Description__c, Discount_Percent__c, Minimum_Quantity__c, Free_Quantity__c, Product__r.Name, Free_Product__r.Name, End_Date__c FROM ${objectMap.scheme} WHERE Active__c = true ORDER BY End_Date__c DESC NULLS LAST`),
+      sfRecords(`SELECT COUNT(Id) total FROM ${objectMap.order} WHERE Retailer__c IN (${allocatedOutletIds(distributorId)})`),
       sfRecords(`SELECT COUNT(Id) total FROM ${objectMap.order} WHERE Status__c != 'Completed' AND Retailer__c IN (${allocatedOutletIds(distributorId)})`),
       sfRecords(`SELECT COUNT(Id) total FROM ${objectMap.visit} WHERE Visit_Date__c = TODAY AND Retailer__c IN (${allocatedOutletIds(distributorId)})`),
       sfRecords(`SELECT COUNT(Id) total FROM ${objectMap.visit} WHERE Visit_Date__c = TODAY AND Status__c = 'Completed' AND Retailer__c IN (${allocatedOutletIds(distributorId)})`),
+      sfRecords(`SELECT COUNT(Id) total FROM ${objectMap.order} WHERE Status__c IN ('Submitted','Confirmed') AND Retailer__c IN (${allocatedOutletIds(distributorId)})`),
+      sfRecords(`SELECT SUM(Outstanding_Amount__c) total FROM ${objectMap.store} WHERE Id IN (${allocatedOutletIds(distributorId)})`),
     ]);
   const mappedSchemes = schemeRows.map((row) => ({
     id: row.Id,
@@ -167,9 +171,12 @@ app.get("/api/dashboard", async (request, res) => {
     userName: req.auth?.displayName || users[0]?.Name,
     loginEmail: req.auth?.sub,
     beatName: req.auth?.beatName,
+    totalOrders: Number(totalOrders[0]?.total || 0),
     pendingOrders: Number(pendingOrders[0]?.total || 0),
     todayVisits: Number(todayVisits[0]?.total || 0),
     completedVisits: Number(completedVisits[0]?.total || 0),
+    pendingDeliveries: Number(pendingDeliveries[0]?.total || 0),
+    outstandingAmount: Number(outstanding[0]?.total || 0),
     schemes: mappedSchemes,
     dataState: "LIVE",
   });
@@ -293,13 +300,14 @@ app.get("/api/outlets", async (request, res) => {
   const req = request as AuthenticatedRequest;
   if (env.USE_MOCK_DATA) return ok(res, stores);
   const distributorId = escapeSoqlLiteral(req.auth!.distributorId);
-  const [rows, visitRows] = await Promise.all([
+  const [rows, visitRows, orderRows] = await Promise.all([
     sfRecords(
       `SELECT Id, Name, Address__c, Phone__c, Email__c, Outlet_Owner_Name__c, Outlet_Type__c, Outstanding_Amount__c, Active__c, Beat__c, Beat__r.Name, Geography__r.Name, Geo_Location__Latitude__s, Geo_Location__Longitude__s, Latitude__c, Longitude__c FROM ${objectMap.store} WHERE Id IN (${allocatedOutletIds(distributorId)}) ORDER BY Name LIMIT 500`,
     ),
     sfRecords(
       `SELECT Id, Visit_Number__c, Visit_Date__c, Status__c, Retailer__c, Check_In_Time__c, Check_Out_Time__c, Check_In_Latitude__c, Check_In_Longitude__c, Check_Out_Latitude__c, Check_Out_Longitude__c, Duration_Minutes__c FROM ${objectMap.visit} WHERE Retailer__c IN (${allocatedOutletIds(distributorId)}) ORDER BY Check_In_Time__c DESC NULLS LAST, Visit_Date__c DESC, CreatedDate DESC LIMIT 1000`,
     ),
+    sfRecords(`SELECT Id, Retailer__c, Order_Date__c, Status__c, Total_Amount__c, Total_Quantity__c FROM ${objectMap.order} WHERE Retailer__c IN (${allocatedOutletIds(distributorId)}) ORDER BY Order_Date__c DESC, CreatedDate DESC LIMIT 1000`),
   ]);
   const visitsByOutlet = new Map<string, any[]>();
   for (const visit of visitRows) {
@@ -323,10 +331,17 @@ app.get("/api/outlets", async (request, res) => {
     });
     visitsByOutlet.set(visit.Retailer__c, outletVisits);
   }
+  const ordersByOutlet = new Map<string, any[]>();
+  for (const order of orderRows) {
+    const outletOrders = ordersByOutlet.get(order.Retailer__c) || [];
+    outletOrders.push(order);
+    ordersByOutlet.set(order.Retailer__c, outletOrders);
+  }
   ok(
     res,
     rows.map((row) => {
       const outletVisits = visitsByOutlet.get(row.Id) || [];
+      const outletOrders = ordersByOutlet.get(row.Id) || [];
       return {
       id: row.Id,
       code: `OUT-${row.Id.slice(-5).toUpperCase()}`,
@@ -352,6 +367,9 @@ app.get("/api/outlets", async (request, res) => {
       lastVisit: outletVisits[0]?.checkInTime || outletVisits[0]?.date || null,
       lastVisitLocation: outletVisits[0]?.checkInLocation || null,
       recentVisits: outletVisits.slice(0, 5),
+      orderCount: outletOrders.length,
+      lastOrderDate: outletOrders[0]?.Order_Date__c || null,
+      lastOrderAmount: Number(outletOrders[0]?.Total_Amount__c || 0),
     };
     }),
   );
@@ -377,6 +395,37 @@ app.get("/api/orders", async (request, res) => {
       outletName: row.Retailer__r?.Name,
     })),
   );
+});
+
+const moduleQueries: Record<string, string> = {
+  "asset-surveys": `SELECT Id, Name, Asset_Code__c, Asset_Name__c, Status__c, Given_Date__c, Picture_URL__c, Outlet__r.Name, Visit__r.Name FROM ${objectMap.assetSurvey} ORDER BY CreatedDate DESC LIMIT 200`,
+  "competitor-activities": `SELECT Id, Name, Competitor_Name__c, Company__c, MRP__c, RBP__c, Scheme_Details__c, Image_URL__c, Outlet__r.Name, Visit__r.Name FROM ${objectMap.competitor} ORDER BY CreatedDate DESC LIMIT 200`,
+  tickets: `SELECT Id, Name, Subject__c, Description__c, Status__c, Image_URL__c, Outlet__r.Name, Visit__r.Name FROM ${objectMap.ticket} ORDER BY CreatedDate DESC LIMIT 200`,
+  "stock-checks": `SELECT Id, Name, Product__r.Name, Quantity__c, Manufacturing_Date__c, Outlet__r.Name, Visit__r.Name FROM ${objectMap.stockCheck} ORDER BY CreatedDate DESC LIMIT 200`,
+  returns: `SELECT Id, Name, Product__r.Name, Quantity__c, Manufacturing_Date__c, Return_Reason__c, Outlet__r.Name, Visit__r.Name FROM ${objectMap.returns} ORDER BY CreatedDate DESC LIMIT 200`,
+};
+
+app.get("/api/modules/:moduleName", async (request, res) => {
+  if (env.USE_MOCK_DATA) return ok(res, []);
+  const moduleName = String(request.params.moduleName);
+  const query = moduleQueries[moduleName];
+  if (!query) return fail(res, 404, "Module not found", "MODULE_NOT_FOUND");
+  const req = request as AuthenticatedRequest;
+  const distributorId = escapeSoqlLiteral(req.auth!.distributorId);
+  const scopedQuery = query.replace(
+    " ORDER BY",
+    ` WHERE Outlet__c IN (${allocatedOutletIds(distributorId)}) ORDER BY`,
+  );
+  const rows = await sfRecords(scopedQuery);
+  return ok(res, rows.map(({ attributes, ...row }) => ({
+    ...row,
+    outletName: row.Outlet__r?.Name,
+    visitName: row.Visit__r?.Name,
+    productName: row.Product__r?.Name,
+    Outlet__r: undefined,
+    Visit__r: undefined,
+    Product__r: undefined,
+  })));
 });
 app.get("/api/beats", async (request, res) => {
   if (env.USE_MOCK_DATA) return ok(res, beats);
@@ -432,11 +481,15 @@ app.get("/api/stores/:storeId", async (request, res) => {
     const storeId = escapeSoqlLiteral(String(req.params.storeId));
     const distributorId = escapeSoqlLiteral(req.auth!.distributorId);
     const rows = await sfRecords(
-      `SELECT Id, Name, Beat__c, Beat__r.Name, Address__c, Phone__c, Outlet_Type__c, Outstanding_Amount__c, Active__c, Geo_Location__Latitude__s, Geo_Location__Longitude__s, Latitude__c, Longitude__c FROM ${objectMap.store} WHERE Id = '${storeId}' AND Id IN (${allocatedOutletIds(distributorId)}) LIMIT 1`,
+      `SELECT Id, Name, Beat__c, Beat__r.Name, Address__c, Phone__c, Email__c, Outlet_Owner_Name__c, Outlet_Type__c, Outstanding_Amount__c, Active__c, Geography__r.Name, Geo_Location__Latitude__s, Geo_Location__Longitude__s, Latitude__c, Longitude__c FROM ${objectMap.store} WHERE Id = '${storeId}' AND Id IN (${allocatedOutletIds(distributorId)}) LIMIT 1`,
     );
     if (!rows.length)
       return fail(res, 404, "Store not found", "STORE_NOT_FOUND");
     const row = rows[0];
+    const [visitSummary, orderSummary] = await Promise.all([
+      sfRecords(`SELECT COUNT(Id) total, MAX(Check_In_Time__c) latest FROM ${objectMap.visit} WHERE Retailer__c = '${storeId}'`),
+      sfRecords(`SELECT COUNT(Id) total, MAX(Order_Date__c) latest, SUM(Total_Amount__c) amount FROM ${objectMap.order} WHERE Retailer__c = '${storeId}'`),
+    ]);
     return ok(res, {
       id: row.Id,
       beatId: row.Beat__c,
@@ -444,12 +497,21 @@ app.get("/api/stores/:storeId", async (request, res) => {
       name: row.Name,
       address: row.Address__c,
       phone: row.Phone__c,
+      contact: row.Phone__c,
+      email: row.Email__c,
+      owner: row.Outlet_Owner_Name__c,
       type: row.Outlet_Type__c,
+      geography: row.Geography__r?.Name,
       beatName: row.Beat__r?.Name,
       active: row.Active__c,
       outstandingAmount: row.Outstanding_Amount__c || 0,
       latitude: row.Geo_Location__Latitude__s || row.Latitude__c,
       longitude: row.Geo_Location__Longitude__s || row.Longitude__c,
+      visitCount: Number(visitSummary[0]?.total || 0),
+      lastVisit: visitSummary[0]?.latest || null,
+      orderCount: Number(orderSummary[0]?.total || 0),
+      lastOrderDate: orderSummary[0]?.latest || null,
+      totalOrderAmount: Number(orderSummary[0]?.amount || 0),
     });
   }
   const store = stores.find((s) => s.id === req.params.storeId);
@@ -591,6 +653,28 @@ app.post("/api/store/visit/start", async (request, res) => {
 app.post("/api/store/revisit", (req, res) =>
   ok(res, { ...req.body, id: `revisit-${Date.now()}` }),
 );
+app.post("/api/outlets/:storeId/visit-status", async (request, res) => {
+  const req = request as AuthenticatedRequest;
+  const storeId = escapeSoqlLiteral(String(req.params.storeId));
+  const distributorId = escapeSoqlLiteral(req.auth!.distributorId);
+  const rows = await sfRecords(`SELECT Id, Name, Beat__c FROM ${objectMap.store} WHERE Id = '${storeId}' AND Id IN (${allocatedOutletIds(distributorId)}) LIMIT 1`);
+  if (!rows.length) return fail(res, 404, "Outlet not found", "OUTLET_NOT_FOUND");
+  const status = String(req.body.status || "Not Visited");
+  if (!env.USE_MOCK_DATA) {
+    const plans = await sfRecords(`SELECT Id FROM ${objectMap.journeyPlan} WHERE Beat__c = '${rows[0].Beat__c}' AND Status__c = 'Approved' ORDER BY Planned_Date__c DESC LIMIT 1`);
+    const created: any = await salesforce.create(objectMap.visit, {
+      Name: `${rows[0].Name} ${status}`,
+      Retailer__c: rows[0].Id,
+      Permanent_Journey_Plan__c: plans[0]?.Id || null,
+      Visit_Date__c: new Date().toISOString().slice(0, 10),
+      Status__c: "Missed",
+      Missed_Reason__c: status === "Not Available" ? "Owner unavailable" : (req.body.reason || "Not visited"),
+      Notes__c: req.body.notes || null,
+    });
+    return ok(res, { id: created.id, status }, "Outlet visit status saved in Salesforce");
+  }
+  return ok(res, { id: `visit-${Date.now()}`, status });
+});
 for (const [path, key] of [
   ["/api/orders", "orderLines"],
   ["/api/returns", "returns"],
@@ -717,6 +801,29 @@ for (const [path, key] of [
 app.post("/api/orders/:orderId/items", (req, res) =>
   ok(res, { orderId: req.params.orderId, items: req.body.items }),
 );
+app.post("/api/stock-checks", async (request, res) => {
+  const req = request as AuthenticatedRequest;
+  const visit = visits.get(req.body.visitId);
+  if (!visit || visit.distributorId !== req.auth!.distributorId)
+    return fail(res, 404, "Visit not found", "VISIT_NOT_FOUND");
+  const created: any = env.USE_MOCK_DATA ? { id: `stock-${Date.now()}` } : await salesforce.create(objectMap.stockCheck, {
+    Outlet__c: visit.storeId, Visit__c: visit.id, Product__c: req.body.productId,
+    Quantity__c: Number(req.body.quantity || 0), Manufacturing_Date__c: req.body.manufacturingDate || null,
+  });
+  return ok(res, { ...req.body, id: created.id }, "Stock check saved in Salesforce");
+});
+app.post("/api/asset-surveys", async (request, res) => {
+  const req = request as AuthenticatedRequest;
+  const visit = visits.get(req.body.visitId);
+  if (!visit || visit.distributorId !== req.auth!.distributorId)
+    return fail(res, 404, "Visit not found", "VISIT_NOT_FOUND");
+  const created: any = env.USE_MOCK_DATA ? { id: `asset-${Date.now()}` } : await salesforce.create(objectMap.assetSurvey, {
+    Outlet__c: visit.storeId, Visit__c: visit.id, Asset_Code__c: req.body.assetCode,
+    Asset_Name__c: req.body.assetName, Status__c: req.body.status || "Available",
+    Given_Date__c: req.body.givenDate || new Date().toISOString().slice(0, 10), Picture_URL__c: req.body.pictureUrl || null,
+  });
+  return ok(res, { ...req.body, id: created.id }, "Asset survey saved in Salesforce");
+});
 app.post("/api/store/checkout", async (request, res) => {
   const req = request as AuthenticatedRequest;
   const visit = visits.get(req.body.visitId);
@@ -737,6 +844,17 @@ app.post("/api/store/checkout", async (request, res) => {
       Check_Out_Longitude__c: visit.checkOut?.longitude,
       Notes__c: visit.remarks,
     });
+  const receiptItems = Array.isArray(req.body.items) ? req.body.items : [];
+  if (req.body.retailerEmail && receiptItems.length) {
+    const schemeRows = env.USE_MOCK_DATA ? [] : await sfRecords(`SELECT Name FROM ${objectMap.scheme} WHERE Active__c = true ORDER BY End_Date__c LIMIT 20`);
+    await sendRetailerOrderSummary(
+      String(req.body.retailerEmail),
+      String(req.body.outletName || visit.storeName),
+      receiptItems,
+      Number(req.body.totalAmount || 0),
+      schemeRows.map((row) => row.Name),
+    );
+  }
   ok(res, visit, "Visit completed successfully");
 });
 app.get("/api/visits/:visitId", (request, res) => {

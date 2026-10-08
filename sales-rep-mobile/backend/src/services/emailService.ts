@@ -77,3 +77,25 @@ export async function sendDistributorInvitation(
     `<p>Hello ${distributorName},</p><p>Your SFA Mobile application is ready.</p><p><a href="${link}" style="display:inline-block;padding:12px 20px;background:#1677c8;color:#fff;text-decoration:none;border-radius:8px;font-weight:700">Open SFA Mobile</a></p><p>Enter <strong>${recipient}</strong> on the login page to receive your secure sign-in code.</p>`,
   );
 }
+
+export async function sendRetailerOrderSummary(
+  recipient: string,
+  outletName: string,
+  items: Array<{ productName: string; quantity: number; amount: number }>,
+  totalAmount: number,
+  schemes: string[],
+) {
+  const itemText = items
+    .map((item) => `${item.productName} - Qty ${item.quantity} - ₹${Number(item.amount).toFixed(2)}`)
+    .join("\n");
+  const itemRows = items
+    .map((item) => `<tr><td>${item.productName}</td><td>${item.quantity}</td><td>₹${Number(item.amount).toFixed(2)}</td></tr>`)
+    .join("");
+  const schemeText = schemes.length ? schemes.join(", ") : "No active product scheme";
+  await sendEmail(
+    recipient,
+    `SFA order confirmation - ${outletName}`,
+    `Hello ${outletName},\n\nYour order has been booked.\n${itemText}\n\nTotal: ₹${Number(totalAmount).toFixed(2)}\nAvailable schemes: ${schemeText}`,
+    `<p>Hello ${outletName},</p><p>Your order has been booked successfully.</p><table cellpadding="7" cellspacing="0" border="1"><tr><th>Product</th><th>Quantity</th><th>Amount</th></tr>${itemRows}</table><p><strong>Total: ₹${Number(totalAmount).toFixed(2)}</strong></p><p><strong>Available schemes:</strong> ${schemeText}</p>`,
+  );
+}

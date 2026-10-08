@@ -56,7 +56,7 @@ export default function OutletsScreen() {
         <Text style={s.meta}>Code: {outlet.code} | Type: {outlet.type || "Not specified"}</Text>
         <View style={s.row}><Text style={s.owner}>Owner: {outlet.owner || "Not specified"}</Text><Text style={s.phone}>☎ {outlet.contact || outlet.phone || "Not specified"}</Text></View>
         <View style={s.row}><Text style={s.location}>⌾ {outlet.address || outlet.geography || "Address unavailable"}</Text><Text style={s.beat}>{outlet.beatName || "Unassigned"}</Text></View>
-        <View style={s.bottom}><Text>Outstanding: <Text style={Number(outlet.outstandingAmount) > 0 ? s.red : s.green}>₹{Number(outlet.outstandingAmount || 0).toLocaleString("en-IN")}</Text></Text><Text style={s.visitCount}>Visits: {outlet.visitCount || 0}</Text></View>
+        <View style={s.bottom}><Text>Outstanding: <Text style={Number(outlet.outstandingAmount) > 0 ? s.red : s.green}>₹{Number(outlet.outstandingAmount || 0).toLocaleString("en-IN")}</Text></Text><Text style={s.visitCount}>Orders: {outlet.orderCount || 0} · Visits: {outlet.visitCount || 0}</Text></View>
         <Text style={s.lastVisit}>Last visit: {outlet.lastVisit ? formatVisitTime(outlet.lastVisit) : "Not visited"}</Text>
         </Pressable>
         {expandedOutlet === outlet.id && <View style={s.historyPanel}>
