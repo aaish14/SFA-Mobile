@@ -17,7 +17,7 @@ Standalone Expo/React Native mobile app with a TypeScript/Express API. It is not
 4. Double-click `START-LOCAL-APP.cmd`, or run `npm run dev` inside `backend`.
 5. In another terminal run `npm run web` inside `mobile` to see the mobile layout at `http://localhost:8081`.
 6. For a physical phone, set `EXPO_PUBLIC_API_URL` to the computer's LAN API address, run `npm run mobile`, and scan the Expo Go QR code.
-7. The local app login accepts any non-empty email/password. Salesforce authentication is server-side.
+7. Sign in with the email on an active `Distributor__c` record (or its linked Salesforce User). The API emails a short-lived six-digit code and creates a distributor-scoped session after verification.
 
 Run verification with `npm run build` and `npm test`.
 
@@ -28,7 +28,8 @@ Run verification with `npm run build` and `npm test`.
 3. Put the client ID and secret only in the backend `.env`.
 4. Keep `USE_MOCK_DATA=false`.
 5. Configure object names in `.env`. All Salesforce HTTP calls are isolated in `backend/src/salesforce/SalesforceService.ts`.
-6. Use HTTPS in production and store environment secrets in the hosting provider's secret manager.
+6. Configure `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASSWORD` and `EMAIL_FROM` so sign-in codes are delivered by email. Keep `AUTH_ALLOW_TEST_CODE=false` outside local development.
+7. Use HTTPS in production and store environment secrets in the hosting provider's secret manager.
 
 Expected Salesforce objects are Employee, Beat, Retailer/Outlet, Attendance, Visit, Product, Scheme, Sales Order, Order Item, Product Return, Competitor Activity and SFA Ticket. The existing Salesforce metadata in the parent project provides these objects and fields.
 
@@ -36,7 +37,7 @@ Expected Salesforce objects are Employee, Beat, Retailer/Outlet, Attendance, Vis
 
 All JSON responses use `{ success, data, message }`; failures also include `errorCode`.
 
-- `POST /api/auth/login`
+- `POST /api/auth/request-code`, `/api/auth/verify-code`
 - `GET /api/dashboard`, `/api/schemes`, `/api/products`, `/api/beats`
 - `GET /api/beats/:beatId/stores`, `/api/stores/:storeId`
 - `POST /api/day/start`, `/api/store/validate-location`, `/api/store/visit/start`

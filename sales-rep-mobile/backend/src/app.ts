@@ -10,7 +10,16 @@ import { distanceInMeters } from "./utils/distance.js";
 import { createPdf, createExcel } from "./services/documentService.js";
 import { salesforce } from "./salesforce/SalesforceService.js";
 import type { VisitPayload } from "./types.js";
-import { authenticateDistributor } from "./services/authService.js";
+import {
+  createLoginCode,
+  findMockDistributor,
+  verifyLoginCode,
+  type DistributorIdentity,
+} from "./services/authService.js";
+import {
+  emailDeliveryIsConfigured,
+  sendDistributorLoginCode,
+} from "./services/emailService.js";
 import { escapeSoqlLiteral } from "./utils/salesforce.js";
 export const app = express();
 app.use(helmet());
@@ -19,11 +28,15 @@ app.use(express.json({ limit: "5mb" }));
 const visits = new Map<string, VisitPayload>();
 const idempotency = new Map<string, unknown>();
 const sfRecords = async (soql: string) => salesforce.records(soql);
+const allocatedOutletIds = (distributorId: string) =>
+  `SELECT Outlet__c FROM ${objectMap.distributorAllocation} WHERE Distributor__c = '${distributorId}' AND Allocation_Status__c = 'Active'`;
 type AuthClaims = {
   sub: string;
   displayName: string;
   distributorId: string;
   distributorName: string;
+  beatId?: string;
+  beatName?: string;
 };
 type AuthenticatedRequest = express.Request & { auth?: AuthClaims };
 const protect: express.RequestHandler = (request, res, next) => {
@@ -40,46 +53,75 @@ const protect: express.RequestHandler = (request, res, next) => {
 app.get("/api/health", (_, res) =>
   ok(res, { mockMode: env.USE_MOCK_DATA }, "SFA API is ready"),
 );
-app.post("/api/auth/login", async (req, res) => {
-  const username = String(req.body.username || req.body.email || "").trim();
-  const password = String(req.body.password || "");
-  if (!username || !password)
-    return fail(
-      res,
-      400,
-      "Email and password are required",
-      "VALIDATION_ERROR",
-    );
-  const configuredUser = authenticateDistributor(username, password);
-  if (!configuredUser)
-    return fail(res, 401, "Invalid username or password", "INVALID_LOGIN");
-  let distributorId = `mock-${configuredUser.accountName.toLowerCase().replace(/\W+/g, "-")}`;
-  if (!env.USE_MOCK_DATA) {
-    const accountName = escapeSoqlLiteral(configuredUser.accountName);
-    const accounts = await sfRecords(
-      `SELECT Id, Name FROM Account WHERE Name = '${accountName}' LIMIT 1`,
-    );
-    if (!accounts.length)
-      return fail(
-        res,
-        403,
-        "The distributor account is not available in Salesforce",
-        "DISTRIBUTOR_NOT_FOUND",
-      );
-    distributorId = accounts[0].Id;
-  }
-  const claims: AuthClaims = {
-    sub: configuredUser.username,
-    displayName: configuredUser.displayName,
-    distributorId,
-    distributorName: configuredUser.accountName,
+async function findDistributor(email: string): Promise<DistributorIdentity | undefined> {
+  if (env.USE_MOCK_DATA) return findMockDistributor(email);
+
+  const safeEmail = escapeSoqlLiteral(email.trim().toLowerCase());
+  const rows = await sfRecords(
+    `SELECT Id, Name, Login_Email__c, Beat__c, Beat__r.Name, User__c, User__r.Name, User__r.Email, User__r.Username, User__r.IsActive FROM ${objectMap.distributor} WHERE Status__c = 'Active' AND (Login_Email__c = '${safeEmail}' OR User__r.Email = '${safeEmail}' OR User__r.Username = '${safeEmail}') LIMIT 1`,
+  );
+  const row = rows[0];
+  if (!row || (row.User__c && row.User__r?.IsActive === false)) return undefined;
+  return {
+    id: row.Id,
+    email: String(row.Login_Email__c || row.User__r?.Email || row.User__r?.Username),
+    displayName: row.User__r?.Name || row.Name,
+    distributorName: row.Name,
+    beatId: row.Beat__c,
+    beatName: row.Beat__r?.Name,
   };
-  ok(res, {
-    token: jwt.sign(claims, env.JWT_SECRET, {
-      expiresIn: "8h",
-    }),
-    user: claims,
-  });
+}
+
+app.post("/api/auth/request-code", async (req, res) => {
+  const email = String(req.body.email || "").trim().toLowerCase();
+  if (!/^\S+@\S+\.\S+$/.test(email))
+    return fail(res, 400, "Enter a valid email address", "VALIDATION_ERROR");
+
+  const distributor = await findDistributor(email);
+  if (!distributor)
+    return fail(res, 403, "No active distributor login is linked to this email", "DISTRIBUTOR_NOT_FOUND");
+
+  const code = createLoginCode(email);
+  if (emailDeliveryIsConfigured()) {
+    await sendDistributorLoginCode(email, distributor.distributorName, code);
+  } else if (!env.AUTH_ALLOW_TEST_CODE) {
+    return fail(res, 503, "Email delivery is not configured. Ask the administrator to configure SMTP.", "EMAIL_NOT_CONFIGURED");
+  }
+
+  return ok(res, {
+    maskedEmail: email.replace(/^(.{2}).*(@.*)$/, "$1***$2"),
+    expiresInMinutes: env.AUTH_CODE_TTL_MINUTES,
+    ...(env.AUTH_ALLOW_TEST_CODE ? { testCode: code } : {}),
+  }, "A sign-in code was sent to the distributor email");
+});
+
+app.post("/api/auth/verify-code", async (req, res) => {
+  const email = String(req.body.email || "").trim().toLowerCase();
+  const code = String(req.body.code || "").trim();
+  if (!email || !/^\d{6}$/.test(code))
+    return fail(res, 400, "Email and a 6-digit code are required", "VALIDATION_ERROR");
+  if (!verifyLoginCode(email, code))
+    return fail(res, 401, "The sign-in code is invalid or expired", "INVALID_CODE");
+
+  const distributor = await findDistributor(email);
+  if (!distributor)
+    return fail(res, 403, "The distributor login is no longer active", "DISTRIBUTOR_NOT_FOUND");
+  const claims: AuthClaims = {
+    sub: distributor.email,
+    displayName: distributor.displayName,
+    distributorId: distributor.id,
+    distributorName: distributor.distributorName,
+    beatId: distributor.beatId,
+    beatName: distributor.beatName,
+  };
+  return ok(
+    res,
+    {
+      token: jwt.sign(claims, env.JWT_SECRET, { expiresIn: "8h" }),
+      user: claims,
+    },
+    "Signed in successfully",
+  );
 });
 app.use("/api", protect);
 app.post("/api/auth/logout", (_req, res) =>
@@ -104,9 +146,9 @@ app.get("/api/dashboard", async (request, res) => {
     await Promise.all([
       sfRecords("SELECT Name FROM User WHERE IsActive = true ORDER BY LastLoginDate DESC NULLS LAST LIMIT 1"),
       sfRecords(`SELECT Id, Name, Scheme_Code__c, Scheme_Type__c, Description__c, Discount_Percent__c, Minimum_Quantity__c, Free_Quantity__c, Product__r.Name, Free_Product__r.Name, End_Date__c FROM ${objectMap.scheme} WHERE Active__c = true ORDER BY End_Date__c DESC NULLS LAST`),
-      sfRecords(`SELECT COUNT(Id) total FROM ${objectMap.order} WHERE Status__c != 'Completed' AND Retailer__r.Distributor__c = '${distributorId}'`),
-      sfRecords(`SELECT COUNT(Id) total FROM ${objectMap.visit} WHERE Visit_Date__c = TODAY AND Retailer__r.Distributor__c = '${distributorId}'`),
-      sfRecords(`SELECT COUNT(Id) total FROM ${objectMap.visit} WHERE Visit_Date__c = TODAY AND Status__c = 'Completed' AND Retailer__r.Distributor__c = '${distributorId}'`),
+      sfRecords(`SELECT COUNT(Id) total FROM ${objectMap.order} WHERE Status__c != 'Completed' AND Retailer__c IN (${allocatedOutletIds(distributorId)})`),
+      sfRecords(`SELECT COUNT(Id) total FROM ${objectMap.visit} WHERE Visit_Date__c = TODAY AND Retailer__c IN (${allocatedOutletIds(distributorId)})`),
+      sfRecords(`SELECT COUNT(Id) total FROM ${objectMap.visit} WHERE Visit_Date__c = TODAY AND Status__c = 'Completed' AND Retailer__c IN (${allocatedOutletIds(distributorId)})`),
     ]);
   const mappedSchemes = schemeRows.map((row) => ({
     id: row.Id,
@@ -135,7 +177,7 @@ app.get("/api/visits", async (request, res) => {
   if (env.USE_MOCK_DATA) return ok(res, []);
   const req = request as AuthenticatedRequest;
   const distributorId = escapeSoqlLiteral(req.auth!.distributorId);
-  const rows = await sfRecords(`SELECT Id, Name, Visit_Number__c, Visit_Date__c, Status__c, Employee__r.Name, Sales_Representative__r.Name, Retailer__c, Retailer__r.Name, Outlet_Name__c, Outlet_Geo_Location__Latitude__s, Outlet_Geo_Location__Longitude__s, Previous_Order_Date__c, Previous_Order_Value__c, Order_Gross_Amount__c, Order_Tax__c, Order_Total__c, Order_Total_Quantity__c FROM ${objectMap.visit} WHERE Retailer__r.Distributor__c = '${distributorId}' ORDER BY Visit_Date__c DESC, CreatedDate DESC LIMIT 200`);
+  const rows = await sfRecords(`SELECT Id, Name, Visit_Number__c, Visit_Date__c, Status__c, Employee__r.Name, Sales_Representative__r.Name, Retailer__c, Retailer__r.Name, Outlet_Name__c, Outlet_Geo_Location__Latitude__s, Outlet_Geo_Location__Longitude__s, Previous_Order_Date__c, Previous_Order_Value__c, Order_Gross_Amount__c, Order_Tax__c, Order_Total__c, Order_Total_Quantity__c FROM ${objectMap.visit} WHERE Retailer__c IN (${allocatedOutletIds(distributorId)}) ORDER BY Visit_Date__c DESC, CreatedDate DESC LIMIT 200`);
   ok(res, rows.map((row) => ({
     id: row.Id,
     visitNumber: row.Visit_Number__c,
@@ -167,7 +209,7 @@ app.post("/api/visits", async (request, res) => {
   const distributorId = escapeSoqlLiteral(req.auth!.distributorId);
   const outletId = escapeSoqlLiteral(String(req.body.outletId));
   const outlets = await sfRecords(
-    `SELECT Id, Beat__c FROM ${objectMap.store} WHERE Id = '${outletId}' AND Distributor__c = '${distributorId}' LIMIT 1`,
+    `SELECT Id, Beat__c FROM ${objectMap.store} WHERE Id = '${outletId}' AND Id IN (${allocatedOutletIds(distributorId)}) LIMIT 1`,
   );
   if (!outlets.length) return fail(res, 404, "Outlet not found", "OUTLET_NOT_FOUND");
   const plans = await sfRecords(
@@ -239,7 +281,7 @@ app.get("/api/outlets", async (request, res) => {
   if (env.USE_MOCK_DATA) return ok(res, stores);
   const distributorId = escapeSoqlLiteral(req.auth!.distributorId);
   const rows = await sfRecords(
-    `SELECT Id, Name, Address__c, Phone__c, Email__c, Outlet_Owner_Name__c, Outlet_Type__c, Outstanding_Amount__c, Active__c, Beat__c, Beat__r.Name, Geography__r.Name, Geo_Location__Latitude__s, Geo_Location__Longitude__s, Latitude__c, Longitude__c FROM ${objectMap.store} WHERE Distributor__c = '${distributorId}' ORDER BY Name LIMIT 500`,
+    `SELECT Id, Name, Address__c, Phone__c, Email__c, Outlet_Owner_Name__c, Outlet_Type__c, Outstanding_Amount__c, Active__c, Beat__c, Beat__r.Name, Geography__r.Name, Geo_Location__Latitude__s, Geo_Location__Longitude__s, Latitude__c, Longitude__c FROM ${objectMap.store} WHERE Id IN (${allocatedOutletIds(distributorId)}) ORDER BY Name LIMIT 500`,
   );
   ok(
     res,
@@ -273,7 +315,7 @@ app.get("/api/orders", async (request, res) => {
   if (env.USE_MOCK_DATA) return ok(res, []);
   const distributorId = escapeSoqlLiteral(req.auth!.distributorId);
   const rows = await sfRecords(
-    `SELECT Id, Name, Order_Date__c, Status__c, Total_Amount__c, Total_Quantity__c, Retailer__c, Retailer__r.Name FROM ${objectMap.order} WHERE Retailer__r.Distributor__c = '${distributorId}' ORDER BY Order_Date__c DESC, CreatedDate DESC LIMIT 200`,
+    `SELECT Id, Name, Order_Date__c, Status__c, Total_Amount__c, Total_Quantity__c, Retailer__c, Retailer__r.Name FROM ${objectMap.order} WHERE Retailer__c IN (${allocatedOutletIds(distributorId)}) ORDER BY Order_Date__c DESC, CreatedDate DESC LIMIT 200`,
   );
   ok(
     res,
@@ -294,7 +336,7 @@ app.get("/api/beats", async (request, res) => {
   const req = request as AuthenticatedRequest;
   const distributorId = escapeSoqlLiteral(req.auth!.distributorId);
   const rows = await sfRecords(
-    `SELECT Id, Name, Outlet_Count__c, Outlet_Names__c FROM ${objectMap.beat} WHERE Active__c = true AND Id IN (SELECT Beat__c FROM ${objectMap.store} WHERE Distributor__c = '${distributorId}') ORDER BY Name`,
+    `SELECT Id, Name, Outlet_Count__c, Outlet_Names__c FROM ${objectMap.beat} WHERE Active__c = true AND Id = '${escapeSoqlLiteral(req.auth!.beatId || "")}' ORDER BY Name`,
   );
   ok(
     res,
@@ -316,7 +358,7 @@ app.get("/api/beats/:beatId/stores", async (request, res) => {
   const beatId = escapeSoqlLiteral(String(req.params.beatId));
   const distributorId = escapeSoqlLiteral(req.auth!.distributorId);
   const rows = await sfRecords(
-    `SELECT Id, Name, Address__c, Phone__c, Outlet_Type__c, Outstanding_Amount__c, Beat__r.Name, Geo_Location__Latitude__s, Geo_Location__Longitude__s, Latitude__c, Longitude__c FROM ${objectMap.store} WHERE Beat__c = '${beatId}' AND Distributor__c = '${distributorId}' AND Active__c = true ORDER BY Name`,
+    `SELECT Id, Name, Address__c, Phone__c, Outlet_Type__c, Outstanding_Amount__c, Beat__r.Name, Geo_Location__Latitude__s, Geo_Location__Longitude__s, Latitude__c, Longitude__c FROM ${objectMap.store} WHERE Beat__c = '${beatId}' AND Id IN (${allocatedOutletIds(distributorId)}) AND Active__c = true ORDER BY Name`,
   );
   ok(
     res,
@@ -343,7 +385,7 @@ app.get("/api/stores/:storeId", async (request, res) => {
     const storeId = escapeSoqlLiteral(String(req.params.storeId));
     const distributorId = escapeSoqlLiteral(req.auth!.distributorId);
     const rows = await sfRecords(
-      `SELECT Id, Name, Beat__c, Beat__r.Name, Address__c, Phone__c, Outlet_Type__c, Outstanding_Amount__c, Active__c, Geo_Location__Latitude__s, Geo_Location__Longitude__s, Latitude__c, Longitude__c FROM ${objectMap.store} WHERE Id = '${storeId}' AND Distributor__c = '${distributorId}' LIMIT 1`,
+      `SELECT Id, Name, Beat__c, Beat__r.Name, Address__c, Phone__c, Outlet_Type__c, Outstanding_Amount__c, Active__c, Geo_Location__Latitude__s, Geo_Location__Longitude__s, Latitude__c, Longitude__c FROM ${objectMap.store} WHERE Id = '${storeId}' AND Id IN (${allocatedOutletIds(distributorId)}) LIMIT 1`,
     );
     if (!rows.length)
       return fail(res, 404, "Store not found", "STORE_NOT_FOUND");
@@ -421,7 +463,7 @@ app.post("/api/store/validate-location", async (request, res) => {
     ? stores.find((item) => item.id === req.body.storeId)
     : (
         await sfRecords(
-          `SELECT Id, Name, Beat__c, Address__c, Geo_Location__Latitude__s, Geo_Location__Longitude__s, Latitude__c, Longitude__c FROM ${objectMap.store} WHERE Id = '${storeId}' AND Distributor__c = '${distributorId}' LIMIT 1`,
+          `SELECT Id, Name, Beat__c, Address__c, Geo_Location__Latitude__s, Geo_Location__Longitude__s, Latitude__c, Longitude__c FROM ${objectMap.store} WHERE Id = '${storeId}' AND Id IN (${allocatedOutletIds(distributorId)}) LIMIT 1`,
         )
       ).map((row) => ({
         id: row.Id,
@@ -452,7 +494,7 @@ app.post("/api/store/visit/start", async (request, res) => {
     ? stores.find((item) => item.id === req.body.storeId)
     : (
         await sfRecords(
-          `SELECT Id, Name, Beat__c FROM ${objectMap.store} WHERE Id = '${storeId}' AND Distributor__c = '${distributorId}' LIMIT 1`,
+          `SELECT Id, Name, Beat__c FROM ${objectMap.store} WHERE Id = '${storeId}' AND Id IN (${allocatedOutletIds(distributorId)}) LIMIT 1`,
         )
       ).map((row) => ({ id: row.Id, name: row.Name, beatId: row.Beat__c }))[0];
   if (!store) return fail(res, 404, "Store not found", "STORE_NOT_FOUND");
@@ -528,14 +570,14 @@ for (const [path, key] of [
         const requestedItems = Array.isArray(req.body.items) ? req.body.items : [];
         if (!requestedItems.length)
           return fail(res, 400, "At least one order item is required", "ORDER_ITEMS_REQUIRED");
-        const productIds = [...new Set(requestedItems.map((item: any) => String(item.productId || "")))]
+        const productIds: string[] = [...new Set<string>(requestedItems.map((item: any) => String(item.productId || "")))]
           .filter(Boolean);
         const safeIds = productIds.map((id) => `'${escapeSoqlLiteral(id)}'`).join(",");
         const productRows = await sfRecords(
           `SELECT Id, Name, Product_Code__c, Selling_Price__c, GST_Percent__c, Available_Stock__c, Units_Per_Case__c, Active__c, Sellable__c FROM ${objectMap.product} WHERE Id IN (${safeIds})`,
         );
         const productById = new Map(productRows.map((product) => [product.Id, product]));
-        const lines = requestedItems.map((item: any) => {
+        const lines: Array<{ product: any; quantity: number; unitPrice: number; grossAmount: number; taxAmount: number; totalAmount: number }> = requestedItems.map((item: any) => {
           const product = productById.get(String(item.productId));
           const quantity = Number(item.quantity || 0);
           if (!product || !product.Active__c || !product.Sellable__c)
@@ -652,7 +694,8 @@ app.post("/api/store/checkout", async (request, res) => {
 });
 app.get("/api/visits/:visitId", (request, res) => {
   const req = request as AuthenticatedRequest;
-  const visit = visits.get(req.params.visitId);
+  const visitId = Array.isArray(req.params.visitId) ? req.params.visitId[0] : req.params.visitId;
+  const visit = visits.get(visitId);
   return visit && visit.distributorId === req.auth!.distributorId
     ? ok(res, visit)
     : fail(res, 404, "Visit not found", "VISIT_NOT_FOUND");

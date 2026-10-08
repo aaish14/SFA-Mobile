@@ -24,9 +24,18 @@ const schema = z.object({
     .default("sfaNewOrg"),
   SALESFORCE_REDIRECT_URI: z.string().optional(),
   SALESFORCE_API_VERSION: z.string().default("67.0"),
-  DISTRIBUTOR_USERS_JSON: z.string().default(""),
+  AUTH_CODE_TTL_MINUTES: z.coerce.number().int().min(2).max(30).default(10),
+  AUTH_CODE_MAX_ATTEMPTS: z.coerce.number().int().min(1).max(10).default(5),
+  AUTH_ALLOW_TEST_CODE: z
+    .string()
+    .default("false")
+    .transform((value) => value === "true"),
   SMTP_HOST: z.string().optional(),
   SMTP_PORT: z.coerce.number().default(587),
+  SMTP_SECURE: z
+    .string()
+    .default("false")
+    .transform((value) => value === "true"),
   SMTP_USER: z.string().optional(),
   SMTP_PASSWORD: z.string().optional(),
   EMAIL_FROM: z.string().optional(),
@@ -34,6 +43,10 @@ const schema = z.object({
 export const env = schema.parse(process.env);
 
 export const objectMap = {
+  distributor: process.env.DISTRIBUTOR_OBJECT || "Distributor__c",
+  distributorAllocation:
+    process.env.DISTRIBUTOR_ALLOCATION_OBJECT ||
+    "Distributor_Outlet_Allocation__c",
   salesRep: process.env.SALES_REP_OBJECT || "Employee__c",
   beat: process.env.BEAT_OBJECT || "Beat__c",
   store: process.env.STORE_OBJECT || "Retailer__c",

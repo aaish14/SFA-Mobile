@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: SFA External Mobile API
-  version: 1.1.0
+  version: 1.2.0
   description: Backend contract for the distributor-isolated SFA mobile application.
 servers:
   - url: http://localhost:4000/api
@@ -14,24 +14,40 @@ paths:
       summary: Check API availability
       responses:
         "200": { description: API status }
-  /auth/login:
+  /auth/request-code:
     post:
       security: []
-      summary: Create a distributor-scoped application session
+      summary: Email a short-lived distributor sign-in code
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
-              required: [username, password]
+              required: [email]
               properties:
-                username: { type: string }
-                password: { type: string, format: password }
+                email: { type: string, format: email }
+      responses:
+        "200": { description: Code sent to the distributor email }
+        "403": { description: Active Salesforce distributor missing }
+        "503": { description: Server email delivery is not configured }
+  /auth/verify-code:
+    post:
+      security: []
+      summary: Verify the emailed code and create a distributor-scoped session
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, code]
+              properties:
+                email: { type: string, format: email }
+                code: { type: string, pattern: "^[0-9]{6}$" }
       responses:
         "200": { description: Signed session and distributor identity }
-        "401": { description: Invalid login }
-        "403": { description: Salesforce distributor account missing }
+        "401": { description: Code invalid or expired }
   /auth/session:
     get:
       summary: Read the current distributor identity
