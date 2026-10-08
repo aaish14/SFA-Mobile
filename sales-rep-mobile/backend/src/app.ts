@@ -380,7 +380,7 @@ app.get("/api/orders", async (request, res) => {
   if (env.USE_MOCK_DATA) return ok(res, []);
   const distributorId = escapeSoqlLiteral(req.auth!.distributorId);
   const rows = await sfRecords(
-    `SELECT Id, Name, Order_Date__c, Status__c, Total_Amount__c, Total_Quantity__c, Retailer__c, Retailer__r.Name FROM ${objectMap.order} WHERE Retailer__c IN (${allocatedOutletIds(distributorId)}) ORDER BY Order_Date__c DESC, CreatedDate DESC LIMIT 200`,
+    `SELECT Id, Name, Order_Date__c, Status__c, Gross_Amount__c, Tax_Amount__c, Total_Amount__c, Total_Quantity__c, SKU__c, Scheme_Applied__c, Scheme_Details__c, Product__r.Name, Visit__r.Name, Retailer__c, Retailer__r.Name FROM ${objectMap.order} WHERE Retailer__c IN (${allocatedOutletIds(distributorId)}) ORDER BY Order_Date__c DESC, CreatedDate DESC LIMIT 200`,
   );
   ok(
     res,
@@ -390,7 +390,14 @@ app.get("/api/orders", async (request, res) => {
       date: row.Order_Date__c,
       status: row.Status__c,
       amount: row.Total_Amount__c || 0,
+      grossAmount: row.Gross_Amount__c || 0,
+      taxAmount: row.Tax_Amount__c || 0,
       totalQuantity: row.Total_Quantity__c || 0,
+      sku: row.SKU__c,
+      schemeApplied: row.Scheme_Applied__c,
+      schemeDetails: row.Scheme_Details__c,
+      productName: row.Product__r?.Name,
+      visitName: row.Visit__r?.Name,
       outletId: row.Retailer__c,
       outletName: row.Retailer__r?.Name,
     })),
