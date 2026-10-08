@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Beat__c</fullName><deleteConstraint>Restrict</deleteConstraint><label>Beat</label><referenceTo>Beat__c</referenceTo><relationshipLabel>Distributors</relationshipLabel><relationshipName>Distributors</relationshipName><required>true</required><trackHistory>true</trackHistory><type>Lookup</type>
+</CustomField>

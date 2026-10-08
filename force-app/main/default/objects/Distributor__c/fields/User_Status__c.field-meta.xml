@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>User_Status__c</fullName><formula>IF(ISBLANK(User__c), &quot;Not Linked&quot;, IF(User__r.IsActive, &quot;Active&quot;, &quot;Inactive&quot;))</formula><formulaTreatBlanksAs>BlankAsZero</formulaTreatBlanksAs><label>User Status</label><type>Text</type>
+</CustomField>

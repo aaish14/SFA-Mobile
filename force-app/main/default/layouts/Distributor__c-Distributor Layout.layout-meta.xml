@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Layout xmlns="http://soap.sforce.com/2006/04/metadata">
+    <layoutSections><customLabel>true</customLabel><detailHeading>true</detailHeading><editHeading>true</editHeading><label>Distributor Information</label>
+        <layoutColumns>
+            <layoutItems><behavior>Required</behavior><field>Name</field></layoutItems>
+            <layoutItems><behavior>Readonly</behavior><field>Distributor_ID__c</field></layoutItems>
+            <layoutItems><behavior>Edit</behavior><field>Email__c</field></layoutItems>
+            <layoutItems><behavior>Edit</behavior><field>Phone__c</field></layoutItems>
+            <layoutItems><behavior>Edit</behavior><field>Alternate_Phone__c</field></layoutItems>
+        </layoutColumns>
+        <layoutColumns>
+            <layoutItems><behavior>Required</behavior><field>Status__c</field></layoutItems>
+            <layoutItems><behavior>Edit</behavior><field>Joining_Date__c</field></layoutItems>
+            <layoutItems><behavior>Edit</behavior><field>Address__c</field></layoutItems>
+            <layoutItems><behavior>Edit</behavior><field>Remarks__c</field></layoutItems>
+        </layoutColumns><style>TwoColumnsTopToBottom</style>
+    </layoutSections>
+    <layoutSections><customLabel>true</customLabel><detailHeading>true</detailHeading><editHeading>true</editHeading><label>Assignment Information</label>
+        <layoutColumns><layoutItems><behavior>Required</behavior><field>Beat__c</field></layoutItems></layoutColumns><layoutColumns/><style>TwoColumnsTopToBottom</style>
+    </layoutSections>
+    <layoutSections><customLabel>true</customLabel><detailHeading>true</detailHeading><editHeading>true</editHeading><label>Application Access</label>
+        <layoutColumns><layoutItems><behavior>Edit</behavior><field>Login_Email__c</field></layoutItems><layoutItems><behavior>Edit</behavior><field>User__c</field></layoutItems></layoutColumns>
+        <layoutColumns><layoutItems><behavior>Readonly</behavior><field>User_Status__c</field></layoutItems></layoutColumns><style>TwoColumnsTopToBottom</style>
+    </layoutSections>
+    <layoutSections><customLabel>false</customLabel><detailHeading>false</detailHeading><editHeading>false</editHeading><layoutColumns/><style>CustomLinks</style></layoutSections>
+    <relatedLists><fields>NAME</fields><fields>Outlet__c</fields><fields>Beat__c</fields><fields>Allocation_Status__c</fields><fields>Allocation_Date__c</fields><relatedList>Distributor_Outlet_Allocation__c.Distributor__c</relatedList></relatedLists>
+    <relatedLists><relatedList>RelatedActivityList</relatedList></relatedLists>
+    <relatedLists><relatedList>RelatedHistoryList</relatedList></relatedLists>
+    <showEmailCheckbox>false</showEmailCheckbox><showHighlightsPanel>true</showHighlightsPanel><showInteractionLogPanel>false</showInteractionLogPanel><showRunAssignmentRulesCheckbox>false</showRunAssignmentRulesCheckbox><showSubmitAndAttachButton>false</showSubmitAndAttachButton>
+</Layout>

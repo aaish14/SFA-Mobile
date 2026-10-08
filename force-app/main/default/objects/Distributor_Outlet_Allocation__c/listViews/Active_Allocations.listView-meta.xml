@@ -1,0 +1,2 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ListView xmlns="http://soap.sforce.com/2006/04/metadata"><fullName>Active_Allocations</fullName><columns>NAME</columns><columns>Distributor__c</columns><columns>Outlet__c</columns><columns>Beat__c</columns><columns>Allocation_Date__c</columns><columns>Allocation_Status__c</columns><filterScope>Everything</filterScope><filters><field>Allocation_Status__c</field><operation>equals</operation><value>Active</value></filters><label>Active Allocations</label></ListView>

@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Distributor_ID__c</fullName>
+    <displayFormat>DIST-{0000}</displayFormat>
+    <label>Distributor ID</label>
+    <startingNumber>1</startingNumber>
+    <type>AutoNumber</type>
+</CustomField>
