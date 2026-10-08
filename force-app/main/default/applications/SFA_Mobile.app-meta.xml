@@ -19,6 +19,8 @@
     <tabs>Geography__c</tabs>
     <tabs>Attendance__c</tabs>
     <tabs>Beat__c</tabs>
+    <tabs>Distributor__c</tabs>
+    <tabs>Distributor_Outlet_Allocation__c</tabs>
     <tabs>Permanent_Journey_Plan__c</tabs>
     <tabs>PJP_Planner</tabs>
     <tabs>Retailer__c</tabs>
