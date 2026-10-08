@@ -1,0 +1,15 @@
+{
+  "name": "sfa-sales-rep-platform",
+  "private": true,
+  "workspaces": [
+    "mobile",
+    "backend"
+  ],
+  "scripts": {
+    "mobile": "npm run start -w mobile",
+    "web": "npm run web -w mobile",
+    "backend": "npm run dev -w backend",
+    "build": "npm run build -w backend && npm run typecheck -w mobile",
+    "test": "npm test -w backend && npm test -w mobile"
+  }
+}

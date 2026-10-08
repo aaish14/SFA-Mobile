@@ -1,0 +1,69 @@
+export type Store = {
+  id: string;
+  beatId: string;
+  name: string;
+  code: string;
+  address: string;
+  contact: string;
+  status: string;
+  lastVisit: string;
+  lastOrder: number;
+  latitude: number;
+  longitude: number;
+  distance?: number;
+  beatName?: string;
+  owner?: string;
+  phone?: string;
+  email?: string;
+  type?: string;
+  geography?: string;
+  active?: boolean;
+  outstandingAmount?: number;
+  locationStatus?: string;
+};
+export type Beat = {
+  id: string;
+  name: string;
+  stores: number;
+  completed: number;
+  pending: number;
+};
+export type Product = {
+  id: string;
+  name: string;
+  code: string;
+  price: number;
+  stock: number;
+  brand?: string;
+  packSize?: string;
+  mrp?: number;
+  retailerPrice?: number;
+  gstPercent?: number;
+  unitsPerCase?: number;
+  active?: boolean;
+};
+export type OrderLine = {
+  productId: string;
+  productName: string;
+  quantity: number;
+  unitPrice: number;
+  discount: number;
+  amount: number;
+};
+export type RootStack = {
+  Login: undefined;
+  Main: undefined;
+  Beats: undefined;
+  Stores: { beat: Beat };
+  StoreGate: { store: Store };
+  Visit: {
+    store: Store;
+    location: { latitude: number; longitude: number };
+    distance: number;
+  };
+  Orders: undefined;
+  Products: undefined;
+  More: undefined;
+  Outlets: undefined;
+  OutletMap: undefined;
+};

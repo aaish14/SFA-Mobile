@@ -1,0 +1,132 @@
+openapi: 3.0.3
+info:
+  title: SFA External Mobile API
+  version: 1.1.0
+  description: Backend contract for the distributor-isolated SFA mobile application.
+servers:
+  - url: http://localhost:4000/api
+security:
+  - bearerAuth: []
+paths:
+  /health:
+    get:
+      security: []
+      summary: Check API availability
+      responses:
+        "200": { description: API status }
+  /auth/login:
+    post:
+      security: []
+      summary: Create a distributor-scoped application session
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [username, password]
+              properties:
+                username: { type: string }
+                password: { type: string, format: password }
+      responses:
+        "200": { description: Signed session and distributor identity }
+        "401": { description: Invalid login }
+        "403": { description: Salesforce distributor account missing }
+  /auth/session:
+    get:
+      summary: Read the current distributor identity
+      responses:
+        "200": { description: Current session }
+        "401": { description: Session missing or expired }
+  /auth/logout:
+    post:
+      summary: End the local application session
+      responses:
+        "200": { description: Signed out }
+  /dashboard:
+    get:
+      summary: Load distributor dashboard and active schemes
+      responses:
+        "200": { description: Distributor-scoped dashboard }
+  /schemes:
+    get:
+      summary: List active Salesforce schemes
+      responses:
+        "200": { description: Active schemes }
+  /products:
+    get:
+      summary: List sellable Salesforce products
+      responses:
+        "200": { description: Product catalogue }
+  /outlets:
+    get:
+      summary: List outlets belonging to the authenticated distributor
+      responses:
+        "200": { description: Distributor outlets }
+  /orders:
+    get:
+      summary: List orders belonging to the authenticated distributor
+      responses:
+        "200": { description: Distributor orders }
+    post:
+      summary: Create one Salesforce order with validated order items
+      responses:
+        "200": { description: Order created or idempotently reused }
+  /beats:
+    get:
+      summary: List beats assigned to the authenticated distributor
+      responses:
+        "200": { description: Distributor beats }
+  /beats/{beatId}/stores:
+    get:
+      summary: List distributor-authorized outlets in one beat
+      parameters:
+        - in: path
+          name: beatId
+          required: true
+          schema: { type: string }
+      responses:
+        "200": { description: Authorized outlets }
+  /stores/{storeId}:
+    get:
+      summary: Read an authorized outlet
+      parameters:
+        - in: path
+          name: storeId
+          required: true
+          schema: { type: string }
+      responses:
+        "200": { description: Outlet details }
+        "404": { description: Outlet not found or not authorized }
+  /visits:
+    get:
+      summary: List distributor-authorized visits
+      responses:
+        "200": { description: Visit list }
+    post:
+      summary: Create a visit against an approved journey plan
+      responses:
+        "200": { description: Visit created }
+        "422": { description: Approved journey plan required }
+  /store/validate-location:
+    post:
+      summary: Validate the device is within 100 metres of the outlet
+      responses:
+        "200": { description: Distance and allowed result }
+        "422": { description: Outlet geolocation missing }
+  /store/visit/start:
+    post:
+      summary: Check in and create an idempotent Salesforce visit
+      responses:
+        "200": { description: Visit started }
+  /store/checkout:
+    post:
+      summary: Complete the visit in Salesforce
+      responses:
+        "200": { description: Visit completed }
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

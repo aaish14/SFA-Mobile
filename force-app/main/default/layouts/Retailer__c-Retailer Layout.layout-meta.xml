@@ -38,6 +38,10 @@
                 <field>Beat__c</field>
             </layoutItems>
             <layoutItems>
+                <behavior>Edit</behavior>
+                <field>Distributor__c</field>
+            </layoutItems>
+            <layoutItems>
                 <behavior>Readonly</behavior>
                 <field>Geography__c</field>
             </layoutItems>

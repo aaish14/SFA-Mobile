@@ -1,0 +1,22 @@
+{
+  "expo": {
+    "name": "SFA Field Sales",
+    "slug": "sfa-field-sales",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "plugins": [
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "SFA uses your location to validate store visits and attendance."
+        }
+      ]
+    ],
+    "android": {
+      "package": "com.aishwarya.sfafieldsales",
+      "permissions": ["ACCESS_FINE_LOCATION"]
+    },
+    "ios": { "bundleIdentifier": "com.aishwarya.sfafieldsales" }
+  }
+}
