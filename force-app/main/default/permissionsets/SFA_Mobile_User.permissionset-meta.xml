@@ -5,15 +5,7 @@
         <visible>true</visible>
     </applicationVisibilities>
     <classAccesses>
-        <apexClass>SfaAdminController</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
-    <classAccesses>
         <apexClass>SfaDemoDataFactory</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
-    <classAccesses>
-        <apexClass>SfaMobileController</apexClass>
         <enabled>true</enabled>
     </classAccesses>
     <description>Access to the SFA Mobile app, its tabs, records and Apex services.</description>
@@ -764,10 +756,6 @@
         <viewAllFields>false</viewAllFields>
         <viewAllRecords>false</viewAllRecords>
     </objectPermissions>
-    <pageAccesses>
-        <apexPage>SFA_Admin</apexPage>
-        <enabled>true</enabled>
-    </pageAccesses>
     <tabSettings>
         <tab>Asset_Survey__c</tab>
         <visibility>Visible</visibility>
@@ -826,14 +814,6 @@
     </tabSettings>
     <tabSettings>
         <tab>Retailer__c</tab>
-        <visibility>Visible</visibility>
-    </tabSettings>
-    <tabSettings>
-        <tab>SFA_Admin</tab>
-        <visibility>Visible</visibility>
-    </tabSettings>
-    <tabSettings>
-        <tab>SFA_Mobile_Home</tab>
         <visibility>Visible</visibility>
     </tabSettings>
     <tabSettings>

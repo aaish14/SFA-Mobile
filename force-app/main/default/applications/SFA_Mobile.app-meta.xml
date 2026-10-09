@@ -13,8 +13,7 @@
     <isOmniPinnedViewEnabled>false</isOmniPinnedViewEnabled>
     <label>SFA Mobile</label>
     <navType>Standard</navType>
-    <tabs>SFA_Mobile_Home</tabs>
-    <tabs>SFA_Admin</tabs>
+    <tabs>standard-home</tabs>
     <tabs>Employee__c</tabs>
     <tabs>Geography__c</tabs>
     <tabs>Attendance__c</tabs>
