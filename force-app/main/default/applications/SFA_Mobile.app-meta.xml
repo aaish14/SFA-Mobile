@@ -13,7 +13,6 @@
     <isOmniPinnedViewEnabled>false</isOmniPinnedViewEnabled>
     <label>SFA Mobile</label>
     <navType>Standard</navType>
-    <tabs>standard-home</tabs>
     <tabs>Employee__c</tabs>
     <tabs>Geography__c</tabs>
     <tabs>Attendance__c</tabs>
@@ -31,6 +30,7 @@
     <tabs>Product_Return__c</tabs>
     <tabs>Leave_Request__c</tabs>
     <tabs>Product__c</tabs>
+    <tabs>Product_Sales_Configuration__c</tabs>
     <tabs>Scheme__c</tabs>
     <tabs>Sales_Order__c</tabs>
     <tabs>Order_Item__c</tabs>
