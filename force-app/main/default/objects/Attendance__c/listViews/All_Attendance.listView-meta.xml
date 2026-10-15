@@ -6,6 +6,7 @@
     <columns>Sales_Representative__c</columns>
     <columns>Start_Odometer__c</columns>
     <columns>End_Odometer__c</columns>
+    <columns>Distance_Travelled_Km__c</columns>
     <columns>Status__c</columns>
     <filterScope>Everything</filterScope>
     <label>All Attendance</label>

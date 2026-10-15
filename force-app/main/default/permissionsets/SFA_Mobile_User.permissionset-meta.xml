@@ -10,6 +10,11 @@
     </classAccesses>
     <description>Access to the SFA Mobile app, its tabs, records and Apex services.</description>
     <fieldPermissions>
+        <editable>false</editable>
+        <field>Attendance__c.Distance_Travelled_Km__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
         <editable>true</editable>
         <field>Attendance__c.End_Latitude__c</field>
         <readable>true</readable>
