@@ -101,8 +101,8 @@
         <label>Application Access</label>
         <layoutColumns>
             <layoutItems>
-                <behavior>Readonly</behavior>
-                <field>Login_Email__c</field>
+                <behavior>Edit</behavior>
+                <field>Application_Access_Email__c</field>
             </layoutItems>
             <layoutItems>
                 <behavior>Edit</behavior>

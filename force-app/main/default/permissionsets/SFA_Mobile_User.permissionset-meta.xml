@@ -226,6 +226,11 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>true</editable>
+        <field>Employee__c.Application_Access_Email__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
         <field>Employee__c.Beat__c</field>
         <readable>true</readable>
     </fieldPermissions>

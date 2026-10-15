@@ -9,7 +9,10 @@ public with sharing class SfaEmployeeInvitationService {
         List<Messaging.SingleEmailMessage> messages = new List<Messaging.SingleEmailMessage>();
 
         for (Employee__c employee : employees) {
-            if (String.isBlank(employee.Email__c)) {
+            String accessEmail = String.isNotBlank(employee.Application_Access_Email__c)
+                ? employee.Application_Access_Email__c
+                : employee.Email__c;
+            if (String.isBlank(accessEmail)) {
                 continue;
             }
 
@@ -18,13 +21,14 @@ public with sharing class SfaEmployeeInvitationService {
                 : previousRecords.get(employee.Id);
             Boolean isNewEmployee = previousRecord == null;
             Boolean emailChanged = previousRecord != null
-                && employee.Email__c != previousRecord.Email__c;
+                && (employee.Email__c != previousRecord.Email__c
+                    || employee.Application_Access_Email__c != previousRecord.Application_Access_Email__c);
 
             if (!isNewEmployee && !emailChanged) {
                 continue;
             }
 
-            String recipient = employee.Email__c.trim().toLowerCase();
+            String recipient = accessEmail.trim().toLowerCase();
             Messaging.SingleEmailMessage message = new Messaging.SingleEmailMessage();
             message.setToAddresses(new List<String>{ recipient });
             message.setSubject('Your SFA Mobile application access');
