@@ -8,6 +8,10 @@
         <apexClass>SfaDemoDataFactory</apexClass>
         <enabled>true</enabled>
     </classAccesses>
+    <classAccesses>
+        <apexClass>SfaPhaseOnePjpController</apexClass>
+        <enabled>true</enabled>
+    </classAccesses>
     <description>Access to the SFA Mobile app, its tabs, records and Apex services.</description>
     <fieldPermissions>
         <editable>false</editable>

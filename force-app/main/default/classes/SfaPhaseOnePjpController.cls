@@ -49,29 +49,32 @@ public with sharing class SfaPhaseOnePjpController {
     @AuraEnabled
     public static List<PjpRow> getMyPjps() {
         Employee__c employee = currentEmployee();
-        return toRows([
-            SELECT Id, Name, Employee__r.Name, Planning_Start_Date__c, Planning_End_Date__c,
-                   Status__c, Approver__r.Name, Submitted_Date__c, Approved_Date__c,
-                   Rejected_Date__c, Rejection_Reason__c,
-                   (SELECT Beat__c, Beat__r.Name FROM Selected_Beats__r ORDER BY Beat__r.Name)
-            FROM Permanent_Journey_Plan__c
-            WHERE Employee__c = :employee.Id AND Planning_Start_Date__c != null
-            ORDER BY CreatedDate DESC
-        ]);
+        Id employeeId = employee.Id;
+        return toRows(Database.query(
+            'SELECT Id, Name, Employee__r.Name, Planning_Start_Date__c, Planning_End_Date__c, ' +
+            'Status__c, Approver__r.Name, Submitted_Date__c, Approved_Date__c, ' +
+            'Rejected_Date__c, Rejection_Reason__c, ' +
+            '(SELECT Beat__c, Beat__r.Name FROM Selected_Beats__r ORDER BY Beat__r.Name) ' +
+            'FROM Permanent_Journey_Plan__c ' +
+            'WHERE Employee__c = :employeeId AND Planning_Start_Date__c != null ' +
+            'ORDER BY CreatedDate DESC',
+            AccessLevel.SYSTEM_MODE
+        ));
     }
 
     @AuraEnabled
     public static List<PjpRow> getMyApprovals() {
-        Employee__c manager = currentEmployee();
-        return toRows([
-            SELECT Id, Name, Employee__r.Name, Planning_Start_Date__c, Planning_End_Date__c,
-                   Status__c, Approver__r.Name, Submitted_Date__c, Approved_Date__c,
-                   Rejected_Date__c, Rejection_Reason__c,
-                   (SELECT Beat__c, Beat__r.Name FROM Selected_Beats__r ORDER BY Beat__r.Name)
-            FROM Permanent_Journey_Plan__c
-            WHERE Approver__c = :manager.Id AND Status__c = 'Submitted'
-            ORDER BY Submitted_Date__c
-        ]);
+        Id currentUserId = UserInfo.getUserId();
+        return toRows(Database.query(
+            'SELECT Id, Name, Employee__r.Name, Planning_Start_Date__c, Planning_End_Date__c, ' +
+            'Status__c, Approver__r.Name, Submitted_Date__c, Approved_Date__c, ' +
+            'Rejected_Date__c, Rejection_Reason__c, ' +
+            '(SELECT Beat__c, Beat__r.Name FROM Selected_Beats__r ORDER BY Beat__r.Name) ' +
+            'FROM Permanent_Journey_Plan__c ' +
+            'WHERE Approver__r.Salesforce_User__c = :currentUserId AND Status__c = \'Submitted\' ' +
+            'ORDER BY Submitted_Date__c',
+            AccessLevel.SYSTEM_MODE
+        ));
     }
 
     @AuraEnabled
@@ -180,14 +183,16 @@ public with sharing class SfaPhaseOnePjpController {
 
     @AuraEnabled
     public static void decidePjp(Id pjpId, Boolean approve, String rejectionReason) {
-        Employee__c manager = currentEmployee();
-        Permanent_Journey_Plan__c plan = [
-            SELECT Id, Employee__c, Employee__r.Salesforce_User__c, Approver__c, Status__c
-            FROM Permanent_Journey_Plan__c WHERE Id = :pjpId LIMIT 1 FOR UPDATE
-        ];
+        Id currentUserId = UserInfo.getUserId();
+        Permanent_Journey_Plan__c plan = Database.query(
+            'SELECT Id, Employee__c, Employee__r.Salesforce_User__c, Approver__c, ' +
+            'Approver__r.Salesforce_User__c, Status__c FROM Permanent_Journey_Plan__c ' +
+            'WHERE Id = :pjpId LIMIT 1 FOR UPDATE',
+            AccessLevel.SYSTEM_MODE
+        );
         if (plan.Status__c != 'Submitted') throw new AuraHandledException('This PJP is no longer Submitted.');
-        if (plan.Approver__c != manager.Id) throw new AuraHandledException('Only the configured approver can decide this PJP.');
-        if (plan.Employee__r.Salesforce_User__c == UserInfo.getUserId()) {
+        if (plan.Approver__r.Salesforce_User__c != currentUserId) throw new AuraHandledException('Only the configured approver can decide this PJP.');
+        if (plan.Employee__r.Salesforce_User__c == currentUserId) {
             throw new AuraHandledException('An employee cannot approve their own PJP.');
         }
         if (!approve && String.isBlank(rejectionReason)) throw new AuraHandledException('Rejection reason is required.');
@@ -215,7 +220,8 @@ public with sharing class SfaPhaseOnePjpController {
         List<Employee__c> employees = Database.query(
             'SELECT Id, Name, Active__c, Reporting_Manager__c, Reporting_Manager__r.Name, ' +
             'Reporting_Manager__r.Salesforce_User__c FROM Employee__c ' +
-            'WHERE Salesforce_User__c = :currentUserId LIMIT 1',
+            'WHERE Salesforce_User__c = :currentUserId AND Active__c = true ' +
+            'ORDER BY CreatedDate ASC LIMIT 1',
             AccessLevel.SYSTEM_MODE
         );
         if (employees.isEmpty()) throw new AuraHandledException('The logged-in user is not linked to an Employee record.');
