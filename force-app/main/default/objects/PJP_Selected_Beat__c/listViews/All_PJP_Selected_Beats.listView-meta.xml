@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ListView xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>All_PJP_Selected_Beats</fullName>
+    <columns>NAME</columns>
+    <columns>PJP__c</columns>
+    <columns>Beat__c</columns>
+    <columns>Unique_Key__c</columns>
+    <filterScope>Everything</filterScope>
+    <label>All PJP Selected Beats</label>
+</ListView>
