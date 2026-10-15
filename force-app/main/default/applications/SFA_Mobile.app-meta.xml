@@ -25,6 +25,8 @@
     <tabs>Retailer__c</tabs>
     <tabs>Visit__c</tabs>
     <tabs>Asset_Survey__c</tabs>
+    <tabs>Survey__c</tabs>
+    <tabs>Survey_Response__c</tabs>
     <tabs>Competitor_Activity__c</tabs>
     <tabs>SFA_Ticket__c</tabs>
     <tabs>Stock_Check__c</tabs>
