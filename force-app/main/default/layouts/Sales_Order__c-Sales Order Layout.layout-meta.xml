@@ -72,6 +72,7 @@
         <fields>NAME</fields>
         <fields>Product__c</fields>
         <fields>Product_Sales_Configuration__c</fields>
+        <fields>Scheme__c</fields>
         <fields>Case_Quantity__c</fields>
         <fields>Piece_Quantity__c</fields>
         <fields>Total_Pieces__c</fields>

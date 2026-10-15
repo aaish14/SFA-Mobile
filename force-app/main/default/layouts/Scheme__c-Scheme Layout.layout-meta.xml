@@ -82,6 +82,14 @@
         <fields>Active__c</fields>
         <relatedList>Scheme_Product__c.Scheme__c</relatedList>
     </relatedLists>
+    <relatedLists>
+        <fields>NAME</fields>
+        <fields>Sales_Order__c</fields>
+        <fields>Product__c</fields>
+        <fields>Piece_Quantity__c</fields>
+        <fields>Line_Amount__c</fields>
+        <relatedList>Order_Item__c.Scheme__c</relatedList>
+    </relatedLists>
     <showEmailCheckbox>false</showEmailCheckbox>
     <showHighlightsPanel>true</showHighlightsPanel>
     <showInteractionLogPanel>false</showInteractionLogPanel>
