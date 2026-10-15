@@ -43,6 +43,9 @@ public with sharing class SfaAllocationEmployeeService {
         }
 
         for (Distributor_Outlet_Allocation__c allocation : allocations) {
+            if (allocation.Employee__c != null) {
+                continue;
+            }
             Id userId = representativeToUser.get(allocation.Distributor__c);
             allocation.Employee__c = userToEmployee.get(userId);
         }

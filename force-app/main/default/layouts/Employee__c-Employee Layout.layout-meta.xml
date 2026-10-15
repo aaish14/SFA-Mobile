@@ -140,7 +140,6 @@
         <fields>Beat__c</fields>
         <fields>Allocation_Status__c</fields>
         <fields>Allocation_Date__c</fields>
-        <fields>Distributor__c</fields>
         <relatedList>Distributor_Outlet_Allocation__c.Employee__c</relatedList>
     </relatedLists>
     <relatedLists>
