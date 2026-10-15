@@ -4,6 +4,10 @@
     <columns>NAME</columns>
     <columns>Employee_Code__c</columns>
     <columns>Email__c</columns>
+    <columns>Phone__c</columns>
+    <columns>Status__c</columns>
+    <columns>Joining_Date__c</columns>
+    <columns>Beat__c</columns>
     <columns>Salesforce_User__c</columns>
     <columns>Reporting_Manager__c</columns>
     <columns>Hierarchy_Level__c</columns>
