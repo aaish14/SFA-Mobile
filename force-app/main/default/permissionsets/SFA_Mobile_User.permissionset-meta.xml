@@ -314,6 +314,11 @@
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
+        <editable>false</editable>
+        <field>Permanent_Journey_Plan__c.Approved_Outlet_Names__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
         <editable>true</editable>
         <field>Permanent_Journey_Plan__c.Approver__c</field>
         <readable>true</readable>

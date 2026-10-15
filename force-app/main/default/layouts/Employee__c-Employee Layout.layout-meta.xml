@@ -158,6 +158,15 @@
         <fields>Submitted_At__c</fields>
         <relatedList>Survey_Response__c.Employee__c</relatedList>
     </relatedLists>
+    <relatedLists>
+        <fields>NAME</fields>
+        <fields>Planning_Start_Date__c</fields>
+        <fields>Planning_End_Date__c</fields>
+        <fields>Status__c</fields>
+        <fields>Approver__c</fields>
+        <fields>Approved_Outlet_Names__c</fields>
+        <relatedList>Permanent_Journey_Plan__c.Employee__c</relatedList>
+    </relatedLists>
     <showEmailCheckbox>false</showEmailCheckbox>
     <showHighlightsPanel>true</showHighlightsPanel>
     <showInteractionLogPanel>false</showInteractionLogPanel>

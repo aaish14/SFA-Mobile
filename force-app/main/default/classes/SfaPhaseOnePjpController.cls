@@ -186,7 +186,8 @@ public with sharing class SfaPhaseOnePjpController {
         Id currentUserId = UserInfo.getUserId();
         Permanent_Journey_Plan__c plan = Database.query(
             'SELECT Id, Employee__c, Employee__r.Salesforce_User__c, Approver__c, ' +
-            'Approver__r.Salesforce_User__c, Status__c FROM Permanent_Journey_Plan__c ' +
+            'Approver__r.Salesforce_User__c, Status__c, ' +
+            '(SELECT Beat__c FROM Selected_Beats__r) FROM Permanent_Journey_Plan__c ' +
             'WHERE Id = :pjpId LIMIT 1 FOR UPDATE',
             AccessLevel.SYSTEM_MODE
         );
@@ -201,6 +202,7 @@ public with sharing class SfaPhaseOnePjpController {
             plan.Status__c = 'Approved';
             plan.Approved_By__c = UserInfo.getUserId();
             plan.Approved_Date__c = System.now();
+            plan.Approved_Outlet_Names__c = approvedOutletNames(plan.Selected_Beats__r);
             plan.Rejection_Reason__c = null;
         } else {
             plan.Status__c = 'Rejected';
@@ -266,5 +268,24 @@ public with sharing class SfaPhaseOnePjpController {
 
     private static String monthName(Integer monthNumber) {
         return new List<String>{'January','February','March','April','May','June','July','August','September','October','November','December'}[monthNumber - 1];
+    }
+
+    private static String approvedOutletNames(List<PJP_Selected_Beat__c> selectedBeats) {
+        Set<Id> beatIds = new Set<Id>();
+        for (PJP_Selected_Beat__c selection : selectedBeats) {
+            if (selection.Beat__c != null) beatIds.add(selection.Beat__c);
+        }
+        if (beatIds.isEmpty()) return null;
+
+        List<String> outletNames = new List<String>();
+        for (Retailer__c outlet : [
+            SELECT Name FROM Retailer__c
+            WHERE Beat__c IN :beatIds AND Active__c = true
+            ORDER BY Name
+        ]) {
+            outletNames.add(outlet.Name);
+        }
+        String joinedNames = String.join(outletNames, ', ');
+        return joinedNames.length() > 255 ? joinedNames.substring(0, 252) + '...' : joinedNames;
     }
 }
