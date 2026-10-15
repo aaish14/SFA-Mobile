@@ -68,6 +68,17 @@
         <layoutColumns/>
         <style>CustomLinks</style>
     </layoutSections>
+    <relatedLists>
+        <fields>NAME</fields>
+        <fields>Product__c</fields>
+        <fields>Product_Sales_Configuration__c</fields>
+        <fields>Case_Quantity__c</fields>
+        <fields>Piece_Quantity__c</fields>
+        <fields>Total_Pieces__c</fields>
+        <fields>Unit_Price__c</fields>
+        <fields>Line_Amount__c</fields>
+        <relatedList>Order_Item__c.Sales_Order__c</relatedList>
+    </relatedLists>
     <showEmailCheckbox>false</showEmailCheckbox>
     <showHighlightsPanel>true</showHighlightsPanel>
     <showInteractionLogPanel>false</showInteractionLogPanel>

@@ -16,6 +16,10 @@
             </layoutItems>
             <layoutItems>
                 <behavior>Edit</behavior>
+                <field>Employee__c</field>
+            </layoutItems>
+            <layoutItems>
+                <behavior>Edit</behavior>
                 <field>Status__c</field>
             </layoutItems>
             <layoutItems>
@@ -46,6 +50,10 @@
                 <behavior>Edit</behavior>
                 <field>Start_Odometer__c</field>
             </layoutItems>
+            <layoutItems>
+                <behavior>Edit</behavior>
+                <field>Odometer_Entry_Mode__c</field>
+            </layoutItems>
         </layoutColumns>
         <layoutColumns>
             <layoutItems>
@@ -67,6 +75,14 @@
             <layoutItems>
                 <behavior>Readonly</behavior>
                 <field>Distance_Travelled_Km__c</field>
+            </layoutItems>
+            <layoutItems>
+                <behavior>Edit</behavior>
+                <field>Travel_Rate_Per_Km__c</field>
+            </layoutItems>
+            <layoutItems>
+                <behavior>Readonly</behavior>
+                <field>Travel_Amount__c</field>
             </layoutItems>
             <layoutItems>
                 <behavior>Edit</behavior>

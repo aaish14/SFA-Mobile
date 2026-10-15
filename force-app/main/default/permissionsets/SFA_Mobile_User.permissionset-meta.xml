@@ -16,6 +16,11 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>true</editable>
+        <field>Attendance__c.Employee__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
         <field>Attendance__c.End_Latitude__c</field>
         <readable>true</readable>
     </fieldPermissions>
@@ -32,6 +37,11 @@
     <fieldPermissions>
         <editable>true</editable>
         <field>Attendance__c.End_Time__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Attendance__c.Odometer_Entry_Mode__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
@@ -87,6 +97,16 @@
     <fieldPermissions>
         <editable>true</editable>
         <field>Attendance__c.Transport_Mode__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
+        <field>Attendance__c.Travel_Amount__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Attendance__c.Travel_Rate_Per_Km__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>

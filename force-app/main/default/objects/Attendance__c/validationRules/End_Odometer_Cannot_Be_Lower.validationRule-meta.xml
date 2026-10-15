@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ValidationRule xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>End_Odometer_Cannot_Be_Lower</fullName>
+    <active>true</active>
+    <errorConditionFormula>AND(NOT(ISBLANK(Start_Odometer__c)), NOT(ISBLANK(End_Odometer__c)), End_Odometer__c &lt; Start_Odometer__c)</errorConditionFormula>
+    <errorDisplayField>End_Odometer__c</errorDisplayField>
+    <errorMessage>End odometer cannot be lower than start odometer.</errorMessage>
+</ValidationRule>
