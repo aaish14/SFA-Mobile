@@ -110,6 +110,29 @@
         <fields>Active__c</fields>
         <relatedList>Product_Sales_Configuration__c.Product__c</relatedList>
     </relatedLists>
+    <relatedLists>
+        <fields>NAME</fields>
+        <fields>Scheme_Code__c</fields>
+        <fields>Scheme_Type__c</fields>
+        <fields>Minimum_Quantity__c</fields>
+        <fields>Discount_Percent__c</fields>
+        <fields>Discount_Amount__c</fields>
+        <fields>Free_Quantity__c</fields>
+        <fields>Start_Date__c</fields>
+        <fields>End_Date__c</fields>
+        <fields>Active__c</fields>
+        <relatedList>Scheme__c.Product__c</relatedList>
+    </relatedLists>
+    <relatedLists>
+        <fields>NAME</fields>
+        <fields>Scheme_Code__c</fields>
+        <fields>Product__c</fields>
+        <fields>Free_Quantity__c</fields>
+        <fields>Start_Date__c</fields>
+        <fields>End_Date__c</fields>
+        <fields>Active__c</fields>
+        <relatedList>Scheme__c.Free_Product__c</relatedList>
+    </relatedLists>
     <showEmailCheckbox>false</showEmailCheckbox>
     <showHighlightsPanel>true</showHighlightsPanel>
     <showInteractionLogPanel>false</showInteractionLogPanel>
