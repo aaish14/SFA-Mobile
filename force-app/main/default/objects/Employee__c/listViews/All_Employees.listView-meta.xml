@@ -3,6 +3,7 @@
     <fullName>All_Employees</fullName>
     <columns>NAME</columns>
     <columns>Employee_Code__c</columns>
+    <columns>Email__c</columns>
     <columns>Salesforce_User__c</columns>
     <columns>Reporting_Manager__c</columns>
     <columns>Hierarchy_Level__c</columns>

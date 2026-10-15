@@ -156,6 +156,11 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>true</editable>
+        <field>Employee__c.Email__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
         <field>Order_Item__c.Case_Quantity__c</field>
         <readable>true</readable>
     </fieldPermissions>
