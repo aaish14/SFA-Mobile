@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Mobile_Request_Key__c</fullName>
+    <caseSensitive>true</caseSensitive>
+    <description>Unique mobile visit checkout key. Prevents duplicate orders when a connection drops after saving.</description>
+    <externalId>true</externalId>
+    <label>Mobile Request Key</label>
+    <length>80</length>
+    <required>false</required>
+    <trackTrending>false</trackTrending>
+    <type>Text</type>
+    <unique>true</unique>
+</CustomField>
