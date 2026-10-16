@@ -1,4 +1,5 @@
-import React from "react";
+import React, { useEffect } from "react";
+import NetInfo from "@react-native-community/netinfo";
 import { StatusBar } from "expo-status-bar";
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
@@ -14,11 +15,23 @@ import OutletsScreen from "./src/screens/OutletsScreen";
 import LoginScreen from "./src/screens/LoginScreen";
 import OutletMapScreen from "./src/screens/OutletMapScreen";
 import ModuleListScreen from "./src/screens/ModuleListScreen";
+import ExpensesScreen from "./src/screens/ExpensesScreen";
+import DayScreen from "./src/screens/DayScreen";
+import SurveyScreen from "./src/screens/SurveyScreen";
 import type { RootStack } from "./src/types";
+import { flushQueue } from "./src/storage/syncQueue";
 
 const Stack = createNativeStackNavigator<RootStack>();
 
 export default function App() {
+  useEffect(() => {
+    void flushQueue();
+    const unsubscribe = NetInfo.addEventListener((state) => {
+      if (state.isConnected) void flushQueue();
+    });
+    return unsubscribe;
+  }, []);
+
   return (
     <>
       <StatusBar style="light" />
@@ -36,6 +49,9 @@ export default function App() {
           <Stack.Screen name="Outlets" component={OutletsScreen} options={{ headerShown: false }} />
           <Stack.Screen name="OutletMap" component={OutletMapScreen} options={{ title: "Outlet Map" }} />
           <Stack.Screen name="ModuleList" component={ModuleListScreen} options={({ route }) => ({ title: route.params.title })} />
+          <Stack.Screen name="Expenses" component={ExpensesScreen} options={{ title: "Expenses" }} />
+          <Stack.Screen name="Day" component={DayScreen} options={{ title: "Start / End Day" }} />
+          <Stack.Screen name="Survey" component={SurveyScreen} options={{ title: "Outlet Survey" }} />
         </Stack.Navigator>
       </NavigationContainer>
     </>

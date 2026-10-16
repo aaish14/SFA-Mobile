@@ -1,0 +1,16 @@
+{
+  "cli": {
+    "version": ">= 16.0.0"
+  },
+  "build": {
+    "preview": {
+      "distribution": "internal",
+      "android": {
+        "buildType": "apk"
+      },
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://maximize-friends-insert-maintain.trycloudflare.com/api"
+      }
+    }
+  }
+}

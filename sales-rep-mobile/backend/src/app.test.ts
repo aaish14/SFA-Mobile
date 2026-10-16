@@ -27,12 +27,12 @@ describe("SFA API", () => {
     expect(response.body.errorCode).toBe("UNAUTHORIZED");
   });
 
-  it("emails a short-lived sign-in code and keeps distributor identity in the session", async () => {
+  it("returns a short-lived test sign-in code and keeps employee identity in the session", async () => {
     const t = await token();
     const response = await request(app)
       .get("/api/auth/session")
       .set("Authorization", `Bearer ${t}`);
-    expect(response.body.data.user.distributorName).toBe("Edge Communications");
+    expect(response.body.data.user.employeeName).toBe("Demo Employee");
   });
 
   it("rejects an incorrect sign-in code", async () => {
@@ -48,6 +48,19 @@ describe("SFA API", () => {
     const t = await token();
     expect((await request(app).get("/api/dashboard").set("Authorization", `Bearer ${t}`)).body.success).toBe(true);
     expect((await request(app).get("/api/beats").set("Authorization", `Bearer ${t}`)).body.data.length).toBeGreaterThan(0);
+  });
+
+  it("submits more than one expense claim in one request", async () => {
+    const t = await token();
+    const response = await request(app)
+      .post("/api/expenses")
+      .set("Authorization", `Bearer ${t}`)
+      .send({ claims: [
+        { policyId: "policy-travel", amount: 250, remarks: "Bus fare" },
+        { policyId: "policy-food", amount: 110, remarks: "Lunch" },
+      ] });
+    expect(response.body.success).toBe(true);
+    expect(response.body.data).toHaveLength(2);
   });
 
   it("enforces the 100 metre visit radius", async () => {

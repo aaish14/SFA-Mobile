@@ -52,6 +52,32 @@ export type Product = {
   price: number;
   stock: number;
   brand?: string;
+  subBrand?: string;
+  brandAlias?: string;
+  configuration?: "Must Sell" | "Focus Sell" | "Suggested Sell" | "Standard";
+  configurationId?: string;
+  configurationName?: string;
+  minimumQuantity?: number;
+  targetQuantity?: number;
+  configurationStartDate?: string;
+  configurationEndDate?: string;
+  configurations?: Array<{
+    id: string;
+    name: string;
+    type: "Must Sell" | "Focus Sell" | "Suggested Sell";
+    minimumQuantity: number;
+    targetQuantity: number;
+    geography?: string;
+    channel?: string;
+  }>;
+  suggestionSource?: string;
+  previousQuantity?: number;
+  lastFiveOrders?: Array<{
+    orderId: string;
+    orderNumber?: string;
+    orderDate?: string;
+    quantity: number;
+  }>;
   packSize?: string;
   mrp?: number;
   retailerPrice?: number;
@@ -80,6 +106,8 @@ export type OrderLine = {
   amount: number;
   schemeId?: string;
   schemeName?: string;
+  configurationId?: string;
+  configurationType?: string;
 };
 export type RootStack = {
   Login: undefined;
@@ -98,4 +126,7 @@ export type RootStack = {
   Outlets: undefined;
   OutletMap: undefined;
   ModuleList: { moduleName: string; title: string };
+  Expenses: undefined;
+  Day: undefined;
+  Survey: { store: Store; visitId: string; location: { latitude: number; longitude: number } };
 };

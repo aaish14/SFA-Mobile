@@ -14,10 +14,10 @@ Standalone Expo/React Native mobile app with a TypeScript/Express API. It is not
 1. Install Node.js 20 or newer.
 2. The included `.env` uses `USE_MOCK_DATA=false` and the already authenticated Salesforce CLI alias `sfaNewOrg`. For an offline demo, change it to `true`.
 3. Run `npm install --workspaces=false` inside `backend`, then repeat inside `mobile`.
-4. Double-click `START-LOCAL-APP.cmd`, or run `npm run dev` inside `backend`.
-5. In another terminal run `npm run web` inside `mobile` to see the mobile layout at `http://localhost:8081`.
+4. Double-click `START-LOCAL-APP.cmd`. It installs missing dependencies, builds the API and web application, starts both services in the background and opens `http://localhost:8081`.
+5. Run `Stop-Localhost.ps1` whenever you want to stop both localhost services.
 6. For a physical phone, set `EXPO_PUBLIC_API_URL` to the computer's LAN API address, run `npm run mobile`, and scan the Expo Go QR code.
-7. Sign in with the email on an active `Distributor__c` record (or its linked Salesforce User). The API emails a short-lived six-digit code and creates a distributor-scoped session after verification.
+7. Sign in with the email on an active sales representative record. The API emails a short-lived six-digit code and creates a sales-representative-scoped session after verification.
 
 Run verification with `npm run build` and `npm test`.
 

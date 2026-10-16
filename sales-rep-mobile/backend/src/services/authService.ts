@@ -1,29 +1,32 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { env } from "../config/env.js";
 
-export type DistributorIdentity = {
+export type EmployeeIdentity = {
   id: string;
   email: string;
   displayName: string;
-  distributorName: string;
+  employeeName: string;
+  salesforceUserId?: string;
   beatId?: string;
   beatName?: string;
 };
 
-export const mockDistributors: DistributorIdentity[] = [
+export const mockEmployees: EmployeeIdentity[] = [
   {
-    id: "mock-edge-distributor",
+    id: "mock-edge-employee",
     email: "edge@sfa.demo",
-    displayName: "Edge Distributor",
-    distributorName: "Edge Communications",
+    displayName: "Demo Employee",
+    employeeName: "Demo Employee",
+    salesforceUserId: "mock-user-edge",
     beatId: "beat-1",
     beatName: "Lakeside Market Beat",
   },
   {
-    id: "mock-express-distributor",
+    id: "mock-express-employee",
     email: "express@sfa.demo",
-    displayName: "Express Distributor",
-    distributorName: "Express Logistics and Transport",
+    displayName: "Second Employee",
+    employeeName: "Second Employee",
+    salesforceUserId: "mock-user-express",
     beatId: "beat-1",
     beatName: "Lakeside Market Beat",
   },
@@ -44,9 +47,9 @@ function codeForWindow(email: string, window: number) {
   return String((digest.readUInt32BE(0) % 900000) + 100000);
 }
 
-export function findMockDistributor(email: string) {
+export function findMockEmployee(email: string) {
   const normalized = normalizeEmail(email);
-  return mockDistributors.find((item) => item.email === normalized);
+  return mockEmployees.find((item) => item.email === normalized);
 }
 
 export function createLoginCode(email: string) {

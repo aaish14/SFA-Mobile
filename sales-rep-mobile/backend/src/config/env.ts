@@ -60,7 +60,12 @@ export const objectMap = {
   ticket: process.env.TICKET_OBJECT || "SFA_Ticket__c",
   scheme: process.env.SCHEME_OBJECT || "Scheme__c",
   product: process.env.PRODUCT_OBJECT || "Product__c",
+  productSalesConfiguration:
+    process.env.PRODUCT_SALES_CONFIGURATION_OBJECT || "Product_Sales_Configuration__c",
+  productRefusal: process.env.PRODUCT_REFUSAL_OBJECT || "Product_Refusal__c",
   attendance: process.env.ATTENDANCE_OBJECT || "Attendance__c",
+  expensePolicy: process.env.EXPENSE_POLICY_OBJECT || "Expense_Policy__c",
+  expenseClaim: process.env.EXPENSE_CLAIM_OBJECT || "Expense_Claim__c",
   journeyPlan: process.env.JOURNEY_PLAN_OBJECT || "Permanent_Journey_Plan__c",
   assetSurvey: process.env.ASSET_SURVEY_OBJECT || "Asset_Survey__c",
   stockCheck: process.env.STOCK_CHECK_OBJECT || "Stock_Check__c",

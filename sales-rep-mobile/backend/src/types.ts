@@ -16,7 +16,7 @@ export type OrderLine = {
 };
 export type VisitPayload = {
   id: string;
-  distributorId: string;
+  employeeId: string;
   storeId: string;
   storeName: string;
   beatName: string;

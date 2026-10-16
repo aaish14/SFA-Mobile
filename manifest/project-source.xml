@@ -3,28 +3,16 @@
     <types>
         <members>PjpPlannerController</members>
         <members>PjpPlannerControllerTest</members>
-        <members>SfaAdminController</members>
-        <members>SfaAdminControllerTest</members>
         <members>SfaDemoDataFactory</members>
-        <members>SfaMobileController</members>
-        <members>SfaMobileControllerTest</members>
         <members>SfaPhaseOnePjpController</members>
         <members>SfaPhaseOnePjpControllerTest</members>
         <members>SfaRecordedScopeHandler</members>
         <name>ApexClass</name>
     </types>
     <types>
-        <members>SFA_Admin</members>
-        <name>ApexPage</name>
-    </types>
-    <types>
         <members>OutletGeographyTrigger</members>
         <members>PjpApproverTrigger</members>
         <name>ApexTrigger</name>
-    </types>
-    <types>
-        <members>SfaAdminOut</members>
-        <name>AuraDefinitionBundle</name>
     </types>
     <types>
         <members>SFA_Mobile</members>
@@ -193,8 +181,6 @@
         <members>Permanent_Journey_Plan__c</members>
         <members>Product__c</members>
         <members>Retailer__c</members>
-        <members>SFA_Admin</members>
-        <members>SFA_Mobile_Home</members>
         <members>Sales_Order__c</members>
         <members>Scheme__c</members>
         <members>Visit__c</members>
@@ -217,8 +203,6 @@
     <types>
         <members>employeeProfilePicture</members>
         <members>pjpMonthlyPlanner</members>
-        <members>sfaAdminPortal</members>
-        <members>sfaMobileApp</members>
         <name>LightningComponentBundle</name>
     </types>
     <types>

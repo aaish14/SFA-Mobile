@@ -17,7 +17,7 @@ export default function OutletMapScreen() {
   }, []);
   const navigate = (outlet: Store) => Linking.openURL(`https://www.openstreetmap.org/directions?engine=fossgis_osrm_car&route=;${outlet.latitude},${outlet.longitude}`);
   return <SafeAreaView style={s.root}><ScrollView contentContainerStyle={s.content}>
-    <Text style={s.title}>OUTLET MAP</Text><Text style={s.subtitle}>Salesforce outlet locations assigned to your distributor</Text>
+    <Text style={s.title}>OUTLET MAP</Text><Text style={s.subtitle}>Salesforce outlet locations assigned to your Employee account</Text>
     {loading && <ActivityIndicator color={colors.brand} />}
     {!!error && <Card style={s.error}><Text style={s.errorTitle}>Map data unavailable</Text><Text style={s.subtitle}>{error}</Text></Card>}
     {!loading && !error && !outlets.length && <Card><Text style={s.name}>No mapped outlets</Text><Text style={s.subtitle}>Ask the administrator to maintain outlet geolocation in Salesforce.</Text></Card>}

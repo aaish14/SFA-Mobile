@@ -41,7 +41,7 @@ async function sendEmail(
     throw new Error("Email delivery has not been configured on the server");
   }
 
-  await salesforce.invokeStandardAction("emailSimple", [
+  const results = await salesforce.invokeStandardAction("emailSimple", [
     {
       recipientAddresses: [recipient],
       emailSubject: subject,
@@ -50,31 +50,37 @@ async function sendEmail(
       senderType: "CurrentUser",
     },
   ]);
+
+  const deliveryResult = Array.isArray(results) ? results[0] : undefined;
+  if (!deliveryResult?.isSuccess) {
+    const deliveryError = deliveryResult?.errors?.[0]?.message;
+    throw new Error(deliveryError || "Salesforce did not accept the email for delivery");
+  }
 }
 
-export async function sendDistributorLoginCode(
+export async function sendEmployeeLoginCode(
   recipient: string,
-  distributorName: string,
+  employeeName: string,
   code: string,
 ) {
   await sendEmail(
     recipient,
     "Your SFA Mobile sign-in code",
-    `Hello ${distributorName},\n\nYour SFA Mobile sign-in code is ${code}. It expires in ${env.AUTH_CODE_TTL_MINUTES} minutes.\n\nIf you did not request this code, you can ignore this email.`,
-    `<p>Hello ${distributorName},</p><p>Your SFA Mobile sign-in code is:</p><p style="font-size:28px;font-weight:700;letter-spacing:6px">${code}</p><p>This code expires in ${env.AUTH_CODE_TTL_MINUTES} minutes. If you did not request it, you can ignore this email.</p>`,
+    `Hello ${employeeName},\n\nYour SFA Mobile sign-in code is ${code}. It expires in ${env.AUTH_CODE_TTL_MINUTES} minutes.\n\nIf you did not request this code, you can ignore this email.`,
+    `<p>Hello ${employeeName},</p><p>Your SFA Mobile sign-in code is:</p><p style="font-size:28px;font-weight:700;letter-spacing:6px">${code}</p><p>This code expires in ${env.AUTH_CODE_TTL_MINUTES} minutes. If you did not request it, you can ignore this email.</p>`,
   );
 }
 
 export async function sendDistributorInvitation(
   recipient: string,
-  distributorName: string,
+  employeeName: string,
 ) {
   const link = env.APP_PUBLIC_URL;
   await sendEmail(
     recipient,
     "Your SFA Mobile application link",
-    `Hello ${distributorName},\n\nOpen the SFA Mobile application: ${link}\n\nEnter this email address to receive your secure sign-in code.`,
-    `<p>Hello ${distributorName},</p><p>Your SFA Mobile application is ready.</p><p><a href="${link}" style="display:inline-block;padding:12px 20px;background:#1677c8;color:#fff;text-decoration:none;border-radius:8px;font-weight:700">Open SFA Mobile</a></p><p>Enter <strong>${recipient}</strong> on the login page to receive your secure sign-in code.</p>`,
+    `Hello ${employeeName},\n\nOpen the SFA Mobile application: ${link}\n\nEnter this email address to receive your secure sign-in code.`,
+    `<p>Hello ${employeeName},</p><p>Your SFA Mobile application is ready.</p><p><a href="${link}" style="display:inline-block;padding:12px 20px;background:#1677c8;color:#fff;text-decoration:none;border-radius:8px;font-weight:700">Open SFA Mobile</a></p><p>Enter <strong>${recipient}</strong> on the login page to receive your secure sign-in code.</p>`,
   );
 }
 

@@ -33,8 +33,6 @@
         <members>Retailer__c</members>
         <members>Sales_Order__c</members>
         <members>Scheme__c</members>
-        <members>SFA_Admin</members>
-        <members>SFA_Mobile_Home</members>
         <members>Visit__c</members>
         <name>CustomTab</name>
     </types>

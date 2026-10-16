@@ -1,16 +1,15 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { ActivityIndicator, Alert, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View } from "react-native";
-import * as Location from "expo-location";
 import { useNavigation } from "@react-navigation/native";
-import { api, post } from "../api/client";
-import { Button, Card, Money } from "../components/ui";
+import { api } from "../api/client";
+import { Card, Money } from "../components/ui";
 import { colors } from "../constants/theme";
 import { orgSchemes } from "../data/orgSchemes";
 import BottomNav from "../components/BottomNav";
 import BrandHeader from "../components/BrandHeader";
 
 type Scheme = { id: string; name: string; type?: string; product?: string; products?: string[]; benefit?: string; description?: string; endDate?: string };
-type Dashboard = { distributorName?: string; name?: string; userName?: string; loginEmail?: string; beatName?: string; target?: number; achievement?: number; totalOrders?: number; pendingOrders?: number; todayVisits?: number; completedVisits?: number; pendingDeliveries?: number; outstandingAmount?: number; schemes?: Scheme[] };
+type Dashboard = { employeeName?: string; name?: string; userName?: string; loginEmail?: string; beatName?: string; target?: number; achievement?: number; totalOrders?: number; pendingOrders?: number; todayVisits?: number; completedVisits?: number; pendingDeliveries?: number; outstandingAmount?: number; schemes?: Scheme[] };
 
 const displayDate = (value?: string) => {
   if (!value) return "Not specified";
@@ -23,8 +22,6 @@ export default function HomeScreen() {
   const [data, setData] = useState<Dashboard>();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [starting, setStarting] = useState(false);
-  const [startedAt, setStartedAt] = useState("");
 
   const loadDashboard = async () => {
     setLoading(true);
@@ -44,29 +41,6 @@ export default function HomeScreen() {
     return Math.min(Math.round((data.achievement / data.target) * 100), 100);
   }, [data]);
 
-  const startDay = async () => {
-    try {
-      setStarting(true);
-      const permission = await Location.requestForegroundPermissionsAsync();
-      if (permission.status !== "granted") {
-        Alert.alert("Location permission required", "Allow location access to capture the Start Day location.");
-        return;
-      }
-      const position = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
-      let startTime = new Date();
-      try {
-        const result = await post<{ startTime?: string }>("/day/start", { location: { latitude: position.coords.latitude, longitude: position.coords.longitude } });
-        startTime = new Date(result.startTime || Date.now());
-        Alert.alert("Day started", "Attendance time and location were saved successfully.");
-      } catch {
-        Alert.alert("Day started locally", "Time and location were captured. Salesforce synchronization is pending until the API is available.");
-      }
-      setStartedAt(startTime.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" }));
-    } catch (reason: any) {
-      Alert.alert("Unable to start day", reason.message || "Please try again.");
-    } finally { setStarting(false); }
-  };
-
   const metrics = [
     ["Total Orders", data?.totalOrders, "▤"],
     ["Pending Orders", data?.pendingOrders, "▤"],
@@ -81,8 +55,8 @@ export default function HomeScreen() {
     <SafeAreaView style={s.safe}><View style={s.shell}>
       <BrandHeader/><ScrollView style={s.page} contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
         <View style={s.header}>
-          <View style={s.headerRow}><View style={s.identity}><Text style={s.appLabel}>DISTRIBUTOR HUB</Text><Text style={s.distributor}>{data?.distributorName || "Distributor"}</Text><Text style={s.manager}>User: <Text style={{fontWeight:"900"}}>{data?.userName || "Loading…"}</Text></Text><Text style={s.profileLine}>{data?.loginEmail || ""}</Text><Text style={s.profileLine}>{data?.beatName ? `Assigned beat: ${data.beatName}` : ""}</Text></View><Text style={s.date}>▣ {new Date().toLocaleDateString("en-IN", { weekday:"short",day:"numeric",month:"short",year:"numeric" })}</Text></View>
-          <View style={s.headerActions}><Pressable style={s.startPill} onPress={startDay}><Text style={s.startPillText}>{startedAt?"✓ Day Started":"▷ Start Day"}</Text></Pressable><Pressable style={s.routePill} onPress={()=>navigation.navigate("Outlets")}><Text style={s.routeText}>➤ Today&apos;s Route</Text></Pressable></View>
+          <View style={s.headerRow}><View style={s.identity}><Text style={s.appLabel}>EMPLOYEE HUB</Text><Text style={s.distributor}>{data?.employeeName || "Employee"}</Text><Text style={s.manager}>User: <Text style={{fontWeight:"900"}}>{data?.userName || "Loading…"}</Text></Text><Text style={s.profileLine}>{data?.loginEmail || ""}</Text><Text style={s.profileLine}>{data?.beatName ? `Assigned beat: ${data.beatName}` : ""}</Text></View><Text style={s.date}>▣ {new Date().toLocaleDateString("en-IN", { weekday:"short",day:"numeric",month:"short",year:"numeric" })}</Text></View>
+          <View style={s.headerActions}><Pressable style={s.startPill} onPress={()=>navigation.navigate("Day")}><Text style={s.startPillText}>▷ Start / End Day</Text></Pressable><Pressable style={s.routePill} onPress={()=>navigation.navigate("Outlets")}><Text style={s.routeText}>➤ Today&apos;s Route</Text></Pressable></View>
         </View>
 
         {loading && <View style={s.loading}><ActivityIndicator color={colors.brand} /><Text style={s.muted}>Loading live Salesforce data…</Text></View>}

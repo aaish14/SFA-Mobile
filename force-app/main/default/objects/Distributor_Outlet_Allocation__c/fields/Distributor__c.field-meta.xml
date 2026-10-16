@@ -1,2 +1,24 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<CustomField xmlns="http://soap.sforce.com/2006/04/metadata"><fullName>Distributor__c</fullName><label>Distributor</label><referenceTo>Distributor__c</referenceTo><relationshipLabel>Outlet Allocations</relationshipLabel><relationshipName>Outlet_Allocations</relationshipName><relationshipOrder>0</relationshipOrder><reparentableMasterDetail>false</reparentableMasterDetail><trackHistory>true</trackHistory><type>MasterDetail</type><writeRequiresMasterRead>false</writeRequiresMasterRead></CustomField>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Distributor__c</fullName>
+    <deleteConstraint>SetNull</deleteConstraint>
+    <label>Sales Representative</label>
+    <lookupFilter>
+        <active>true</active>
+        <booleanFilter>1</booleanFilter>
+        <filterItems>
+            <field>Distributor__c.Beat__c</field>
+            <operation>equals</operation>
+            <valueField>$Source.Beat__c</valueField>
+        </filterItems>
+        <infoMessage>Select a sales representative belonging to the selected Beat.</infoMessage>
+        <isOptional>false</isOptional>
+    </lookupFilter>
+    <referenceTo>Distributor__c</referenceTo>
+    <relationshipLabel>Outlet Allocations</relationshipLabel>
+    <relationshipName>Outlet_Allocations</relationshipName>
+    <required>false</required>
+    <trackHistory>true</trackHistory>
+    <trackTrending>false</trackTrending>
+    <type>Lookup</type>
+</CustomField>

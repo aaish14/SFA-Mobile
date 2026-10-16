@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ListView xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Active_Expense_Policies</fullName>
+    <columns>NAME</columns>
+    <columns>Expense_Type__c</columns>
+    <columns>Category__c</columns>
+    <columns>Rate_Type__c</columns>
+    <columns>Rate__c</columns>
+    <columns>Maximum_Amount__c</columns>
+    <columns>Receipt_Required__c</columns>
+    <columns>Geography__c</columns>
+    <columns>Start_Date__c</columns>
+    <columns>End_Date__c</columns>
+    <filterScope>Everything</filterScope>
+    <filters>
+        <field>Active__c</field>
+        <operation>equals</operation>
+        <value>1</value>
+    </filters>
+    <label>Active Expense Policies</label>
+</ListView>

@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ValidationRule xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Employee_Or_Representative_Required</fullName>
+    <active>true</active>
+    <errorConditionFormula>AND(ISBLANK(Employee__c), ISBLANK(Distributor__c))</errorConditionFormula>
+    <errorDisplayField>Employee__c</errorDisplayField>
+    <errorMessage>Select an Employee for this outlet allocation.</errorMessage>
+</ValidationRule>

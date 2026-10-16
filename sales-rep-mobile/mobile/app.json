@@ -5,8 +5,18 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
+    "plugins": [
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "SFA uses your location to validate store visits and attendance."
+        }
+      ]
+    ],
     "android": {
       "package": "com.aishwarya.sfafieldsales",
+      "versionCode": 8,
+      "usesCleartextTraffic": true,
       "permissions": ["ACCESS_FINE_LOCATION"]
     },
     "ios": {
@@ -14,6 +24,12 @@
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "SFA uses your location to validate store visits and attendance."
       }
-    }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "8257be1a-9198-49db-b5e3-27ea629a5114"
+      }
+    },
+    "owner": "aishwarya1412"
   }
 }

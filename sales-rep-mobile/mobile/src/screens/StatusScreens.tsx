@@ -45,7 +45,7 @@ export function ProfileScreen() {
   return (
     <View style={s.root}>
       <Text style={s.title}>Aishwarya</Text>
-      <Text style={s.muted}>Sales Representative</Text>
+      <Text style={s.muted}>Employee</Text>
       <Card>
         <Label>Offline synchronization</Label>
         <Text style={s.big}>{pending} pending</Text>

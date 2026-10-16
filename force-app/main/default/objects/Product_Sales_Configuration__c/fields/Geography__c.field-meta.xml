@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Geography__c</fullName>
+    <deleteConstraint>SetNull</deleteConstraint>
+    <description>Optional geography scope. Leave blank when the configuration applies everywhere.</description>
+    <label>Geography</label>
+    <referenceTo>Geography__c</referenceTo>
+    <relationshipLabel>Product Sales Configurations</relationshipLabel>
+    <relationshipName>Product_Sales_Configurations</relationshipName>
+    <required>false</required>
+    <trackHistory>false</trackHistory>
+    <trackTrending>false</trackTrending>
+    <type>Lookup</type>
+</CustomField>

@@ -15,3 +15,20 @@ work/
 .DS_Store
 Thumbs.db
 
+# Secrets, device signing keys, local data snapshots and build artifacts
+.env
+.env.*
+!.env.example
+credentials.json
+*.pem
+*.key
+*.jks
+*.keystore
+.expo/
+node_modules.incomplete/
+diagnostics/
+releases/
+*.apk
+*.aab
+*.zip
+

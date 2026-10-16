@@ -1,7 +1,7 @@
 export const rep = {
   id: "rep-1",
   name: "Aishwarya",
-  role: "Sales Representative",
+  role: "Employee",
   target: 100000,
   achievement: 65000,
 };

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Alert, KeyboardAvoidingView, Platform, SafeAreaView, StyleSheet, Text, TextInput, View } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
@@ -10,7 +10,7 @@ import type { RootStack } from "../types";
 type CodeDelivery = { maskedEmail: string; expiresInMinutes: number; testCode?: string };
 type LoginResult = {
   token: string;
-  user: { displayName: string; distributorName: string; distributorId: string };
+  user: { displayName: string; employeeName: string; employeeId: string };
 };
 
 export default function LoginScreen({ navigation }: NativeStackScreenProps<RootStack, "Login">) {
@@ -19,6 +19,14 @@ export default function LoginScreen({ navigation }: NativeStackScreenProps<RootS
   const [delivery, setDelivery] = useState<CodeDelivery>();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    AsyncStorage.multiGet(["token", "currentUser"]).then((entries) => {
+      const savedToken = entries[0][1];
+      const savedUser = entries[1][1];
+      if (savedToken && savedUser) navigation.replace("Main");
+    });
+  }, [navigation]);
 
   const requestCode = async () => {
     try {
@@ -38,7 +46,7 @@ export default function LoginScreen({ navigation }: NativeStackScreenProps<RootS
   const showCodeEntry = () => {
     const normalizedEmail = email.trim().toLowerCase();
     if (!/^\S+@\S+\.\S+$/.test(normalizedEmail)) {
-      Alert.alert("Email required", "Enter the distributor email address first.");
+      Alert.alert("Email required", "Enter the Employee email address first.");
       return;
     }
     setDelivery({
@@ -73,17 +81,17 @@ export default function LoginScreen({ navigation }: NativeStackScreenProps<RootS
       <KeyboardAvoidingView style={styles.content} behavior={Platform.OS === "ios" ? "padding" : undefined}>
         <View style={styles.brandPanel}>
           <View style={styles.logoBadge}><Text style={styles.logoText}>SFA</Text></View>
-          <Text style={styles.eyebrow}>DISTRIBUTOR PORTAL</Text>
+          <Text style={styles.eyebrow}>EMPLOYEE PORTAL</Text>
           <Text style={styles.title}>Your field-sales workspace</Text>
           <Text style={styles.subtitle}>View assigned outlets, follow the beat and manage every visit from one secure mobile application.</Text>
         </View>
 
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>{delivery ? "Enter verification code" : "Distributor sign in"}</Text>
+          <Text style={styles.cardTitle}>{delivery ? "Enter verification code" : "Employee sign in"}</Text>
           <Text style={styles.cardCopy}>
             {delivery
               ? `We sent a 6-digit code to ${delivery.maskedEmail}. It is valid for ${delivery.expiresInMinutes} minutes.`
-              : "Use the email linked to your active distributor record in Salesforce."}
+              : "Use the email linked to your active Employee record in Salesforce."}
           </Text>
           <Text style={styles.label}>Email address</Text>
           <TextInput
@@ -93,7 +101,7 @@ export default function LoginScreen({ navigation }: NativeStackScreenProps<RootS
             autoCapitalize="none"
             autoCorrect={false}
             keyboardType="email-address"
-            placeholder="distributor@company.com"
+            placeholder="employee@company.com"
             editable={!delivery && !busy}
           />
 

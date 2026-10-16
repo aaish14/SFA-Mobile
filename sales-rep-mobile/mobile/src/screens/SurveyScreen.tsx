@@ -1,0 +1,37 @@
+import React, { useEffect, useState } from "react";
+import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { NativeStackScreenProps } from "@react-navigation/native-stack";
+import { api, post } from "../api/client";
+import { Button, Card, Label } from "../components/ui";
+import { colors } from "../constants/theme";
+import type { RootStack } from "../types";
+
+type Question = { id:string; text:string; type:string; options:string[]; required:boolean };
+type Survey = { id:string; name:string; type:string; instructions?:string; ratingTarget?:string; maximumRating:number; requireBeforeImage:boolean; requireAfterImage:boolean; questions:Question[] };
+
+export default function SurveyScreen({ route, navigation }: NativeStackScreenProps<RootStack,"Survey">) {
+  const [surveys,setSurveys]=useState<Survey[]>([]), [selected,setSelected]=useState<Survey>(), [answers,setAnswers]=useState<Record<string,string|string[]>>({});
+  const [beforeImageUrl,setBeforeImageUrl]=useState(""), [afterImageUrl,setAfterImageUrl]=useState(""), [remarks,setRemarks]=useState(""), [rating,setRating]=useState(0);
+  const [loading,setLoading]=useState(true), [saving,setSaving]=useState(false), [error,setError]=useState("");
+  const load=()=>{setLoading(true);setError("");api<Survey[]>(`/surveys?outletId=${encodeURIComponent(route.params.store.id)}`).then((rows)=>{setSurveys(rows);setSelected(rows[0]);}).catch((e)=>setError(e.message)).finally(()=>setLoading(false));};
+  useEffect(load,[]);
+  const setAnswer=(id:string,value:string|string[])=>setAnswers((current)=>({...current,[id]:value}));
+  const chooseMultiple=(question:Question,option:string)=>{const current=Array.isArray(answers[question.id])?answers[question.id] as string[]:[];setAnswer(question.id,current.includes(option)?current.filter((value)=>value!==option):[...current,option]);};
+  const submit=async(status:"Draft"|"Completed")=>{
+    if(!selected)return;
+    try{setSaving(true);const result=await post<{id:string;status:string}>("/survey-responses",{surveyId:selected.id,visitId:route.params.visitId,status,answers:Object.entries(answers).map(([questionId,value])=>({questionId,value})),overallRating:rating||undefined,remarks,beforeImageUrl,afterImageUrl,location:route.params.location,startedAt:new Date().toISOString()});Alert.alert("Survey saved",`${selected.name} was saved as ${result.status}.`);if(status==="Completed")navigation.goBack();}
+    catch(e:any){Alert.alert("Unable to save survey",e.message||"Try again.");}finally{setSaving(false);}
+  };
+  if(loading)return <View style={s.center}><ActivityIndicator color={colors.brand}/><Text>Loading Salesforce surveys…</Text></View>;
+  return <ScrollView contentContainerStyle={s.body}><Text style={s.title}>Outlet Surveys</Text><Text style={s.sub}>{route.params.store.name} · only active surveys for this outlet type are shown</Text>{!!error&&<Pressable style={s.error} onPress={load}><Text>{error} · Tap to retry</Text></Pressable>}{!surveys.length&&!error&&<Card><Text>No applicable surveys are active today.</Text></Card>}
+    <View style={s.tabs}>{surveys.map((survey)=><Pressable key={survey.id} style={[s.tab,selected?.id===survey.id&&s.tabOn]} onPress={()=>{setSelected(survey);setAnswers({});setRating(0);}}><Text style={selected?.id===survey.id?s.tabTextOn:s.tabText}>{survey.name}</Text></Pressable>)}</View>
+    {selected&&<Card><Label>{selected.type.toUpperCase()}</Label><Text style={s.name}>{selected.name}</Text>{!!selected.instructions&&<Text style={s.instructions}>{selected.instructions}</Text>}
+      {selected.type==="Rating"&&<><Label>RATE {selected.ratingTarget||"OUTLET"}</Label><View style={s.rating}>{Array.from({length:selected.maximumRating||5},(_,index)=>index+1).map((value)=><Pressable key={value} onPress={()=>setRating(value)}><Text style={[s.star,value<=rating&&s.starOn]}>★</Text></Pressable>)}</View></>}
+      {(selected.type==="Image Upload"||selected.requireBeforeImage)&&<><Label>BEFORE ARRANGEMENT IMAGE {selected.requireBeforeImage?"*":""}</Label><TextInput style={s.input} value={beforeImageUrl} onChangeText={setBeforeImageUrl} placeholder="Paste captured before-image URL" autoCapitalize="none"/></>}
+      {(selected.type==="Image Upload"||selected.requireAfterImage)&&<><Label>AFTER ARRANGEMENT IMAGE {selected.requireAfterImage?"*":""}</Label><TextInput style={s.input} value={afterImageUrl} onChangeText={setAfterImageUrl} placeholder="Paste captured after-image URL" autoCapitalize="none"/></>}
+      {selected.questions.map((question)=><View key={question.id} style={s.question}><Label>{question.text}{question.required?" *":""}</Label>{question.type==="Single Choice"?<View style={s.options}>{question.options.map((option)=><Pressable key={option} style={[s.option,answers[question.id]===option&&s.optionOn]} onPress={()=>setAnswer(question.id,option)}><Text>{answers[question.id]===option?"✓ ":""}{option}</Text></Pressable>)}</View>:question.type==="Multiple Choice"?<View style={s.options}>{question.options.map((option)=>{const checked=Array.isArray(answers[question.id])&&(answers[question.id] as string[]).includes(option);return <Pressable key={option} style={[s.option,checked&&s.optionOn]} onPress={()=>chooseMultiple(question,option)}><Text>{checked?"✓ ":""}{option}</Text></Pressable>;})}</View>:question.type==="Rating"?<View style={s.rating}>{[1,2,3,4,5].map((value)=><Pressable key={value} onPress={()=>setAnswer(question.id,String(value))}><Text style={[s.star,value<=Number(answers[question.id]||0)&&s.starOn]}>★</Text></Pressable>)}</View>:<TextInput style={s.input} value={String(answers[question.id]||"")} onChangeText={(value)=>setAnswer(question.id,value)} keyboardType={question.type==="Number"||question.type==="Phone"?"phone-pad":"default"} placeholder={`Enter ${question.type.toLowerCase()} answer`}/>}</View>)}
+      <Label>REMARKS</Label><TextInput style={[s.input,s.notes]} value={remarks} onChangeText={setRemarks} multiline placeholder="Survey remarks"/><Button title="SAVE DRAFT" kind="secondary" disabled={saving} onPress={()=>submit("Draft")}/><Button title="SUBMIT SURVEY" disabled={saving} onPress={()=>submit("Completed")}/>
+    </Card>}
+  </ScrollView>;
+}
+const s=StyleSheet.create({body:{padding:16,paddingBottom:50,backgroundColor:"#F5F1E8"},center:{flex:1,alignItems:"center",justifyContent:"center",gap:10},title:{fontSize:25,fontWeight:"900",color:colors.ink},sub:{color:colors.muted,marginBottom:14},error:{backgroundColor:"#FFE8E8",padding:12,borderRadius:10},tabs:{flexDirection:"row",flexWrap:"wrap",gap:8,marginBottom:12},tab:{padding:10,borderWidth:1,borderColor:colors.border,borderRadius:12,backgroundColor:"white"},tabOn:{backgroundColor:colors.brand},tabText:{color:colors.ink,fontWeight:"700"},tabTextOn:{color:"white",fontWeight:"900"},name:{fontSize:20,fontWeight:"900",color:colors.ink,marginVertical:8},instructions:{color:colors.muted,lineHeight:20,marginBottom:14},question:{marginTop:14},input:{borderWidth:1,borderColor:colors.border,borderRadius:12,padding:13,backgroundColor:"white",marginVertical:6},notes:{minHeight:80,textAlignVertical:"top"},options:{flexDirection:"row",flexWrap:"wrap",gap:7,marginTop:7},option:{borderWidth:1,borderColor:colors.border,borderRadius:18,paddingVertical:8,paddingHorizontal:11,backgroundColor:"white"},optionOn:{borderColor:colors.brand,backgroundColor:"#DFF3EF"},rating:{flexDirection:"row",gap:7,marginVertical:8},star:{fontSize:32,color:"#CBD5D3"},starOn:{color:"#F5B82E"}});

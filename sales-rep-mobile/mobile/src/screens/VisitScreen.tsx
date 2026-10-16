@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import {
   Alert,
   Platform,
+  Pressable,
   ScrollView,
   StyleSheet,
   Text,
@@ -18,6 +19,8 @@ import { colors } from "../constants/theme";
 import { enqueue } from "../storage/syncQueue";
 import type { OrderLine, Product, RootStack } from "../types";
 type Action = "order" | "return" | "competitor" | "ticket" | "stock" | "asset" | "revisit" | null;
+type OrderView = "All Products" | "Must Sell" | "Focus Sell" | "Suggested Sell";
+const refusalReasons = ["Stock already available", "Low demand", "No product demand", "Product not selling", "Season expired", "Other"];
 export default function VisitScreen({
   route,
   navigation,
@@ -32,6 +35,16 @@ export default function VisitScreen({
     [tickets, setTickets] = useState<any[]>([]),
     [startError, setStartError] = useState(""),
     [completed, setCompleted] = useState(false);
+  const [orderView, setOrderView] = useState<OrderView>("All Products");
+  const [productSearch, setProductSearch] = useState("");
+  const [brandFilter, setBrandFilter] = useState("All brands");
+  const [subBrandFilter, setSubBrandFilter] = useState("All sub-brands");
+  const [aliasFilter, setAliasFilter] = useState("All aliases");
+  const [refusedProductIds, setRefusedProductIds] = useState<string[]>([]);
+  const [selectedRefusalReason, setSelectedRefusalReason] = useState("");
+  const [isCompleting, setIsCompleting] = useState(false);
+  const [completionMessage, setCompletionMessage] = useState("");
+  const [completionError, setCompletionError] = useState("");
   const startVisit = () => {
     setStartError("");
     Promise.all([
@@ -40,12 +53,11 @@ export default function VisitScreen({
         location: route.params.location,
         requestId: `visit-${Date.now()}`,
       }),
-      api<Product[]>("/products"),
+      api<Product[]>(`/products?outletId=${encodeURIComponent(route.params.store.id)}`),
     ])
       .then(([v, p]) => {
         setVisit(v);
         setProducts(p);
-        setAction("order");
       })
       .catch((e) => {
         setStartError(e.message || "Visit could not start.");
@@ -56,19 +68,64 @@ export default function VisitScreen({
     startVisit();
   }, []);
   const total = useMemo(() => lines.reduce((s, l) => s + l.amount, 0), [lines]);
-  const selectedProduct = products.find((product) => product.id === (form.productId || products[0]?.id));
+  const brands = useMemo(() => ["All brands", ...Array.from(new Set(products.map((product) => product.brand).filter(Boolean) as string[]))], [products]);
+  const subBrands = useMemo(() => ["All sub-brands", ...Array.from(new Set(products.map((product) => product.subBrand).filter(Boolean) as string[]))], [products]);
+  const aliases = useMemo(() => ["All aliases", ...Array.from(new Set(products.map((product) => product.brandAlias).filter(Boolean) as string[]))], [products]);
+  const visibleProducts = useMemo(() => products.filter((product) => {
+    const matchesView = orderView === "All Products" || product.configuration === orderView || product.configurations?.some((configuration) => configuration.type === orderView);
+    const matchesBrand = brandFilter === "All brands" || product.brand === brandFilter;
+    const matchesSubBrand = subBrandFilter === "All sub-brands" || product.subBrand === subBrandFilter;
+    const matchesAlias = aliasFilter === "All aliases" || product.brandAlias === aliasFilter;
+    const text = `${product.name} ${product.code} ${product.brand || ""} ${product.subBrand || ""} ${product.brandAlias || ""}`.toLowerCase();
+    return matchesView && matchesBrand && matchesSubBrand && matchesAlias && text.includes(productSearch.toLowerCase());
+  }), [products, orderView, brandFilter, subBrandFilter, aliasFilter, productSearch]);
+  const selectedProduct = visibleProducts.find((product) => product.id === form.productId) || visibleProducts[0];
+  const selectedConfiguration = selectedProduct?.configurations?.find((configuration) => configuration.type === orderView) || selectedProduct?.configurations?.find((configuration) => configuration.type === "Must Sell") || selectedProduct?.configurations?.[0];
   const selectedScheme = selectedProduct?.schemes?.find((scheme) => scheme.id === form.schemeId);
   const update = (k: string, v: string) => setForm((x) => ({ ...x, [k]: v }));
+  const selectView = (view: OrderView) => {
+    setOrderView(view);
+    setSelectedRefusalReason("");
+    setForm((current) => ({ ...current, productId: "", schemeId: "", refusalNotes: "" }));
+  };
+  const cycleFilter = (values: string[], current: string, setter: (value: string) => void) => {
+    const index = Math.max(0, values.indexOf(current));
+    setter(values[(index + 1) % values.length]);
+    setSelectedRefusalReason("");
+    setForm((value) => ({ ...value, productId: "", schemeId: "", refusalNotes: "" }));
+  };
+  const selectRefusalReason = (reason: string) => {
+    const nextReason = selectedRefusalReason === reason ? "" : reason;
+    setSelectedRefusalReason(nextReason);
+    setForm((current) => ({ ...current, refusalNotes: nextReason }));
+  };
+  const saveRefusal = async (reason: string) => {
+    if (!visit || !selectedProduct) return;
+    try {
+      await post("/product-refusals", { visitId: visit.id, productId: selectedProduct.id, reason, notes: form.refusalNotes });
+      setRefusedProductIds((ids) => [...new Set([...ids, selectedProduct.id])]);
+      setSelectedRefusalReason("");
+      setForm((current) => ({ ...current, refusalNotes: "" }));
+      Alert.alert("Refusal saved", `${selectedProduct.name}: ${reason}`);
+    } catch (error: any) {
+      Alert.alert("Could not save refusal", error.message || "Please try again.");
+    }
+  };
   const save = async () => {
     if (!visit) return;
     try {
       if (action === "order") {
-        const product = products.find(
-          (p) => p.id === (form.productId || products[0]?.id),
-        );
+        const product = selectedProduct;
+        if (selectedRefusalReason) {
+          await saveRefusal(selectedRefusalReason);
+          return;
+        }
         const quantity = Number(form.quantity || 0);
         if (!product || quantity <= 0)
           throw new Error("Select a product and enter a valid quantity.");
+        const minimumQuantity = selectedConfiguration?.minimumQuantity || product.minimumQuantity || 1;
+        if (quantity < minimumQuantity)
+          throw new Error(`${selectedConfiguration?.name || product.configurationName || product.name} requires at least ${minimumQuantity} units.`);
         if (selectedScheme && quantity < selectedScheme.minimumQuantity)
           throw new Error(`${selectedScheme.name} requires at least ${selectedScheme.minimumQuantity} units.`);
         const automaticDiscount = selectedScheme
@@ -84,6 +141,8 @@ export default function VisitScreen({
           amount: quantity * product.price - discount,
           schemeId: selectedScheme?.id,
           schemeName: selectedScheme?.name,
+          configurationId: selectedConfiguration?.id || product.configurationId,
+          configurationType: selectedConfiguration?.type || product.configuration,
         };
         const next = [...lines, line];
         setLines(next);
@@ -113,8 +172,12 @@ export default function VisitScreen({
         if (action === "competitor") setCompetitors((x) => [...x, payload]);
         if (action === "ticket") setTickets((x) => [...x, payload]);
       }
-      setAction(null);
-      setForm({});
+      if (action === "order") {
+        setForm({});
+      } else {
+        setAction(null);
+        setForm({});
+      }
       Alert.alert("Saved", "The visit action was saved.");
     } catch (e: any) {
       await enqueue(
@@ -141,7 +204,15 @@ export default function VisitScreen({
     }
   };
   const checkout = async () => {
+    if (isCompleting) return;
+    setIsCompleting(true);
+    setCompletionMessage("");
+    setCompletionError("");
     try {
+      const handledProductIds = new Set([...lines.map((line) => line.productId), ...refusedProductIds]);
+      const pendingMustSell = products.filter((product) => (product.configuration === "Must Sell" || product.configurations?.some((configuration) => configuration.type === "Must Sell")) && !handledProductIds.has(product.id));
+      if (pendingMustSell.length)
+        throw new Error(`Complete or record a refusal for every Must Sell product: ${pendingMustSell.map((product) => product.name).join(", ")}`);
       if (lines.length) {
         await post("/orders", {
           visitId: visit.id,
@@ -152,7 +223,7 @@ export default function VisitScreen({
       const loc = Platform.OS === "web"
         ? { coords: { latitude: route.params.location.latitude, longitude: route.params.location.longitude } }
         : await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
-      await post("/store/checkout", {
+      const completion = await post<{ retailerEmailSent?: boolean; retailerEmailError?: string }>("/store/checkout", {
         visitId: visit.id,
         location: {
           latitude: loc.coords.latitude,
@@ -165,14 +236,21 @@ export default function VisitScreen({
         totalAmount: total,
       });
       setCompleted(true);
+      setAction(null);
+      setCompletionMessage("Visit completed and saved in Salesforce.");
       Alert.alert(
         "Visit completed successfully",
-        route.params.store.email
-          ? "Checkout was saved in Salesforce and the retailer order email was sent."
-          : "Checkout was saved in Salesforce. Add an email to the outlet record to send order confirmation.",
+        completion.retailerEmailSent
+          ? "The visit and order were saved in Salesforce, and the retailer email was sent."
+          : completion.retailerEmailError
+            ? `The visit and order were saved in Salesforce. Email was not sent: ${completion.retailerEmailError}`
+            : "The visit and order were saved in Salesforce. You can now share the PDF or Excel file through WhatsApp or email.",
       );
     } catch (e: any) {
-      Alert.alert("Checkout failed", e.message);
+      setCompletionError(e.message || "Unable to complete the visit. Please try again.");
+      Alert.alert("Checkout failed", e.message || "Unable to complete the visit. Please try again.");
+    } finally {
+      setIsCompleting(false);
     }
   };
   const share = async (kind: "pdf" | "excel") => {
@@ -187,12 +265,24 @@ export default function VisitScreen({
       if (Platform.OS === "web") {
         const response = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
         if (!response.ok) throw new Error((await response.json().catch(() => null))?.message || "Document generation failed");
-        const objectUrl = URL.createObjectURL(await response.blob());
+        const documentBlob = await response.blob();
+        const documentFile = new File([documentBlob], fileName, { type: documentBlob.type });
+        const browserNavigator: any = navigator;
+        if (browserNavigator.share && browserNavigator.canShare?.({ files: [documentFile] })) {
+          await browserNavigator.share({
+            title: `${route.params.store.name} visit ${kind.toUpperCase()}`,
+            text: `SFA visit document for ${route.params.store.name}. Choose WhatsApp or Mail to send it.`,
+            files: [documentFile],
+          });
+          return;
+        }
+        const objectUrl = URL.createObjectURL(documentBlob);
         const anchor = document.createElement("a");
         anchor.href = objectUrl;
         anchor.download = fileName;
         anchor.click();
         URL.revokeObjectURL(objectUrl);
+        Alert.alert("Document downloaded", `${fileName} was downloaded. Attach it in WhatsApp or email.`);
       } else {
         const uri = `${FileSystem.cacheDirectory}${fileName}`;
         const result = await FileSystem.downloadAsync(url, uri, {
@@ -200,9 +290,14 @@ export default function VisitScreen({
           sessionType: FileSystem.FileSystemSessionType.BACKGROUND,
           md5: false,
         });
-        if (await Sharing.isAvailableAsync()) await Sharing.shareAsync(result.uri);
+        if (!(await Sharing.isAvailableAsync())) throw new Error("Sharing is not available on this device");
+        await Sharing.shareAsync(result.uri, {
+          dialogTitle: `Send ${kind.toUpperCase()} using WhatsApp or Mail`,
+          mimeType: kind === "pdf" ? "application/pdf" : "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        });
       }
     } catch (error: any) {
+      if (error?.name === "AbortError") return;
       Alert.alert("Document unavailable", error.message);
     }
   };
@@ -237,6 +332,7 @@ export default function VisitScreen({
               ["8", "Share Order", () => lines.length ? share("pdf") : Alert.alert("No order", "Create an order before sharing it.")],
               ["9", "Checkout", checkout],
               ["10", "Asset Survey", () => setAction("asset")],
+              ["11", "Survey & Merchandising", () => navigation.navigate("Survey", { store: route.params.store, visitId: visit.id, location: route.params.location })],
             ].map(([number, label, handler]) => <Text key={String(label)} style={s.actionTile} onPress={handler as () => void}><Text style={s.actionNumber}>{number as string}</Text>{"\n"}{label as string}</Text>)}
           </View>
         </>
@@ -246,23 +342,32 @@ export default function VisitScreen({
           <Text style={s.formTitle}>{action.toUpperCase()}</Text>
           {action === "order" && (
             <>
-              <Text style={s.sub}>
-                Product:{" "}
-                {
-                  products.find(
-                    (p) => p.id === (form.productId || products[0]?.id),
-                  )?.name
-                }
-              </Text>
+              <Text style={s.orderHelp}>Choose a Salesforce-controlled configuration, then select products for this outlet.</Text>
+              <View style={s.tabRow}>{(["All Products", "Must Sell", "Focus Sell", "Suggested Sell"] as OrderView[]).map((view) => <Pressable key={view} style={[s.tab, orderView === view && s.tabActive]} onPress={() => selectView(view)}><Text style={[s.tabText, orderView === view && s.tabTextActive]}>{view}</Text></Pressable>)}</View>
+              <TextInput style={s.input} placeholder="Search product, SKU or brand" value={productSearch} onChangeText={setProductSearch}/>
+              <View style={s.filterRow}>
+                <Pressable style={s.filter} onPress={() => cycleFilter(brands, brandFilter, setBrandFilter)}><Text style={s.filterLabel}>BRAND</Text><Text style={s.filterValue}>{brandFilter}</Text></Pressable>
+                <Pressable style={s.filter} onPress={() => cycleFilter(subBrands, subBrandFilter, setSubBrandFilter)}><Text style={s.filterLabel}>SUB-BRAND</Text><Text style={s.filterValue}>{subBrandFilter}</Text></Pressable>
+                <Pressable style={s.filter} onPress={() => cycleFilter(aliases, aliasFilter, setAliasFilter)}><Text style={s.filterLabel}>ALIAS</Text><Text style={s.filterValue}>{aliasFilter}</Text></Pressable>
+              </View>
+              {!selectedProduct ? <Text style={s.sub}>No products match this configuration and filter.</Text> : <Card style={s.productCard}>
+                <View style={s.productTop}><Text style={s.productName}>{selectedProduct.name}</Text><Text style={s.configuration}>{selectedProduct.configurations?.map((configuration) => configuration.type).join(" · ") || selectedProduct.configuration || "Standard"}</Text></View>
+                <Text style={s.sub}>{selectedProduct.code} · {selectedProduct.brand || "No brand"}{selectedProduct.subBrand ? ` · ${selectedProduct.subBrand}` : ""}{selectedProduct.brandAlias ? ` · ${selectedProduct.brandAlias}` : ""}</Text>
+                <Text style={s.productMeta}>Price <Money value={selectedProduct.price}/> · Stock {selectedProduct.stock} · Previously purchased {selectedProduct.previousQuantity || 0}</Text>
+                {!!(selectedConfiguration || selectedProduct.configurationName) && <Text style={s.suggestion}>{selectedConfiguration?.name || selectedProduct.configurationName} · Minimum {selectedConfiguration?.minimumQuantity || selectedProduct.minimumQuantity || 1}{(selectedConfiguration?.targetQuantity || selectedProduct.targetQuantity) ? ` · Target ${selectedConfiguration?.targetQuantity || selectedProduct.targetQuantity}` : ""}{selectedConfiguration?.geography ? ` · ${selectedConfiguration.geography}` : ""}{selectedConfiguration?.channel && selectedConfiguration.channel !== "All Channels" ? ` · ${selectedConfiguration.channel}` : ""}</Text>}
+                {!!selectedProduct.suggestionSource && <Text style={s.suggestion}>{selectedProduct.suggestionSource}</Text>}
+                {!!selectedProduct.lastFiveOrders?.length && <View style={s.history}><Label>LAST FIVE ORDER HISTORY</Label>{selectedProduct.lastFiveOrders.map((history) => <Text key={`${history.orderId}-${history.orderDate}`} style={s.historyLine}>{history.orderNumber || "Order"} · {history.orderDate || "Date unavailable"} · Qty {history.quantity}</Text>)}</View>}
+              </Card>}
               <Button
                 title="NEXT PRODUCT"
                 kind="secondary"
                 onPress={() => {
-                  const i = products.findIndex(
-                    (p) => p.id === (form.productId || products[0]?.id),
-                  );
-                  update("productId", products[(i + 1) % products.length].id);
+                  if (!visibleProducts.length) return;
+                  const i = visibleProducts.findIndex((p) => p.id === selectedProduct?.id);
+                  update("productId", visibleProducts[(i + 1) % visibleProducts.length].id);
                   update("schemeId", "");
+                   update("refusalNotes", "");
+                   setSelectedRefusalReason("");
                 }}
               />
               <Label>AVAILABLE SCHEMES FOR THIS PRODUCT</Label>
@@ -298,6 +403,14 @@ export default function VisitScreen({
                 value={form.discount}
                 onChangeText={(v) => update("discount", v)}
               />
+              {(selectedProduct?.configuration === "Must Sell" || selectedProduct?.configurations?.some((configuration) => configuration.type === "Must Sell")) && !lines.some((line) => line.productId === selectedProduct.id) && !refusedProductIds.includes(selectedProduct.id) && <>
+                <Label>RETAILER DECLINED THIS MUST SELL PRODUCT</Label>
+                <View style={s.reasonGrid}>{refusalReasons.map((reason) => {
+                  const isSelected = selectedRefusalReason === reason;
+                  return <Pressable key={reason} style={[s.reason, isSelected && s.reasonSelected]} onPress={() => selectRefusalReason(reason)} accessibilityRole="button" accessibilityState={{ selected: isSelected }}><Text style={[s.reasonText, isSelected && s.reasonTextSelected]}>{isSelected ? "✓ " : ""}{reason}</Text></Pressable>;
+                })}</View>
+                <TextInput style={s.input} placeholder="Optional refusal notes" value={form.refusalNotes} onChangeText={(value) => update("refusalNotes", value)}/>
+              </>}
             </>
           )}
           {action === "return" && (
@@ -446,12 +559,16 @@ export default function VisitScreen({
           Order total: <Money value={total} />
         </Text>
         {!completed ? (
-          <Button title="COMPLETE VISIT" onPress={checkout} />
+          <>
+            <Button title={isCompleting ? "COMPLETING VISIT…" : "COMPLETE VISIT"} onPress={checkout} disabled={isCompleting} />
+            {!!completionError && <Text style={s.completionError}>{completionError}</Text>}
+          </>
         ) : (
           <>
-            <Button title="SHARE PDF" onPress={() => share("pdf")} />
+            {!!completionMessage && <Text style={s.completionSuccess}>{completionMessage}</Text>}
+            <Button title="SEND PDF · WHATSAPP / MAIL" onPress={() => share("pdf")} />
             <Button
-              title="SHARE EXCEL"
+              title="SEND EXCEL · WHATSAPP / MAIL"
               kind="secondary"
               onPress={() => share("excel")}
             />
@@ -503,4 +620,29 @@ const s = StyleSheet.create({
   schemeCard: { borderWidth:1, borderColor:colors.border, borderRadius:12, padding:12, marginVertical:5, color:colors.ink, fontWeight:"800", backgroundColor:"white" },
   schemeSelected: { borderColor:colors.brand, backgroundColor:"#E7F5F3" },
   schemeDetail: { color:colors.muted, fontWeight:"500", fontSize:12 },
+  orderHelp:{color:colors.muted,marginBottom:10},
+  tabRow:{flexDirection:"row",flexWrap:"wrap",gap:6,marginBottom:8},
+  tab:{paddingVertical:9,paddingHorizontal:12,borderRadius:18,borderWidth:1,borderColor:colors.border,backgroundColor:"white"},
+  tabActive:{backgroundColor:colors.brand,borderColor:colors.brand},
+  tabText:{fontSize:11,fontWeight:"800",color:colors.ink},
+  tabTextActive:{color:"white"},
+  filterRow:{flexDirection:"row",gap:6,marginVertical:6},
+  filter:{flex:1,padding:9,borderRadius:10,backgroundColor:"#F4F7F5",borderWidth:1,borderColor:colors.border},
+  filterLabel:{fontSize:8,fontWeight:"900",color:colors.muted},
+  filterValue:{fontSize:10,fontWeight:"800",color:colors.ink,marginTop:3},
+  productCard:{marginVertical:8,borderLeftWidth:4,borderLeftColor:colors.brand},
+  productTop:{flexDirection:"row",justifyContent:"space-between",alignItems:"center",gap:8},
+  productName:{flex:1,fontSize:17,fontWeight:"900",color:colors.ink},
+  configuration:{fontSize:9,fontWeight:"900",color:colors.brand,backgroundColor:"#E7F5F3",padding:6,borderRadius:10},
+  productMeta:{fontSize:12,fontWeight:"700",color:colors.ink,marginTop:6},
+  suggestion:{fontSize:11,color:colors.blue,fontWeight:"700",marginTop:5},
+  history:{marginTop:10,paddingTop:8,borderTopWidth:1,borderTopColor:colors.border},
+  historyLine:{fontSize:11,color:colors.muted,marginTop:3},
+  reasonGrid:{flexDirection:"row",flexWrap:"wrap",gap:6,marginVertical:6},
+  reason:{paddingVertical:9,paddingHorizontal:10,borderWidth:1,borderColor:colors.warning,borderRadius:12,backgroundColor:"#FFF8E7"},
+  reasonText:{fontSize:10,fontWeight:"800",color:colors.ink},
+  reasonSelected:{backgroundColor:colors.warning,borderColor:colors.warning},
+  reasonTextSelected:{color:"white"},
+  completionSuccess:{color:colors.brand,fontWeight:"800",textAlign:"center",marginVertical:8},
+  completionError:{color:colors.danger,fontWeight:"800",textAlign:"center",marginVertical:8},
 });

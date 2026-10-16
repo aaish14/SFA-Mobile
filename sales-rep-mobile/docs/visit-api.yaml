@@ -1,8 +1,8 @@
 openapi: 3.0.3
 info:
   title: SFA External Mobile API
-  version: 1.4.0
-  description: Backend contract for the distributor-isolated SFA mobile application.
+  version: 1.5.0
+  description: Backend contract for the sales-representative-isolated SFA mobile application.
 servers:
   - url: http://localhost:4000/api
 security:
@@ -144,7 +144,23 @@ paths:
     post:
       summary: Complete the visit in Salesforce
       responses:
-        "200": { description: Visit completed and retailer order summary emailed when an outlet email is available }
+        "200": { description: Visit completed; response separately reports retailerEmailSent or retailerEmailError so email failure never reverses visit completion }
+  /documents/{kind}/{visitId}:
+    get:
+      summary: Generate an authenticated visit PDF or Excel file for download or native sharing
+      parameters:
+        - in: path
+          name: kind
+          required: true
+          schema: { type: string, enum: [pdf, excel] }
+        - in: path
+          name: visitId
+          required: true
+          schema: { type: string }
+      responses:
+        "200": { description: Generated PDF or Excel attachment }
+        "400": { description: Unsupported document type }
+        "404": { description: Visit unavailable or not owned by the authenticated sales representative }
   /modules/{moduleName}:
     get:
       summary: Read distributor-scoped asset survey, competitor, ticket, stock-check, or return records
