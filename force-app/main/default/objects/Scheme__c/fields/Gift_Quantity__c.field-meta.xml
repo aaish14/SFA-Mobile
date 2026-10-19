@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Gift_Quantity__c</fullName>
+    <description>Gift Quantity. DMS schema from the October 15 mentor recordings and SFA &amp; DMS deck. Inventory posting and application sync are separate automation, not performed by this field.</description>
+    <externalId>false</externalId>
+    <label>Gift Quantity</label>
+    <precision>18</precision>
+    <required>false</required>
+    <scale>0</scale>
+    <trackTrending>false</trackTrending>
+    <type>Number</type>
+    <unique>false</unique>
+</CustomField>
