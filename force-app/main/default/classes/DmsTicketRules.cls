@@ -16,12 +16,16 @@ public with sharing class DmsTicketRules {
                 DMS_Support_Ticket__c previous=oldRows.get(row.Id);
                 if(previous.Distributor__c!=row.Distributor__c) row.addError('The ticket distributor cannot be changed.');
                 if(previous.Status__c!=row.Status__c) {
+                    if (UserInfo.getUserId()!=previous.Officer__c && !FeatureManagement.checkPermission('DMS_Manage_Tickets'))
+                        row.addError('Only the assigned company officer or an authorised support administrator can change ticket status.');
                     Boolean allowed=(previous.Status__c=='Open' && new Set<String>{'In Progress','Rejected'}.contains(row.Status__c)) ||
                         (previous.Status__c=='In Progress' && new Set<String>{'Closed','Rejected'}.contains(row.Status__c));
                     if(!allowed) row.addError('Use Open, then In Progress, then Closed; reject only an open or in-progress ticket.');
                     if(new Set<String>{'Closed','Rejected'}.contains(row.Status__c) && String.isBlank(row.Resolution__c))
                         row.addError('Enter a resolution or rejection reason.');
                 }
+                if(new Set<String>{'Closed','Rejected'}.contains(row.Status__c) && String.isBlank(row.Resolution__c))
+                    row.addError('Keep a resolution or rejection reason on completed tickets.');
             }
         }
     }
