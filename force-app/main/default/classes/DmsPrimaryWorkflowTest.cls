@@ -92,8 +92,8 @@ private class DmsPrimaryWorkflowTest {
     @IsTest static void approvesAndRejectsPrimaryReturns() {
         DMS_Primary_Return__c approved=returnRecord();
         DMS_Primary_Return__c rejected=returnRecord();
-        // Store a business rejection reason as well as the approval audit comment.
-        rejected.Rejection_Reason__c='Test return not eligible'; update rejected;
+        // Standard approval comments are stored in approval history; reject
+        // must work without editing a locked record's Rejection Reason first.
         Test.startTest();
         decide(submit(approved.Id,'Company_Officer_Return_Approval'),'Approve');
         decide(submit(rejected.Id,'Company_Officer_Return_Approval'),'Reject');
@@ -106,6 +106,11 @@ private class DmsPrimaryWorkflowTest {
     }
     @IsTest static void preventsEmptyOrMismatchedSubmission() {
         DMS_Primary_Order__c empty=order();
+        Approval.ProcessSubmitRequest emptyRequest=new Approval.ProcessSubmitRequest();
+        emptyRequest.setObjectId(empty.Id);
+        emptyRequest.setProcessDefinitionNameOrId('Company_Officer_Approval');
+        System.assertEquals(false,Approval.process(emptyRequest,false).isSuccess(),
+            'Actual approval submission must reject orders without products.');
         empty.Status__c='Submitted';
         System.assertEquals(false,Database.update(empty,false).isSuccess());
         DMS_Distributor__c other=new DMS_Distributor__c(Name='Other distributor',Active__c=true);
@@ -131,5 +136,46 @@ private class DmsPrimaryWorkflowTest {
         System.assertEquals(20895,[SELECT Total_Amount__c FROM DMS_Primary_Order__c WHERE Id=:first.Id].Total_Amount__c);
         System.assertEquals(105,[SELECT Total_Amount__c FROM DMS_Primary_Order__c WHERE Id=:second.Id].Total_Amount__c);
         Test.stopTest();
+    }
+    @IsTest static void sharesOnlyWithDesignatedOfficer() {
+        User officer=new User(LastName='DMS Test Officer',Alias='dmstesto',
+            Email='dms-officer@example.invalid',
+            Username='dms.officer.'+UserInfo.getOrganizationId()+'.'+System.now().getTime()+'@example.invalid',
+            TimeZoneSidKey='Asia/Kolkata',LocaleSidKey='en_US',EmailEncodingKey='UTF-8',
+            LanguageLocaleKey='en_US',ProfileId=[SELECT Id FROM Profile WHERE Name='Standard Platform User' LIMIT 1].Id);
+        System.runAs(new User(Id=UserInfo.getUserId())) {
+            insert officer;
+            insert new PermissionSetAssignment(AssigneeId=officer.Id,
+                PermissionSetId=[SELECT Id FROM PermissionSet WHERE Name='DMS_Distributor_Officer'].Id);
+        }
+        DMS_Distributor__c distributor=[SELECT Id,Officer__c FROM DMS_Distributor__c LIMIT 1];
+        distributor.Officer__c=officer.Id;update distributor;
+        DMS_Primary_Order__c parent=order();
+        DMS_Primary_Order_Line__c line=orderLine(parent.Id);
+        DMS_Primary_Return__c returned=returnRecord();
+        System.assertEquals(1,[SELECT COUNT() FROM DMS_Primary_Order__Share
+            WHERE ParentId=:parent.Id AND UserOrGroupId=:officer.Id AND RowCause='Officer_Access__c']);
+        System.assertEquals(1,[SELECT COUNT() FROM DMS_Primary_Order_Line__Share
+            WHERE ParentId=:line.Id AND UserOrGroupId=:officer.Id AND RowCause='Officer_Access__c']);
+        System.assertEquals(1,[SELECT COUNT() FROM DMS_Primary_Return__Share
+            WHERE ParentId=:returned.Id AND UserOrGroupId=:officer.Id AND RowCause='Officer_Access__c']);
+        // A real non-admin, licensed officer must be able to approve the routed work item.
+        Approval.ProcessSubmitRequest request=new Approval.ProcessSubmitRequest();
+        request.setObjectId(parent.Id);request.setProcessDefinitionNameOrId('Company_Officer_Approval');
+        Approval.ProcessResult submitted=Approval.process(request);
+        System.runAs(officer) {
+            decide(submitted,'Approve');
+        }
+        System.assertEquals('Approved',[SELECT Status__c FROM DMS_Primary_Order__c WHERE Id=:parent.Id].Status__c);
+        // Draft reassignment removes only our managed shares, not other manual grants.
+        distributor.Officer__c=UserInfo.getUserId();update distributor;
+        update new DMS_Primary_Return__c(Id=returned.Id,Notes__c='Refresh draft approver');
+        System.assertEquals(0,[SELECT COUNT() FROM DMS_Primary_Return__Share
+            WHERE ParentId=:returned.Id AND RowCause='Officer_Access__c']);
+        DmsOfficerSharing.synchronize('DMS_Primary_Order__c',new Set<Id>());
+        try {
+            DmsOfficerSharing.synchronize('Employee__c',new Set<Id>{parent.Id});
+            System.assert(false,'Unsupported objects must be rejected.');
+        } catch(DmsOfficerSharing.SharingConfigurationException expected) {}
     }
 }
