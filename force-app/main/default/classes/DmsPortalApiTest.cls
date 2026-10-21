@@ -1,7 +1,8 @@
 @IsTest private class DmsPortalApiTest {
     @TestSetup static void permission() {
-        insert new PermissionSetAssignment(AssigneeId=UserInfo.getUserId(),
-            PermissionSetId=[SELECT Id FROM PermissionSet WHERE Name='DMS_Backend_Transactions'].Id);
+        Id permissionId=[SELECT Id FROM PermissionSet WHERE Name='DMS_Backend_Transactions'].Id;
+        if([SELECT COUNT() FROM PermissionSetAssignment WHERE AssigneeId=:UserInfo.getUserId() AND PermissionSetId=:permissionId]==0)
+            insert new PermissionSetAssignment(AssigneeId=UserInfo.getUserId(),PermissionSetId=permissionId);
     }
     private static DMS_Distributor__c distributor() {
         DMS_Distributor__c row=new DMS_Distributor__c(Name='Portal test',Active__c=true,Officer__c=UserInfo.getUserId());
@@ -81,6 +82,50 @@
         cmd.distributorId=supplier.Id;System.assertEquals('Approved',call(cmd).get('status'));
         System.assertEquals('Approved',call(cmd).get('status'));
         cmd.decision='Rejected';cmd.notes='Changed';System.assert(call(cmd).containsKey('error'));
+    }
+    @IsTest static void employeeOrderUsesSalesforcePricesAndIsIdempotent() {
+        DMS_Distributor__c supplier=distributor();
+        Employee__c employee=new Employee__c(Name='Primary employee',Phone__c='9000000000',Active__c=true,DMS_Distributor__c=supplier.Id);insert employee;
+        Product__c product=new Product__c(Name='Primary product',Product_Code__c='PRIMARY-1',MRP__c=20,
+            Retailer_Base_Price__c=15,Units_Per_Case__c=10,DMS_Case_Price__c=100,Active__c=true,Sellable__c=true);insert product;
+        DmsPortalApi.Command cmd=new DmsPortalApi.Command();cmd.action='primaryOrder';cmd.distributorId=supplier.Id;
+        cmd.employeeId=employee.Id;cmd.requestKey='primary-1234567890';
+        DmsEmployeeTransactions.LineInput input=new DmsEmployeeTransactions.LineInput();input.productId=product.Id;input.cases=2;
+        cmd.lines=new List<DmsEmployeeTransactions.LineInput>{input};
+        Test.startTest();
+        Map<String,Object> order=call(cmd);System.assertNotEquals(null,order.get('id'),JSON.serialize(order));
+        System.assertEquals('Submitted',order.get('status'));
+        System.assertEquals(order.get('id'),call(cmd).get('id'));
+        input.cases=3;System.assert(call(cmd).containsKey('error'));
+        Test.stopTest();
+        System.assertEquals(1,[SELECT COUNT() FROM DMS_Primary_Order__c]);
+        DMS_Primary_Order_Line__c line=[SELECT Case_Price__c,Pieces_Per_Case__c,Cases__c FROM DMS_Primary_Order_Line__c];
+        System.assertEquals(100,line.Case_Price__c);System.assertEquals(10,line.Pieces_Per_Case__c);System.assertEquals(2,line.Cases__c);
+    }
+    @IsTest static void employeeReturnUsesReceiptAndCannotExceedReceipt() {
+        DMS_Distributor__c supplier=distributor();
+        Employee__c employee=new Employee__c(Name='Return employee',Phone__c='9000000000',Active__c=true,DMS_Distributor__c=supplier.Id);insert employee;
+        Product__c product=new Product__c(Name='Received product',Product_Code__c='PRIMARY-R',MRP__c=20,
+            Retailer_Base_Price__c=15,Units_Per_Case__c=10,DMS_Case_Price__c=100,Active__c=true,Sellable__c=true);insert product;
+        DMS_Primary_Order__c original=new DMS_Primary_Order__c(Distributor__c=supplier.Id,Employee__c=employee.Id);insert original;
+        DMS_Goods_Receipt__c receipt=new DMS_Goods_Receipt__c(Distributor__c=supplier.Id,Primary_Order__c=original.Id,Status__c='Received',Received_Date__c=Date.today());insert receipt;
+        DMS_Goods_Receipt_Line__c received=new DMS_Goods_Receipt_Line__c(Goods_Receipt__c=receipt.Id,Product__c=product.Id,
+            Received_Cases__c=3,Pieces_Per_Case__c=10,Case_Cost__c=100,Batch_Number__c='R1');insert received;
+        DmsPortalApi.Command cmd=new DmsPortalApi.Command();cmd.action='primaryReturn';cmd.distributorId=supplier.Id;
+        cmd.employeeId=employee.Id;cmd.requestKey='return-1234567890';
+        DmsEmployeeTransactions.LineInput input=new DmsEmployeeTransactions.LineInput();input.receiptLineId=received.Id;input.cases=2;input.reason='Damaged';
+        cmd.lines=new List<DmsEmployeeTransactions.LineInput>{input};
+        Test.startTest();
+        Map<String,Object> returned=call(cmd);System.assertNotEquals(null,returned.get('id'),JSON.serialize(returned));
+        System.assertEquals(returned.get('id'),call(cmd).get('id'));
+        cmd.requestKey='return-abcdefghij';System.assert(call(cmd).containsKey('error'));
+        Test.stopTest();System.assertEquals(1,[SELECT COUNT() FROM DMS_Primary_Return__c]);
+    }
+    @IsTest static void employeeCannotOrderForAnotherDistributor() {
+        DMS_Distributor__c supplier=distributor(),other=distributor();
+        Employee__c employee=new Employee__c(Name='Scoped employee',Phone__c='9000000000',Active__c=true,DMS_Distributor__c=supplier.Id);insert employee;
+        DmsPortalApi.Command cmd=new DmsPortalApi.Command();cmd.action='primaryOrder';cmd.employeeId=employee.Id;cmd.distributorId=other.Id;
+        System.assert(call(cmd).containsKey('error'));System.assertEquals(0,[SELECT COUNT() FROM DMS_Primary_Order__c]);
     }
     @IsTest static void deniesUntrustedUser() {
         User user=new User(Alias='notrust',Email='no@example.invalid',EmailEncodingKey='UTF-8',LastName='No API Access',
