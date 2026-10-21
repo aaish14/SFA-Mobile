@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ValidationRule xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>No_Primary_Scheme</fullName>
+    <active>true</active>
+    <errorConditionFormula>AND(NOT(ISBLANK(Scheme__c)), ISPICKVAL(Scheme__r.Sales_Channel__c, &apos;Primary&apos;), OR(ISNEW(), ISCHANGED(Scheme__c)))</errorConditionFormula>
+    <errorMessage>Primary case schemes cannot be used on secondary outlet order items. Select a Secondary scheme.</errorMessage>
+</ValidationRule>

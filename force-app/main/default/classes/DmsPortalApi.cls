@@ -37,6 +37,13 @@ global with sharing class DmsPortalApi {
             throw new InputException('Unsupported transaction.');
         } catch(Exception error) {
             Database.rollback(checkpoint);
+            if(error instanceof DmlException) {
+                DmlException validation=(DmlException)error;
+                if(validation.getNumDml()>0 && (validation.getDmlStatusCode(0)=='FIELD_CUSTOM_VALIDATION_EXCEPTION' || validation.getDmlStatusCode(0)=='REQUIRED_FIELD_MISSING')) {
+                    RestContext.response.statusCode=400;
+                    return new Map<String,Object>{'error'=>validation.getDmlMessage(0)};
+                }
+            }
             RestContext.response.statusCode=error instanceof InputException?400:500;
             return new Map<String,Object>{'error'=>error instanceof InputException?error.getMessage():
                 'Salesforce could not save this transaction. No partial changes were saved.'};
