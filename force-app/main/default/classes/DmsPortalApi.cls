@@ -29,7 +29,7 @@ global with sharing class DmsPortalApi {
             List<DMS_Distributor__c> distributors=[SELECT Id,Officer__c FROM DMS_Distributor__c
                 WHERE Id=:cmd.distributorId AND Active__c=true FOR UPDATE];
             if(distributors.isEmpty()) throw new InputException('Distributor is not active.');
-            if(cmd.action=='primaryOrder'||cmd.action=='primaryReturn') return DmsEmployeeTransactions.save(cmd);
+            if(cmd.action=='primaryOrder'||cmd.action=='primaryReturn'||cmd.action=='distributorPrimaryOrder') return DmsEmployeeTransactions.save(cmd);
             if(cmd.action=='ticket') return ticket(cmd);
             if(cmd.action=='secondaryDecision') return decision(cmd,false);
             if(cmd.action=='returnDecision') return decision(cmd,true);

@@ -45,6 +45,8 @@ public without sharing class DmsPrimaryWorkflow {
                    row.get('Officer__c')!=old.get('Officer__c')) {
                     row.addError('Distributor, employee and approver cannot change after submission.');
                 }
+                if(!isReturn && row.get('Order_Source__c')!=old.get('Order_Source__c'))
+                    row.addError('Order source cannot change after submission.');
                 continue;
             }
             DMS_Distributor__c distributor=distributors.get((Id)row.get('Distributor__c'));
@@ -62,7 +64,10 @@ public without sharing class DmsPrimaryWorkflow {
                     !distributor.Officer__r.IsActive) {
                     row.addError('Select an active distributor with an active company Distributor Officer.');
                 }
-                if(employee==null || !employee.Active__c) row.addError('Select an active employee.');
+                Boolean distributorEntry=!isReturn && row.get('Order_Source__c')=='Distributor DMS';
+                if(distributorEntry) {
+                    if(row.get('Employee__c')!=null) row.addError('Distributor orders must not be attributed to an employee.');
+                } else if(employee==null || !employee.Active__c) row.addError('Select an active employee.');
                 if(!withLines.contains(row.Id)) row.addError('Add at least one product line before submitting for approval.');
             }
         }
