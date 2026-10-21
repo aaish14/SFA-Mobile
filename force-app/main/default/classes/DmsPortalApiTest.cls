@@ -127,6 +127,50 @@
         DmsPortalApi.Command cmd=new DmsPortalApi.Command();cmd.action='primaryOrder';cmd.employeeId=employee.Id;cmd.distributorId=other.Id;
         System.assert(call(cmd).containsKey('error'));System.assertEquals(0,[SELECT COUNT() FROM DMS_Primary_Order__c]);
     }
+    @IsTest static void primarySchemesAndFreeReceipts() {
+        DMS_Distributor__c supplier=distributor();
+        Employee__c employee=new Employee__c(Name='Scheme employee',Phone__c='9000000000',Active__c=true,DMS_Distributor__c=supplier.Id);insert employee;
+        Product__c paid=new Product__c(Name='Paid',Product_Code__c='PROMO-P',MRP__c=20,Retailer_Base_Price__c=15,Units_Per_Case__c=10,DMS_Case_Price__c=2000,Active__c=true,Sellable__c=true);
+        Product__c bonus=new Product__c(Name='Bonus',Product_Code__c='PROMO-F',MRP__c=10,Retailer_Base_Price__c=8,Units_Per_Case__c=20,DMS_Case_Price__c=100,Active__c=true,Sellable__c=true);
+        insert new List<Product__c>{paid,bonus};
+        Scheme__c scheme=new Scheme__c(Name='Buy one get two',Scheme_Type__c='Different Listed Product Free',Sales_Channel__c='Primary',Active__c=true,Minimum_Cases__c=1,Free_Cases__c=2,Free_Product__c=bonus.Id,Discount_Percent__c=10);
+        scheme.Scheme_Code__c='PRIMARY-FREE';scheme.Start_Date__c=Date.today().addDays(-30);scheme.End_Date__c=Date.today().addDays(30);
+        insert scheme; insert new Scheme_Product__c(Scheme__c=scheme.Id,Product__c=paid.Id,Active__c=true);
+        DMS_Primary_Order__c order=new DMS_Primary_Order__c(Distributor__c=supplier.Id,Employee__c=employee.Id);insert order;
+        DMS_Primary_Order_Line__c line=new DMS_Primary_Order_Line__c(Order__c=order.Id,Product__c=paid.Id,Cases__c=3,Scheme__c=scheme.Id);insert line;
+        line=[SELECT Id,Free_Cases__c,Free_Product__c,Free_Pieces_Per_Case__c,Discount_Amount__c,Total_Pieces__c FROM DMS_Primary_Order_Line__c WHERE Id=:line.Id];
+        System.assertEquals(6,line.Free_Cases__c); System.assertEquals(bonus.Id,line.Free_Product__c);
+        System.assertEquals(20,line.Free_Pieces_Per_Case__c); System.assertEquals(600,line.Discount_Amount__c); System.assertEquals(150,line.Total_Pieces__c);
+        Approval.ProcessSubmitRequest submit=new Approval.ProcessSubmitRequest();submit.setObjectId(order.Id);submit.setProcessDefinitionNameOrId('Company_Officer_Approval');
+        Approval.ProcessResult submission=Approval.process(submit);
+        Approval.ProcessWorkitemRequest approve=new Approval.ProcessWorkitemRequest();approve.setWorkitemId(submission.getNewWorkitemIds()[0]);approve.setAction('Approve');Approval.process(approve);
+        DmsPortalApi.Command cmd=new DmsPortalApi.Command();cmd.action='receiveGoods';cmd.distributorId=supplier.Id;cmd.recordId=line.Id;
+        cmd.receiptKind='Free';cmd.cases=6;cmd.batch='FREE1';cmd.expiry=Date.today().addMonths(6);cmd.requestKey='free-receipt-123456';
+        Test.startTest();Map<String,Object> result=call(cmd);System.assertNotEquals(null,result.get('id'),JSON.serialize(result));
+        System.assertEquals(result.get('id'),call(cmd).get('id'));
+        cmd.requestKey='free-receipt-654321';cmd.cases=1;System.assert(call(cmd).containsKey('error'));
+        Test.stopTest();
+        DMS_Inventory__c stock=[SELECT Product__c,On_Hand_Pieces__c FROM DMS_Inventory__c];System.assertEquals(bonus.Id,stock.Product__c);System.assertEquals(120,stock.On_Hand_Pieces__c);
+        System.assertEquals(0,[SELECT Received_Value__c FROM DMS_Goods_Receipt_Line__c].Received_Value__c);
+    }
+    @IsTest static void invalidSchemesAndSurveyOwnership() {
+        DMS_Distributor__c supplier=distributor();
+        Product__c product=new Product__c(Name='Scheme check',Product_Code__c='SCHEME-CHECK',MRP__c=20,Retailer_Base_Price__c=15,Units_Per_Case__c=10,DMS_Case_Price__c=100,Active__c=true,Sellable__c=true);insert product;
+        DMS_Primary_Order__c order=new DMS_Primary_Order__c(Distributor__c=supplier.Id);insert order;
+        Scheme__c scheme=new Scheme__c(Name='Minimum two',Scheme_Code__c='PRIMARY-MIN',Start_Date__c=Date.today().addDays(-30),End_Date__c=Date.today().addDays(30),Scheme_Type__c='Same Product Free',Sales_Channel__c='Primary',Product__c=product.Id,Active__c=true,Minimum_Cases__c=2,Free_Cases__c=1,Discount_Amount__c=5,Free_Gift__c='Display',Gift_Quantity__c=1);insert scheme;
+        DMS_Primary_Order_Line__c line=new DMS_Primary_Order_Line__c(Order__c=order.Id,Product__c=product.Id,Cases__c=1,Scheme__c=scheme.Id);
+        System.assertEquals(false,Database.insert(line,false).isSuccess());
+        line.Cases__c=5;insert line;
+        line=[SELECT Id,Free_Cases__c,Gift_Quantity__c,Discount_Amount__c,Scheme__c FROM DMS_Primary_Order_Line__c WHERE Id=:line.Id];
+        System.assertEquals(2,line.Free_Cases__c);System.assertEquals(10,line.Discount_Amount__c);System.assertEquals(2,line.Gift_Quantity__c);
+        line.Scheme__c=null;update line;System.assertEquals(0,[SELECT Free_Cases__c FROM DMS_Primary_Order_Line__c WHERE Id=:line.Id].Free_Cases__c);
+        scheme.Active__c=false;update scheme;line.Scheme__c=scheme.Id;System.assertEquals(false,Database.update(line,false).isSuccess());
+        scheme.Active__c=true;scheme.End_Date__c=Date.today().addDays(-1);update scheme;System.assertEquals(false,Database.update(line,false).isSuccess());
+        scheme.End_Date__c=Date.today().addDays(30);scheme.Discount_Percent__c=100;scheme.Discount_Amount__c=50;update scheme;System.assertEquals(false,Database.update(line,false).isSuccess());
+        DMS_Distributor_Survey__c survey=new DMS_Distributor_Survey__c(Distributor__c=supplier.Id,Product__c=product.Id,Visit_Date__c=Date.today(),Stock_Cases__c=5,Movement__c='Slow Moving',Demand_Notes__c='Review demand next month.');
+        insert survey;System.assertEquals(UserInfo.getUserId(),[SELECT Officer__c FROM DMS_Distributor_Survey__c WHERE Id=:survey.Id].Officer__c);
+        supplier.Officer__c=null;update supplier;survey.Stock_Cases__c=6;System.assertEquals(false,Database.update(survey,false).isSuccess());
+    }
     @IsTest static void deniesUntrustedUser() {
         User user=new User(Alias='notrust',Email='no@example.invalid',EmailEncodingKey='UTF-8',LastName='No API Access',
             LanguageLocaleKey='en_US',LocaleSidKey='en_US',TimeZoneSidKey='Asia/Kolkata',

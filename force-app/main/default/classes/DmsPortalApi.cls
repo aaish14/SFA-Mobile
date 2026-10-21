@@ -7,7 +7,7 @@
 global with sharing class DmsPortalApi {
     public class InputException extends Exception {}
     public class Command {
-        public String action,requestKey,subject,category,description,decision,notes,batch;
+        public String action,requestKey,subject,category,description,decision,notes,batch,receiptKind;
         public Id distributorId,recordId,employeeId;
         public Decimal cases;
         public Date expiry;
@@ -87,12 +87,14 @@ global with sharing class DmsPortalApi {
         return result(row.Id,cmd.decision);
     }
     private static Map<String,Object> receiveGoods(Command cmd) {
+        if(cmd.receiptKind!=null&&!new Set<String>{'Paid','Free'}.contains(cmd.receiptKind)) throw new InputException('Choose Paid or Free goods.');
+        Boolean freeGoods=cmd.receiptKind=='Free';
         String requestKey=key(cmd);
         List<DMS_Goods_Receipt__c> existing=[SELECT Id,Status__c FROM DMS_Goods_Receipt__c WHERE Request_Key__c=:requestKey];
         if(!existing.isEmpty()) {
-            List<DMS_Goods_Receipt_Line__c> saved=[SELECT Primary_Order_Line__c,Received_Cases__c,Batch_Number__c,Expiry_Date__c
+            List<DMS_Goods_Receipt_Line__c> saved=[SELECT Primary_Order_Line__c,Received_Cases__c,Free_Cases__c,Batch_Number__c,Expiry_Date__c
                 FROM DMS_Goods_Receipt_Line__c WHERE Goods_Receipt__c=:existing[0].Id];
-            if(saved.size()!=1||saved[0].Primary_Order_Line__c!=cmd.recordId||saved[0].Received_Cases__c!=cmd.cases||
+            if(saved.size()!=1||saved[0].Primary_Order_Line__c!=cmd.recordId||(freeGoods?saved[0].Free_Cases__c:saved[0].Received_Cases__c)!=cmd.cases||
                 saved[0].Batch_Number__c!=cmd.batch||saved[0].Expiry_Date__c!=cmd.expiry)
                 throw new InputException('This receipt key was already used with different details.');
             return result(existing[0].Id,existing[0].Status__c);
@@ -100,31 +102,34 @@ global with sharing class DmsPortalApi {
         if(cmd.cases==null||cmd.cases<=0||cmd.cases>100000||cmd.cases!=cmd.cases.setScale(0)||
             String.isBlank(cmd.batch)||cmd.batch.length()>80||cmd.expiry==null||cmd.expiry<Date.today())
             throw new InputException('Enter positive whole cases, batch number and an unexpired expiry date.');
-        List<DMS_Primary_Order_Line__c> lines=[SELECT Id,Order__c,Product__c,Cases__c,Pieces_Per_Case__c,Case_Price__c
+        List<DMS_Primary_Order_Line__c> lines=[SELECT Id,Order__c,Product__c,Cases__c,Pieces_Per_Case__c,Case_Price__c,Discount_Amount__c,Free_Cases__c,Free_Product__c,Free_Pieces_Per_Case__c
             FROM DMS_Primary_Order_Line__c WHERE Id=:cmd.recordId AND Order__r.Distributor__c=:cmd.distributorId
             AND Order__r.Status__c='Approved' FOR UPDATE];
         if(lines.isEmpty()) throw new InputException('Select a line from your approved primary order.');
         DMS_Primary_Order_Line__c line=lines[0];
         Decimal received=0;
-        for(AggregateResult row:[SELECT SUM(Received_Cases__c) amount FROM DMS_Goods_Receipt_Line__c
+        for(AggregateResult row:[SELECT SUM(Received_Cases__c) amount,SUM(Free_Cases__c) bonus FROM DMS_Goods_Receipt_Line__c
             WHERE Primary_Order_Line__c=:line.Id AND Goods_Receipt__r.Status__c='Received'])
-            if(row.get('amount')!=null) received=(Decimal)row.get('amount');
-        if(received+cmd.cases>line.Cases__c) throw new InputException('Received cases exceed the remaining approved quantity.');
-        if(line.Pieces_Per_Case__c==null||line.Pieces_Per_Case__c<=0) throw new InputException('The order has no valid case conversion.');
+            if(row.get(freeGoods?'bonus':'amount')!=null) received=(Decimal)row.get(freeGoods?'bonus':'amount');
+        Decimal entitlement=freeGoods?line.Free_Cases__c:line.Cases__c;
+        if(entitlement==null||received+cmd.cases>entitlement) throw new InputException('Received cases exceed the remaining approved quantity.');
+        Id productId=freeGoods?line.Free_Product__c:line.Product__c;
+        Decimal conversion=freeGoods?line.Free_Pieces_Per_Case__c:line.Pieces_Per_Case__c;
+        if(productId==null||conversion==null||conversion<=0) throw new InputException('The order has no valid product or case conversion.');
         List<DMS_Inventory__c> matches=[SELECT Id,On_Hand_Pieces__c,Expiry_Date__c FROM DMS_Inventory__c
-            WHERE Distributor__c=:cmd.distributorId AND Product__c=:line.Product__c AND Batch_Number__c=:cmd.batch FOR UPDATE];
+            WHERE Distributor__c=:cmd.distributorId AND Product__c=:productId AND Batch_Number__c=:cmd.batch FOR UPDATE];
         if(matches.size()>1) throw new InputException('Duplicate inventory batches need administrator review.');
         DMS_Inventory__c stock=matches.isEmpty()?new DMS_Inventory__c(Distributor__c=cmd.distributorId,
-            Product__c=line.Product__c,Batch_Number__c=cmd.batch,Expiry_Date__c=cmd.expiry,On_Hand_Pieces__c=0):matches[0];
+            Product__c=productId,Batch_Number__c=cmd.batch,Expiry_Date__c=cmd.expiry,On_Hand_Pieces__c=0):matches[0];
         if(stock.Expiry_Date__c!=cmd.expiry) throw new InputException('Expiry must match the existing batch.');
         DMS_Goods_Receipt__c receipt=new DMS_Goods_Receipt__c(Distributor__c=cmd.distributorId,
             Primary_Order__c=line.Order__c,Received_Date__c=Date.today(),Received_By__c=UserInfo.getUserId(),
             Status__c='Draft',Request_Key__c=requestKey);
         insert receipt;
         insert new DMS_Goods_Receipt_Line__c(Goods_Receipt__c=receipt.Id,Primary_Order_Line__c=line.Id,
-            Product__c=line.Product__c,Received_Cases__c=cmd.cases,Pieces_Per_Case__c=line.Pieces_Per_Case__c,
-            Case_Cost__c=line.Case_Price__c,Batch_Number__c=cmd.batch,Expiry_Date__c=cmd.expiry);
-        stock.On_Hand_Pieces__c=(stock.On_Hand_Pieces__c==null?0:stock.On_Hand_Pieces__c)+cmd.cases*line.Pieces_Per_Case__c;
+            Product__c=productId,Received_Cases__c=freeGoods?0:cmd.cases,Free_Cases__c=freeGoods?cmd.cases:0,Pieces_Per_Case__c=conversion,
+            Case_Cost__c=freeGoods?0:(line.Case_Price__c-(line.Discount_Amount__c==null?0:line.Discount_Amount__c)/line.Cases__c),Batch_Number__c=cmd.batch,Expiry_Date__c=cmd.expiry);
+        stock.On_Hand_Pieces__c=(stock.On_Hand_Pieces__c==null?0:stock.On_Hand_Pieces__c)+cmd.cases*conversion;
         stock.Last_Stock_Update__c=System.now();upsert stock;
         receipt.Status__c='Received';update receipt;
         return result(receipt.Id,'Received');

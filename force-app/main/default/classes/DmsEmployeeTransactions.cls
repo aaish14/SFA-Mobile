@@ -2,7 +2,7 @@
  * Prices and conversions are read from Salesforce, never accepted from the phone.
  */
 public with sharing class DmsEmployeeTransactions {
-    public class LineInput { public Id productId,receiptLineId; public Decimal cases; public String reason,notes; }
+    public class LineInput { public Id productId,receiptLineId,schemeId; public Decimal cases; public String reason,notes; }
     public static Map<String,Object> save(DmsPortalApi.Command cmd) {
         Boolean isReturn=cmd.action=='primaryReturn';
         List<Employee__c> employees=[SELECT Id,DMS_Distributor__c FROM Employee__c
@@ -38,7 +38,7 @@ public with sharing class DmsEmployeeTransactions {
                 if(product==null||product.Units_Per_Case__c==null||product.Units_Per_Case__c<=0||
                    product.Units_Per_Case__c!=product.Units_Per_Case__c.setScale(0)||product.DMS_Case_Price__c==null||product.DMS_Case_Price__c<=0)
                     throw new DmsPortalApi.InputException('Configure positive Primary Case Price and whole Units Per Case for every product first.');
-                lines.add(new DMS_Primary_Order_Line__c(Product__c=product.Id,Cases__c=input.cases,
+                lines.add(new DMS_Primary_Order_Line__c(Product__c=product.Id,Cases__c=input.cases,Scheme__c=input.schemeId,
                     Pieces_Per_Case__c=product.Units_Per_Case__c,Case_Price__c=product.DMS_Case_Price__c,
                     Tax_Percent__c=product.GST_Percent__c==null?0:product.GST_Percent__c));
             }
@@ -49,7 +49,7 @@ public with sharing class DmsEmployeeTransactions {
             insert lines;
         } else {
             Map<Id,DMS_Goods_Receipt_Line__c> receipts=new Map<Id,DMS_Goods_Receipt_Line__c>([
-                SELECT Id,Product__c,Received_Cases__c,Case_Cost__c,Pieces_Per_Case__c,Batch_Number__c,Expiry_Date__c
+                SELECT Id,Product__c,Received_Cases__c,Free_Cases__c,Case_Cost__c,Pieces_Per_Case__c,Batch_Number__c,Expiry_Date__c
                 FROM DMS_Goods_Receipt_Line__c WHERE Id IN :receiptIds AND Goods_Receipt__r.Distributor__c=:cmd.distributorId
                 AND Goods_Receipt__r.Status__c='Received' FOR UPDATE]);
             Map<Id,Decimal> alreadyReturned=new Map<Id,Decimal>();
@@ -60,7 +60,7 @@ public with sharing class DmsEmployeeTransactions {
             for(LineInput input:cmd.lines) {
                 DMS_Goods_Receipt_Line__c receipt=receipts.get(input.receiptLineId);
                 Decimal previous=alreadyReturned.containsKey(input.receiptLineId)?alreadyReturned.get(input.receiptLineId):0;
-                if(receipt==null||previous+input.cases>receipt.Received_Cases__c)
+                if(receipt==null||previous+input.cases>receipt.Received_Cases__c+(receipt.Free_Cases__c==null?0:receipt.Free_Cases__c))
                     throw new DmsPortalApi.InputException('Return cases exceed the unreturned received cases for this distributor.');
                 if(!new Set<String>{'Damaged','Expired','Delayed Delivery','No Demand','Other'}.contains(input.reason)||
                     (input.reason=='Other'&&String.isBlank(input.notes)))

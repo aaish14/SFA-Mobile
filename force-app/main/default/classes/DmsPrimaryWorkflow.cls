@@ -103,6 +103,10 @@ public without sharing class DmsPrimaryWorkflow {
                 continue;
             }
             if(deleting) continue;
+            if(!isReturn && previous!=null && previous.get(row.Id).get('Scheme__c')!=null && row.get('Scheme__c')==null) {
+                row.put('Discount_Amount__c',0); row.put('Free_Cases__c',0); row.put('Free_Product__c',null);
+                row.put('Free_Pieces_Per_Case__c',null); row.put('Free_Gift__c',null); row.put('Gift_Quantity__c',0);
+            }
             Product__c product=products.get((Id)row.get('Product__c'));
             if(product==null || (!isReturn && (!product.Active__c || !product.Sellable__c))) {
                 row.addError('Select a valid product; new orders require an active, sellable product.');
@@ -122,11 +126,12 @@ public without sharing class DmsPrimaryWorkflow {
             Decimal cases=(Decimal)row.get('Cases__c');
             Decimal pieces=(Decimal)row.get('Pieces_Per_Case__c');
             Decimal price=(Decimal)row.get(priceField);
-            if(cases==null || cases<=0 || pieces==null || pieces<=0 ||
+            if(cases==null || cases<=0 || cases!=cases.setScale(0) || pieces==null || pieces<=0 || pieces!=pieces.setScale(0) ||
                 price==null || price<0 || (!isReturn && price==0)) {
-                row.addError('Enter positive cases and pieces per case, and a valid case price. Order case price must be greater than zero.');
+                row.addError('Enter positive whole cases and pieces per case, and a valid case price. Order case price must be greater than zero.');
             }
         }
+        if(!isReturn && !deleting) DmsPrimarySchemes.apply(records);
     }
 
     public static void updateOrderTotals(List<DMS_Primary_Order_Line__c> records,
