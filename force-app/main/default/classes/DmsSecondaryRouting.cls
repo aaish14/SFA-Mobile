@@ -28,7 +28,15 @@ public without sharing class DmsSecondaryRouting {
                 continue;
             }
             record.put('DMS_Distributor__c',outlet.DMS_Distributor__c);
-            record.put('DMS_Status__c','Pending');
+            // Only secondary sales orders are automatic. Returns keep their
+            // existing distributor decision workflow; primary orders are separate.
+            if(record.getSObjectType()==Sales_Order__c.SObjectType) {
+                record.put('DMS_Status__c','Approved');
+                record.put('DMS_Decision_Notes__c','Automatically approved secondary order.');
+                record.put('DMS_Decided_At__c',System.now());
+            } else {
+                record.put('DMS_Status__c','Pending');
+            }
         }
     }
 }

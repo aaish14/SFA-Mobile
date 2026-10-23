@@ -43,14 +43,18 @@ private class DmsSecondaryRoutingTest {
             Product__c=[SELECT Id FROM Product__c LIMIT 1].Id,Quantity__c=2,Return_Reason__c='Damaged');
         insert returned;
         Test.stopTest();
-        System.assertEquals(200,[SELECT COUNT() FROM Sales_Order__c WHERE DMS_Distributor__c=:distributor AND DMS_Status__c='Pending']);
+        System.assertEquals(200,[SELECT COUNT() FROM Sales_Order__c WHERE DMS_Distributor__c=:distributor AND DMS_Status__c='Approved' AND DMS_Decided_At__c!=null]);
+        System.assertEquals('Automatically approved secondary order.',
+            [SELECT DMS_Decision_Notes__c FROM Sales_Order__c LIMIT 1].DMS_Decision_Notes__c);
         System.assertEquals(distributor,[SELECT DMS_Distributor__c FROM Product_Return__c WHERE Id=:returned.Id].DMS_Distributor__c);
+        System.assertEquals('Pending',[SELECT DMS_Status__c FROM Product_Return__c WHERE Id=:returned.Id].DMS_Status__c);
     }
     @IsTest static void keepsUnmappedSfaRecordsAndRejectsWrongSupplier() {
         Id unmapped=[SELECT Id FROM Retailer__c WHERE Name='Unmapped outlet'].Id;
         Sales_Order__c legacy=orderFor(unmapped,null);
         insert legacy;
         System.assertEquals(null,[SELECT DMS_Distributor__c FROM Sales_Order__c WHERE Id=:legacy.Id].DMS_Distributor__c);
+        System.assertNotEquals('Approved',[SELECT DMS_Status__c FROM Sales_Order__c WHERE Id=:legacy.Id].DMS_Status__c);
         Id supplier=[SELECT Id FROM DMS_Distributor__c LIMIT 1].Id;
         Database.SaveResult missingMapping=Database.insert(orderFor(unmapped,supplier),false);
         System.assertEquals(false,missingMapping.isSuccess());
