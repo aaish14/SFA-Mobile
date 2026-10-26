@@ -68,18 +68,16 @@
         <detailHeading>false</detailHeading>
         <editHeading>false</editHeading>
         <layoutColumns/>
-        <layoutColumns/>
-        <layoutColumns/>
         <style>CustomLinks</style>
     </layoutSections>
-    <miniLayout>
-        <fields>Planned_Date__c</fields>
-    </miniLayout>
     <relatedLists>
         <fields>NAME</fields>
         <fields>Beat__c</fields>
         <relatedList>PJP_Selected_Beat__c.PJP__c</relatedList>
     </relatedLists>
+    <miniLayout>
+        <fields>Planned_Date__c</fields>
+    </miniLayout>
     <showEmailCheckbox>false</showEmailCheckbox>
     <showHighlightsPanel>true</showHighlightsPanel>
     <showInteractionLogPanel>false</showInteractionLogPanel>

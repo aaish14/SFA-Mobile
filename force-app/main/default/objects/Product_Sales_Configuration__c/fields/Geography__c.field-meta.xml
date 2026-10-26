@@ -7,8 +7,5 @@
     <referenceTo>Geography__c</referenceTo>
     <relationshipLabel>Product Sales Configurations</relationshipLabel>
     <relationshipName>Product_Sales_Configurations</relationshipName>
-    <required>false</required>
-    <trackHistory>false</trackHistory>
-    <trackTrending>false</trackTrending>
     <type>Lookup</type>
 </CustomField>

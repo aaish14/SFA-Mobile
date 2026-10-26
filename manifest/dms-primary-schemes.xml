@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Package xmlns="http://soap.sforce.com/2006/04/metadata">
+<types><members>DMS_Distributor_Survey__c</members><name>CustomObject</name></types>
+<types><members>DMS_Primary_Order_Line__c.Free_Product__c</members><members>DMS_Primary_Order_Line__c.Free_Pieces_Per_Case__c</members><members>DMS_Primary_Order_Line__c.Total_Pieces__c</members><name>CustomField</name></types>
+<types><members>DMS_Goods_Receipt_Line__c.Valid_Receipt_Quantities</members><members>DMS_Goods_Receipt_Line__c.Original_Line_Matches</members><members>Order_Item__c.No_Primary_Scheme</members><name>ValidationRule</name></types>
+<types><members>DmsPortalApi</members><members>DmsPortalApiTest</members><members>DmsPrimarySchemes</members><members>DmsPrimaryWorkflow</members><members>DmsEmployeeTransactions</members><name>ApexClass</name></types>
+<types><members>DmsDistributorSurvey</members><name>ApexTrigger</name></types>
+<types><members>DMS_Monthly_Surveys</members><members>DMS_Backend_Transactions</members><members>DMS_Distributor_Officer</members><name>PermissionSet</name></types>
+<types><members>DMS_Management</members><name>CustomApplication</name></types>
+<types><members>DMS_Distributor_Survey__c</members><name>CustomTab</name></types>
+<types><members>DMS_Distributor__c-DMS Distributor Layout</members><members>DMS_Distributor_Survey__c-Distributor Survey Layout</members><members>DMS_Primary_Order_Line__c-Primary Order Line Layout</members><name>Layout</name></types>
+<version>65.0</version></Package>

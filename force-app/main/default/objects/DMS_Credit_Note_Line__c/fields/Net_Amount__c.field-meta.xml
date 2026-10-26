@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Net_Amount__c</fullName>
+    <description>Net Credit. DMS schema from the October 15 mentor recordings and SFA &amp; DMS deck. Calculated in Salesforce.</description>
+    <formula>ROUND(Quantity__c * Unit_Credit__c, 2)</formula>
+    <formulaTreatBlanksAs>BlankAsZero</formulaTreatBlanksAs>
+    <label>Net Credit</label>
+    <precision>18</precision>
+    <scale>2</scale>
+    <type>Currency</type>
+</CustomField>

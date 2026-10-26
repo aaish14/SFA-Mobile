@@ -1,0 +1,165 @@
+openapi: 3.0.3
+info:
+  title: DMS distributor API
+  version: 1.0.0
+  description: Separate distributor sessions; existing SFA routes remain unchanged. Salesforce is the system of record.
+servers:
+  - url: /api/dms
+security:
+  - distributorSession: []
+paths:
+  /primary/catalogue:
+    get:
+      summary: Read active primary products and schemes for the signed-in distributor
+      description: Returns distributor/assigned officer, products with case prices and conversions, and current Primary schemes matching distributor geography. Each product includes only schemes linked directly or through active Scheme Products. Missing case configuration is not invented. Salesforce revalidates prices, dates, quantity thresholds and eligibility at submission.
+      responses:
+        '200': {description: distributor, products (each with schemes), retrievedAt}
+        '401': {description: Distributor login required}
+        '502': {description: Salesforce unavailable}
+  /primary/orders:
+    post:
+      summary: Place a distributor primary order and submit to its company officer
+      description: Identity comes only from the distributor session; employee IDs, prices and approver IDs are not accepted. Atomic creation of header, lines and approval request. Stable requestKey permits safe retries; changed content with the same key is rejected. Approval does not deliver goods or change stock. Employee SFA ordering remains separate and unchanged.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [requestKey, lines]
+              properties:
+                requestKey: {type: string, format: uuid}
+                notes: {type: string, maxLength: 1000}
+                lines:
+                  type: array
+                  minItems: 1
+                  maxItems: 50
+                  items:
+                    type: object
+                    additionalProperties: false
+                    required: [productId, cases]
+                    properties:
+                      productId: {type: string, pattern: '^[A-Za-z0-9]{18}$'}
+                      cases: {type: integer, minimum: 1, maximum: 100000}
+                      schemeId: {type: string, pattern: '^[A-Za-z0-9]{18}$'}
+      responses:
+        '200': {description: Salesforce id and Submitted status, or existing record current status on replay}
+        '400': {description: Invalid input, configuration or changed replay; no partial changes}
+        '401': {description: Distributor login required}
+        '403': {description: Distributor disabled}
+        '502': {description: Unconfirmed upstream result; retry with exactly the same key and payload}
+  /auth/request-code:
+    post:
+      security: []
+      summary: Send a one-use code to the unique active distributor login email
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email: {type: string, format: email}
+      responses:
+        '200': {description: Generic delivery acknowledgement; no code is returned}
+        '429': {description: Retry after rate limit}
+        '503': {description: Email service unavailable}
+  /auth/verify-code:
+    post:
+      security: []
+      summary: Exchange a one-use code for an eight-hour distributor-only session
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, code]
+              properties:
+                email: {type: string, format: email}
+                code: {type: string, pattern: '^\d{6}$'}
+      responses:
+        '200': {description: Token and distributor identity}
+        '401': {description: Invalid, consumed or expired code}
+  /overview:
+    get:
+      summary: Read this distributor's orders, returns, stock, receipts, invoices, tickets, outlet assets and outlets
+      description: Includes retrievedAt and per-list limit metadata. Lists are capped at 200. dashboard contains separately aggregated lifetime received-purchase and issued-sales values, order counts, and a six-calendar-month purchased-versus-sold series (including the current month). Values are gross posted document values, not net of returns. No records from other distributors are returned.
+      responses:
+        '200': {description: Salesforce snapshot}
+        '401': {description: Distributor login required}
+        '403': {description: Distributor disabled}
+        '502': {description: Salesforce unavailable; retain cached data labelled offline}
+  /reports:
+    get:
+      summary: Four distributor-scoped management reports
+      description: >-
+        Current and previous calendar months in Asia/Kolkata. Sales is booked secondary
+        order value (Submitted/Fulfilled, excluding distributor rejection), not invoiced
+        revenue or net of returns. Overall and employee/area/product targets come from
+        DMS Sales Targets; missing targets are null, never invented. Beat productivity
+        compares unique outlets in approved PJP beats with unique visited outlets and
+        visited outlets with orders. Coverage is active buying outlets / active assigned
+        outlets. Stock includes product/batch quantities, expiry within 30 days, and
+        no issued invoice movement in 30 days (a review flag, not proof of low demand).
+        Reports use complete paginated Salesforce queries, independent of detail-list
+        limits. Distributor identity comes only from the authenticated session.
+      responses:
+        '200': {description: reports with period, sales, beats, coverage, stock and calculatedAt}
+        '401': {description: Sign in required}
+        '403': {description: Distributor disabled}
+        '502': {description: Report could not be calculated; do not show invented zeroes}
+  /tickets:
+    post:
+      summary: Create a distributor support ticket
+      description: requestKey is a stable UUID. Retries return the existing ticket. Distributor identity comes from the session, not the request body.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [requestKey, subject, category, description]
+              properties:
+                requestKey: {type: string, format: uuid}
+                subject: {type: string, minLength: 1, maxLength: 180}
+                category: {type: string, enum: [Product, Portal, Delivery]}
+                description: {type: string, minLength: 1, maxLength: 32000}
+      responses:
+        '200': {description: Created or previously saved record}
+        '400': {description: Invalid input}
+        '502': {description: Upstream failure; retry with same key}
+  /transactions:
+    post:
+      summary: Decide a secondary order or return, or receive goods against an approved primary order
+      description: Mutations are atomic in Salesforce. Approval never changes stock. receiveGoods requires a stable requestKey, approved order line, positive whole cases, batch and expiry. Over-receipts and cross-distributor records are rejected. Decision retries with the same result are safe.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [action]
+              properties:
+                action: {type: string, enum: [secondaryDecision, returnDecision, receiveGoods]}
+                recordId: {type: string}
+                decision: {type: string, enum: [Approved, Rejected]}
+                notes: {type: string, maxLength: 255}
+                requestKey: {type: string, format: uuid}
+                cases: {type: integer, minimum: 1, maximum: 100000}
+                receiptKind: {type: string, enum: [Paid, Free], default: Paid, description: Free receives the snapshotted scheme entitlement and its product/conversion at zero cost. Paid and Free are received separately with their own batch/expiry.}
+                batch: {type: string, maxLength: 80}
+                expiry: {type: string, format: date}
+      responses:
+        '200': {description: Saved Salesforce transaction}
+        '400': {description: Invalid input or transition; no partial writes}
+        '401': {description: Login required}
+        '502': {description: Upstream failure; no success is implied}
+components:
+  securitySchemes:
+    distributorSession:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

@@ -40,6 +40,8 @@
                 <default>false</default>
                 <label>Other</label>
             </value>
+            <value><fullName>Delayed Delivery</fullName><default>false</default><label>Delayed Delivery</label></value>
+            <value><fullName>No Demand</fullName><default>false</default><label>No Demand</label></value>
         </valueSetDefinition>
     </valueSet>
 </CustomField>

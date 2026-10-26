@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Location__c</fullName>
+    <description>Distributor Location. DMS schema from the October 15 mentor recordings and SFA &amp; DMS deck. Inventory posting and application sync are separate automation, not performed by this field.</description>
+    <label>Distributor Location</label>
+    <scale>7</scale>
+    <displayLocationInDecimal>true</displayLocationInDecimal>
+    <type>Location</type>
+</CustomField>

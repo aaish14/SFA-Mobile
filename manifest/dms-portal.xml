@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Package xmlns="http://soap.sforce.com/2006/04/metadata">
+<types><members>DMS_Support_Ticket__c</members><name>CustomObject</name></types>
+<types><members>DMS_Goods_Receipt__c.Request_Key__c</members><members>DMS_Primary_Return__c.Request_Key__c</members><members>DMS_Primary_Order__c.Request_Key__c</members><members>DMS_Primary_Order__c.Request_Hash__c</members><members>DMS_Primary_Return__c.Request_Hash__c</members><name>CustomField</name></types>
+<types><members>DmsPortalApi</members><members>DmsPortalApiTest</members><members>DmsTicketRules</members><members>DmsEmployeeTransactions</members><name>ApexClass</name></types>
+<types><members>DmsSupportTicket</members><name>ApexTrigger</name></types>
+<types><members>DMS_Trusted_Backend</members><name>CustomPermission</name></types>
+<types><members>DMS_Backend_Transactions</members><members>DMS_Ticket_Officer</members><name>PermissionSet</name></types>
+<types><members>DMS_Support_Ticket__c</members><name>CustomTab</name></types>
+<types><members>DMS_Support_Ticket__c-DMS Support Ticket Layout</members><name>Layout</name></types>
+<version>65.0</version></Package>

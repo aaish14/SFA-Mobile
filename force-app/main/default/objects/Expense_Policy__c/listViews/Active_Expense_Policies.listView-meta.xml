@@ -12,10 +12,6 @@
     <columns>Start_Date__c</columns>
     <columns>End_Date__c</columns>
     <filterScope>Everything</filterScope>
-    <filters>
-        <field>Active__c</field>
-        <operation>equals</operation>
-        <value>1</value>
-    </filters>
+    <filters><field>Active__c</field><operation>equals</operation><value>1</value></filters>
     <label>Active Expense Policies</label>
 </ListView>

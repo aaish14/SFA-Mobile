@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Discontinued__c</fullName>
+    <defaultValue>false</defaultValue>
+    <description>Marks a distributor as discontinued without deleting its history. Saving this checkbox clears Active and prevents DMS access through existing active-distributor checks.</description>
+    <inlineHelpText>Select and save to discontinue this distributor. To reactivate, clear Discontinued and explicitly select Active.</inlineHelpText>
+    <label>Discontinued</label>
+    <type>Checkbox</type>
+</CustomField>

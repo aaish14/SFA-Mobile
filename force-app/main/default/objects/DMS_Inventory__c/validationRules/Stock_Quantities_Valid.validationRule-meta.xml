@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ValidationRule xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Stock_Quantities_Valid</fullName>
+    <active>true</active>
+    <errorConditionFormula>OR(On_Hand_Pieces__c &lt; 0, Reserved_Pieces__c &lt; 0, Reserved_Pieces__c &gt; On_Hand_Pieces__c, Reorder_Level_Pieces__c &lt; 0)</errorConditionFormula>
+    <errorMessage>Stock cannot be negative and reserved pieces cannot exceed on-hand pieces.</errorMessage>
+</ValidationRule>

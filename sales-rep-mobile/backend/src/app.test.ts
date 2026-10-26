@@ -10,6 +10,9 @@ beforeAll(async () => {
   ({ app } = await import("./app.js"));
 });
 
+/**
+ * Create a test authentication token for requests to the local test application.
+ */
 async function token() {
   const requested = await request(app)
     .post("/api/auth/request-code")
@@ -46,8 +49,12 @@ describe("SFA API", () => {
 
   it("loads dashboard and beats", async () => {
     const t = await token();
-    expect((await request(app).get("/api/dashboard").set("Authorization", `Bearer ${t}`)).body.success).toBe(true);
-    expect((await request(app).get("/api/beats").set("Authorization", `Bearer ${t}`)).body.data.length).toBeGreaterThan(0);
+    expect(
+      (await request(app).get("/api/dashboard").set("Authorization", `Bearer ${t}`)).body.success,
+    ).toBe(true);
+    expect(
+      (await request(app).get("/api/beats").set("Authorization", `Bearer ${t}`)).body.data.length,
+    ).toBeGreaterThan(0);
   });
 
   it("submits more than one expense claim in one request", async () => {
@@ -55,10 +62,12 @@ describe("SFA API", () => {
     const response = await request(app)
       .post("/api/expenses")
       .set("Authorization", `Bearer ${t}`)
-      .send({ claims: [
-        { policyId: "policy-travel", amount: 250, remarks: "Bus fare" },
-        { policyId: "policy-food", amount: 110, remarks: "Lunch" },
-      ] });
+      .send({
+        claims: [
+          { policyId: "policy-travel", amount: 250, remarks: "Bus fare" },
+          { policyId: "policy-food", amount: 110, remarks: "Lunch" },
+        ],
+      });
     expect(response.body.success).toBe(true);
     expect(response.body.data).toHaveLength(2);
   });

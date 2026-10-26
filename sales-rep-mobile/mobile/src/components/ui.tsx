@@ -1,13 +1,15 @@
 import React from "react";
 import { Pressable, StyleSheet, Text, View, ViewStyle } from "react-native";
 import { colors } from "../constants/theme";
-export const Card = ({
-  children,
-  style,
-}: {
-  children: React.ReactNode;
-  style?: ViewStyle;
-}) => <View style={[s.card, style]}>{children}</View>;
+/**
+ * Group related content inside the shared card container.
+ */
+export const Card = ({ children, style }: { children: React.ReactNode; style?: ViewStyle }) => (
+  <View style={[s.card, style]}>{children}</View>
+);
+/**
+ * Render the shared action control with the supplied style, disabled state and press callback.
+ */
 export const Button = ({
   title,
   onPress,
@@ -29,16 +31,18 @@ export const Button = ({
       disabled && { opacity: 0.45 },
     ]}
   >
-    <Text
-      style={[s.buttonText, kind === "secondary" && { color: colors.brand }]}
-    >
-      {title}
-    </Text>
+    <Text style={[s.buttonText, kind === "secondary" && { color: colors.brand }]}>{title}</Text>
   </Pressable>
 );
+/**
+ * Render a consistently styled section or field label.
+ */
 export const Label = ({ children }: { children: React.ReactNode }) => (
   <Text style={s.label}>{children}</Text>
 );
+/**
+ * Render a numeric value using the application currency display convention.
+ */
 export const Money = ({ value }: { value: number }) => (
   <Text>₹{new Intl.NumberFormat("en-IN").format(value)}</Text>
 );

@@ -3,8 +3,14 @@ import { salesforce } from "../salesforce/SalesforceService.js";
 import { sendDistributorInvitation } from "../services/emailService.js";
 import { escapeSoqlLiteral } from "../utils/salesforce.js";
 
+/**
+ * Read the invitation script inputs and send the configured application invitation; this entry
+ * point sends email when executed.
+ */
 async function main() {
-  const email = String(process.argv[2] || "").trim().toLowerCase();
+  const email = String(process.argv[2] || "")
+    .trim()
+    .toLowerCase();
 
   if (!/^\S+@\S+\.\S+$/.test(email)) {
     throw new Error("Pass a valid distributor email address");

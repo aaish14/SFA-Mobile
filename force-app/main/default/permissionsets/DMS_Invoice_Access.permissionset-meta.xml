@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<PermissionSet xmlns="http://soap.sforce.com/2006/04/metadata">
+<fieldPermissions><editable>false</editable><field>DMS_Invoice__c.Primary_Order__c</field><readable>true</readable></fieldPermissions>
+<fieldPermissions><editable>false</editable><field>DMS_Invoice__c.Source_Key__c</field><readable>true</readable></fieldPermissions>
+<fieldPermissions><editable>false</editable><field>DMS_Invoice__c.Bill_To_Name__c</field><readable>true</readable></fieldPermissions>
+<fieldPermissions><editable>false</editable><field>DMS_Invoice__c.Supplier_Name__c</field><readable>true</readable></fieldPermissions>
+<fieldPermissions><editable>false</editable><field>DMS_Invoice_Line__c.Primary_Order_Line__c</field><readable>true</readable></fieldPermissions>
+<fieldPermissions><editable>false</editable><field>DMS_Invoice_Line__c.Cases__c</field><readable>true</readable></fieldPermissions>
+<fieldPermissions><editable>false</editable><field>DMS_Invoice_Line__c.Case_Price__c</field><readable>true</readable></fieldPermissions>
+<fieldPermissions><editable>false</editable><field>DMS_Invoice_Line__c.Snapshot_Gross__c</field><readable>true</readable></fieldPermissions>
+<fieldPermissions><editable>false</editable><field>DMS_Invoice_Line__c.Snapshot_Tax__c</field><readable>true</readable></fieldPermissions>
+<fieldPermissions><editable>false</editable><field>DMS_Invoice_Line__c.Snapshot_Total__c</field><readable>true</readable></fieldPermissions>
+<fieldPermissions><editable>false</editable><field>DMS_Invoice_Line__c.Product_Name__c</field><readable>true</readable></fieldPermissions>
+<fieldPermissions><editable>false</editable><field>DMS_Invoice_Line__c.Scheme_Name__c</field><readable>true</readable></fieldPermissions>
+<fieldPermissions><editable>false</editable><field>DMS_Invoice_Line__c.Bonus_Details__c</field><readable>true</readable></fieldPermissions>
+<fieldPermissions><editable>true</editable><field>Order_Item__c.Invoice_Tax_Amount__c</field><readable>true</readable></fieldPermissions>
+<fieldPermissions><editable>true</editable><field>Sales_Order__c.Invoice_Ready__c</field><readable>true</readable></fieldPermissions>
+<fieldPermissions><editable>false</editable><field>DMS_Invoice__c.Sales_Order__c</field><readable>true</readable></fieldPermissions>
+<fieldPermissions><editable>false</editable><field>DMS_Invoice__c.Outlet__c</field><readable>true</readable></fieldPermissions>
+<fieldPermissions><editable>false</editable><field>DMS_Invoice_Line__c.Gross_Amount__c</field><readable>true</readable></fieldPermissions>
+<fieldPermissions><editable>false</editable><field>DMS_Invoice_Line__c.Tax_Amount__c</field><readable>true</readable></fieldPermissions>
+<fieldPermissions><editable>false</editable><field>DMS_Invoice_Line__c.Total_Amount__c</field><readable>true</readable></fieldPermissions>
+<fieldPermissions><editable>false</editable><field>DMS_Invoice__c.Status__c</field><readable>true</readable></fieldPermissions>
+<fieldPermissions><editable>false</editable><field>DMS_Invoice__c.Invoice_Date__c</field><readable>true</readable></fieldPermissions>
+<fieldPermissions><editable>false</editable><field>DMS_Invoice__c.Gross_Amount__c</field><readable>true</readable></fieldPermissions>
+<fieldPermissions><editable>false</editable><field>DMS_Invoice__c.Discount_Amount__c</field><readable>true</readable></fieldPermissions>
+<fieldPermissions><editable>false</editable><field>DMS_Invoice__c.Tax_Amount__c</field><readable>true</readable></fieldPermissions>
+<fieldPermissions><editable>false</editable><field>DMS_Invoice__c.Total_Amount__c</field><readable>true</readable></fieldPermissions>
+<fieldPermissions><editable>false</editable><field>DMS_Invoice__c.Paid_Amount__c</field><readable>true</readable></fieldPermissions>
+<fieldPermissions><editable>false</editable><field>DMS_Invoice__c.Balance_Due__c</field><readable>true</readable></fieldPermissions>
+<fieldPermissions><editable>false</editable><field>DMS_Invoice_Line__c.Quantity_Pieces__c</field><readable>true</readable></fieldPermissions>
+<fieldPermissions><editable>false</editable><field>DMS_Invoice_Line__c.Unit_Price__c</field><readable>true</readable></fieldPermissions>
+<fieldPermissions><editable>false</editable><field>DMS_Invoice_Line__c.Discount_Amount__c</field><readable>true</readable></fieldPermissions>
+<fieldPermissions><editable>false</editable><field>DMS_Invoice_Line__c.Scheme__c</field><readable>true</readable></fieldPermissions>
+<hasActivationRequired>false</hasActivationRequired><label>DMS Invoice Access</label>
+<objectPermissions><allowCreate>false</allowCreate><allowDelete>false</allowDelete><allowEdit>false</allowEdit><allowRead>true</allowRead><modifyAllRecords>false</modifyAllRecords><object>DMS_Invoice__c</object><viewAllRecords>false</viewAllRecords></objectPermissions>
+<objectPermissions><allowCreate>false</allowCreate><allowDelete>false</allowDelete><allowEdit>false</allowEdit><allowRead>true</allowRead><modifyAllRecords>false</modifyAllRecords><object>DMS_Invoice_Line__c</object><viewAllRecords>false</viewAllRecords></objectPermissions>
+</PermissionSet>

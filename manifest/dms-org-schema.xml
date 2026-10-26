@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Package xmlns="http://soap.sforce.com/2006/04/metadata">
+    <types>
+        <members>DMS_Distributor__c</members>
+        <members>DMS_Primary_Order__c</members>
+        <members>DMS_Primary_Order_Line__c</members>
+        <members>DMS_Goods_Receipt__c</members>
+        <members>DMS_Goods_Receipt_Line__c</members>
+        <members>DMS_Inventory__c</members>
+        <members>DMS_Invoice__c</members>
+        <members>DMS_Invoice_Line__c</members>
+        <members>DMS_Primary_Return__c</members>
+        <members>DMS_Primary_Return_Line__c</members>
+        <members>DMS_Credit_Note__c</members>
+        <members>DMS_Credit_Note_Line__c</members>
+        <name>CustomObject</name>
+    </types>
+    <types>
+        <members>Product__c.Boxes_Per_Case__c</members>
+        <members>Product__c.Pieces_Per_Box__c</members>
+        <members>Product__c.Box_Conversion_Pieces__c</members>
+        <members>Scheme__c.Minimum_Cases__c</members>
+        <members>Scheme__c.Free_Cases__c</members>
+        <members>Scheme__c.Free_Gift__c</members>
+        <members>Scheme__c.Gift_Quantity__c</members>
+        <members>Product_Return__c.DMS_Distributor__c</members>
+        <members>Product_Return__c.Invoice_Line__c</members>
+        <members>Product_Return__c.DMS_Status__c</members>
+        <members>Product_Return__c.DMS_Decision_Notes__c</members>
+        <members>Product__c.DMS_Case_Price__c</members>
+        <members>Scheme__c.Sales_Channel__c</members>
+        <members>Retailer__c.DMS_Distributor__c</members>
+        <members>Sales_Order__c.DMS_Distributor__c</members>
+        <members>Sales_Order__c.DMS_Status__c</members>
+        <members>Sales_Order__c.DMS_Decision_Notes__c</members>
+        <members>Sales_Order__c.DMS_Decided_At__c</members>
+        <members>Product_Return__c.Return_Reason__c</members>
+        <name>CustomField</name>
+    </types>
+    <types>
+        <members>DMS_Distributor__c-DMS Distributor Layout</members>
+        <members>DMS_Primary_Order__c-Primary Order Layout</members>
+        <members>DMS_Primary_Order_Line__c-Primary Order Line Layout</members>
+        <members>DMS_Goods_Receipt__c-Goods Receipt Layout</members>
+        <members>DMS_Goods_Receipt_Line__c-Goods Receipt Line Layout</members>
+        <members>DMS_Inventory__c-Distributor Inventory Layout</members>
+        <members>DMS_Invoice__c-DMS Invoice Layout</members>
+        <members>DMS_Invoice_Line__c-DMS Invoice Line Layout</members>
+        <members>DMS_Primary_Return__c-Primary Return Layout</members>
+        <members>DMS_Primary_Return_Line__c-Primary Return Line Layout</members>
+        <members>DMS_Credit_Note__c-Credit Note Layout</members>
+        <members>DMS_Credit_Note_Line__c-Credit Note Line Layout</members>
+        <members>Product__c-Product Layout</members>
+        <members>Scheme__c-Scheme Layout</members>
+        <members>Retailer__c-Retailer Layout</members>
+        <members>Sales_Order__c-Sales Order Layout</members>
+        <members>Product_Return__c-Product Return Layout</members>
+        <name>Layout</name>
+    </types>
+    <types>
+        <members>DMS_Distributor__c</members>
+        <members>DMS_Primary_Order__c</members>
+        <members>DMS_Primary_Order_Line__c</members>
+        <members>DMS_Goods_Receipt__c</members>
+        <members>DMS_Goods_Receipt_Line__c</members>
+        <members>DMS_Inventory__c</members>
+        <members>DMS_Invoice__c</members>
+        <members>DMS_Invoice_Line__c</members>
+        <members>DMS_Primary_Return__c</members>
+        <members>DMS_Primary_Return_Line__c</members>
+        <members>DMS_Credit_Note__c</members>
+        <members>DMS_Credit_Note_Line__c</members>
+        <name>CustomTab</name>
+    </types>
+    <types>
+        <members>DMS_Management</members>
+        <name>CustomApplication</name>
+    </types>
+    <types>
+        <members>DMS_Configuration_Admin</members>
+        <name>PermissionSet</name>
+    </types>
+    <version>65.0</version>
+</Package>

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Gross_Amount__c</fullName>
+    <description>Gross Amount. DMS schema from the October 15 mentor recordings and SFA &amp; DMS deck. Calculated from related line records.</description>
+    <label>Gross Amount</label>
+    <summarizedField>DMS_Invoice_Line__c.Gross_Amount__c</summarizedField>
+    <summaryForeignKey>DMS_Invoice_Line__c.Invoice__c</summaryForeignKey>
+    <summaryOperation>sum</summaryOperation>
+    <type>Summary</type>
+</CustomField>

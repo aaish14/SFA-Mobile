@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ValidationRule xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Credit_Channel_And_Recipient</fullName>
+    <active>true</active>
+    <errorConditionFormula>OR(AND(ISPICKVAL(Sales_Channel__c,'Secondary'), ISBLANK(Outlet__c)), AND(ISPICKVAL(Sales_Channel__c,'Primary'), OR(NOT(ISBLANK(Outlet__c)),NOT(ISBLANK(Secondary_Return__c)),NOT(ISBLANK(Invoice__c)))), AND(ISPICKVAL(Sales_Channel__c,'Secondary'), NOT(ISBLANK(Primary_Return__c))))</errorConditionFormula>
+    <errorMessage>Primary credits are for the distributor; secondary credits require an outlet and cannot reference a primary return.</errorMessage>
+</ValidationRule>

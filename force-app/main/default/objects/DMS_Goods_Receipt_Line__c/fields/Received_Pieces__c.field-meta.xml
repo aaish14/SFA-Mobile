@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Received_Pieces__c</fullName>
+    <description>Received Pieces. DMS schema from the October 15 mentor recordings and SFA &amp; DMS deck. Calculated in Salesforce.</description>
+    <formula>(Received_Cases__c + BLANKVALUE(Free_Cases__c, 0)) * Pieces_Per_Case__c</formula>
+    <formulaTreatBlanksAs>BlankAsZero</formulaTreatBlanksAs>
+    <label>Received Pieces</label>
+    <precision>18</precision>
+    <scale>0</scale>
+    <type>Number</type>
+</CustomField>

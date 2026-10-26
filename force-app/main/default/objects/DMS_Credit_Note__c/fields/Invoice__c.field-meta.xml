@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Invoice__c</fullName>
+    <deleteConstraint>Restrict</deleteConstraint>
+    <description>Secondary Invoice. DMS schema from the October 15 mentor recordings and SFA &amp; DMS deck. Inventory posting and application sync are separate automation, not performed by this field.</description>
+    <label>Secondary Invoice</label>
+    <referenceTo>DMS_Invoice__c</referenceTo>
+    <relationshipLabel>Credit Notes</relationshipLabel>
+    <relationshipName>Credit_Notes</relationshipName>
+    <required>false</required>
+    <type>Lookup</type>
+</CustomField>

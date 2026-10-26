@@ -1,12 +1,1 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<ListView xmlns="http://soap.sforce.com/2006/04/metadata">
-    <fullName>All_Survey_Responses</fullName>
-    <columns>NAME</columns>
-    <columns>Survey__c</columns>
-    <columns>Outlet__c</columns>
-    <columns>Employee__c</columns>
-    <columns>Status__c</columns>
-    <columns>Submitted_At__c</columns>
-    <filterScope>Everything</filterScope>
-    <label>All Survey Responses</label>
-</ListView>
+<?xml version="1.0" encoding="UTF-8"?><ListView xmlns="http://soap.sforce.com/2006/04/metadata"><fullName>All_Survey_Responses</fullName><columns>NAME</columns><columns>Survey__c</columns><columns>Outlet__c</columns><columns>Employee__c</columns><columns>Status__c</columns><columns>Submitted_At__c</columns><filterScope>Everything</filterScope><label>All Survey Responses</label></ListView>

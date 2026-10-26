@@ -1,0 +1,12 @@
+{
+  "name": "sfa-dms-code-quality",
+  "private": true,
+  "description": "Local formatting and guide tools; not part of either application runtime.",
+  "scripts": {
+    "check:methods": "node method-audit.cjs",
+    "check:apex": "prettier --plugin=prettier-plugin-apex --check ../../force-app/main/default/**/*.{cls,trigger}",
+    "verify:apex-format": "prettier --plugin=prettier-plugin-apex --debug-check ../../force-app/main/default/**/*.{cls,trigger}",
+    "format:apex": "prettier --plugin=prettier-plugin-apex --write ../../force-app/main/default/**/*.{cls,trigger}"
+  },
+  "devDependencies": { "prettier": "3.9.10", "prettier-plugin-apex": "2.3.0" }
+}

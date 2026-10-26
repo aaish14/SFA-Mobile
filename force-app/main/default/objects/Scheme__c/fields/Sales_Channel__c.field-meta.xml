@@ -1,24 +1,2 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
-    <fullName>Sales_Channel__c</fullName>
-    <label>Primary or Secondary</label>
-    <required>false</required>
-    <trackTrending>false</trackTrending>
-    <type>Picklist</type>
-    <valueSet>
-        <restricted>true</restricted>
-        <valueSetDefinition>
-            <sorted>false</sorted>
-            <value>
-                <fullName>Primary</fullName>
-                <default>false</default>
-                <label>Primary</label>
-            </value>
-            <value>
-                <fullName>Secondary</fullName>
-                <default>true</default>
-                <label>Secondary</label>
-            </value>
-        </valueSetDefinition>
-    </valueSet>
-</CustomField>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata"><fullName>Sales_Channel__c</fullName><label>Primary or Secondary</label><type>Picklist</type><valueSet><restricted>true</restricted><valueSetDefinition><sorted>false</sorted><value><fullName>Primary</fullName><default>false</default><label>Primary</label></value><value><fullName>Secondary</fullName><default>true</default><label>Secondary</label></value></valueSetDefinition></valueSet></CustomField>

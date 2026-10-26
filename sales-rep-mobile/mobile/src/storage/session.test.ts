@@ -10,12 +10,22 @@ describe("log out", () => {
   beforeEach(() => {
     vi.resetAllMocks();
     pendingCount.mockResolvedValue(0);
-    storage.getAllKeys.mockResolvedValue(["token", "currentUser", "sfa-api-cache:old:/products", "sfa-pending-sync", "preference"]);
+    storage.getAllKeys.mockResolvedValue([
+      "token",
+      "currentUser",
+      "sfa-api-cache:old:/products",
+      "sfa-pending-sync",
+      "preference",
+    ]);
     storage.multiRemove.mockResolvedValue(undefined);
   });
   it("removes credentials and cached records, preserving unrelated settings", async () => {
     await logOut();
-    expect(storage.multiRemove).toHaveBeenCalledWith(["token", "currentUser", "sfa-api-cache:old:/products"]);
+    expect(storage.multiRemove).toHaveBeenCalledWith([
+      "token",
+      "currentUser",
+      "sfa-api-cache:old:/products",
+    ]);
   });
   it("keeps the session and offline work when changes are waiting to sync", async () => {
     pendingCount.mockResolvedValue(2);

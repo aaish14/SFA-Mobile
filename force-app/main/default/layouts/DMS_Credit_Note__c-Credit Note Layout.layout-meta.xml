@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Layout xmlns="http://soap.sforce.com/2006/04/metadata">
+    <layoutSections>
+        <customLabel>true</customLabel><detailHeading>true</detailHeading><editHeading>true</editHeading><label>Credit Note Information</label>
+        <layoutColumns>
+            <layoutItems><behavior>Readonly</behavior><field>Name</field></layoutItems>
+            <layoutItems><behavior>Edit</behavior><field>Status__c</field></layoutItems>
+            <layoutItems><behavior>Edit</behavior><field>Invoice__c</field></layoutItems>
+            <layoutItems><behavior>Edit</behavior><field>Outlet__c</field></layoutItems>
+            <layoutItems><behavior>Edit</behavior><field>Reason__c</field></layoutItems>
+            <layoutItems><behavior>Edit</behavior><field>Scheme__c</field></layoutItems>
+            <layoutItems><behavior>Readonly</behavior><field>Total_Amount__c</field></layoutItems>
+        </layoutColumns>
+        <layoutColumns>
+            <layoutItems><behavior>Required</behavior><field>Distributor__c</field></layoutItems>
+            <layoutItems><behavior>Edit</behavior><field>Credit_Date__c</field></layoutItems>
+            <layoutItems><behavior>Edit</behavior><field>Notes__c</field></layoutItems>
+            <layoutItems><behavior>Edit</behavior><field>Primary_Return__c</field></layoutItems>
+            <layoutItems><behavior>Edit</behavior><field>Sales_Channel__c</field></layoutItems>
+            <layoutItems><behavior>Edit</behavior><field>Secondary_Return__c</field></layoutItems>
+        </layoutColumns>
+        <style>TwoColumnsTopToBottom</style>
+    </layoutSections>
+    <relatedLists><fields>NAME</fields><fields>Product__c</fields><fields>Total_Amount__c</fields><relatedList>DMS_Credit_Note_Line__c.Credit_Note__c</relatedList></relatedLists>
+    <showEmailCheckbox>false</showEmailCheckbox><showHighlightsPanel>true</showHighlightsPanel><showInteractionLogPanel>false</showInteractionLogPanel><showRunAssignmentRulesCheckbox>false</showRunAssignmentRulesCheckbox><showSubmitAndAttachButton>false</showSubmitAndAttachButton>
+</Layout>

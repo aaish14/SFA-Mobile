@@ -9,10 +9,6 @@
     <columns>Receipt_URL__c</columns>
     <columns>Status__c</columns>
     <filterScope>Everything</filterScope>
-    <filters>
-        <field>Status__c</field>
-        <operation>equals</operation>
-        <value>Submitted</value>
-    </filters>
+    <filters><field>Status__c</field><operation>equals</operation><value>Submitted</value></filters>
     <label>Submitted Expense Claims</label>
 </ListView>

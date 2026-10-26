@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomObject xmlns="http://soap.sforce.com/2006/04/metadata">
+    <deploymentStatus>Deployed</deploymentStatus>
+    <description>Primary Return records for distributor management. This release provides schema and calculations only; no stock-posting automation is enabled.</description>
+    <enableActivities>true</enableActivities>
+    <enableReports>true</enableReports>
+    <label>Primary Return</label>
+    <nameField><displayFormat>PR-{000000}</displayFormat><label>Primary Return Number</label><type>AutoNumber</type></nameField>
+    <pluralLabel>Primary Returns</pluralLabel>
+    <sharingModel>Private</sharingModel>
+</CustomObject>

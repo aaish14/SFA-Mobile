@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Package xmlns="http://soap.sforce.com/2006/04/metadata">
+<types><members>DmsPrimaryWorkflow</members><members>DmsPrimaryWorkflowTest</members><members>DmsOfficerSharing</members><name>ApexClass</name></types>
+<types><members>DMS_Primary_Order__c.Officer_Access__c</members><members>DMS_Primary_Order_Line__c.Officer_Access__c</members><members>DMS_Primary_Return__c.Officer_Access__c</members><name>SharingReason</name></types>
+<types><members>DmsPrimaryOrderRules</members><members>DmsPrimaryReturnRules</members><members>DmsPrimaryOrderLineRules</members><members>DmsPrimaryReturnLineRules</members><name>ApexTrigger</name></types>
+<types><members>DMS_Primary_Return__c</members><name>Workflow</name></types>
+<types><members>DMS_Primary_Return__c.Company_Officer_Return_Approval</members><name>ApprovalProcess</name></types>
+<version>65.0</version></Package>

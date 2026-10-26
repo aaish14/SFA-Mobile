@@ -4,6 +4,5 @@
     <defaultValue>false</defaultValue>
     <description>Set only after all selected order lines are saved. Approved submitted orders are invoiced atomically.</description>
     <label>Order Ready for Invoice</label>
-    <trackTrending>false</trackTrending>
     <type>Checkbox</type>
 </CustomField>

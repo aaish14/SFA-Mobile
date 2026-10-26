@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Package xmlns="http://soap.sforce.com/2006/04/metadata">
+<types><members>DmsInvoiceService</members><members>DmsInvoiceServiceTest</members><name>ApexClass</name></types>
+<types><members>DmsPrimaryOrderRules</members><members>DmsSecondaryOrderRouting</members><name>ApexTrigger</name></types>
+<types><members>DMS_Invoice__c.Primary_Order__c</members><members>DMS_Invoice__c.Source_Key__c</members><members>DMS_Invoice__c.Bill_To_Name__c</members><members>DMS_Invoice__c.Supplier_Name__c</members><members>DMS_Invoice_Line__c.Primary_Order_Line__c</members><members>DMS_Invoice_Line__c.Cases__c</members><members>DMS_Invoice_Line__c.Case_Price__c</members><members>DMS_Invoice_Line__c.Snapshot_Gross__c</members><members>DMS_Invoice_Line__c.Snapshot_Tax__c</members><members>DMS_Invoice_Line__c.Snapshot_Total__c</members><members>DMS_Invoice_Line__c.Product_Name__c</members><members>DMS_Invoice_Line__c.Scheme_Name__c</members><members>DMS_Invoice_Line__c.Bonus_Details__c</members><members>Order_Item__c.Invoice_Tax_Amount__c</members><members>Sales_Order__c.Invoice_Ready__c</members><members>DMS_Invoice__c.Sales_Order__c</members><members>DMS_Invoice__c.Outlet__c</members><members>DMS_Invoice_Line__c.Gross_Amount__c</members><members>DMS_Invoice_Line__c.Tax_Amount__c</members><members>DMS_Invoice_Line__c.Total_Amount__c</members><name>CustomField</name></types>
+<types><members>DMS_Invoice__c.Order_Outlet_And_Distributor_Match</members><name>ValidationRule</name></types>
+<types><members>DMS_Invoice_Access</members><name>PermissionSet</name></types>
+<types><members>DMS_Invoice__c-DMS Invoice Layout</members><name>Layout</name></types>
+<version>65.0</version>
+</Package>

@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Package xmlns="http://soap.sforce.com/2006/04/metadata">
+    <types>
+        <members>Product_Return__c.Mobile_Request_Key__c</members>
+        <members>Competitor_Activity__c.Mobile_Request_Key__c</members>
+        <members>SFA_Ticket__c.Mobile_Request_Key__c</members>
+        <members>Stock_Check__c.Mobile_Request_Key__c</members>
+        <members>Asset_Survey__c.Mobile_Request_Key__c</members>
+        <members>Product_Refusal__c.Employee__c</members>
+        <members>Product_Refusal__c.Sales_Representative__c</members>
+        <members>Product_Refusal__c.Notes__c</members>
+        <members>Product_Refusal__c.Refused_At__c</members>
+        <name>CustomField</name>
+    </types>
+    <types><members>Product_Refusal__c.Employee_or_Representative_Required</members><name>ValidationRule</name></types>
+    <version>67.0</version>
+</Package>

@@ -1,0 +1,2 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ValidationRule xmlns="http://soap.sforce.com/2006/04/metadata"><fullName>Valid_Month_And_Scope</fullName><active>true</active><errorConditionFormula>OR(DAY(Month__c) != 1, Target_Amount__c &lt;= 0, IF(ISBLANK(Employee__c),0,1)+IF(ISBLANK(Geography__c),0,1)+IF(ISBLANK(Product__c),0,1) &gt; 1)</errorConditionFormula><errorMessage>Use the first day of the month, a positive target, and at most one breakdown (employee, area or product). Leave all breakdowns blank for the overall distributor target.</errorMessage></ValidationRule>

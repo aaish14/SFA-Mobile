@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Workflow xmlns="http://soap.sforce.com/2006/04/metadata">
+<fieldUpdates><fullName>Set_Submitted</fullName><field>Status__c</field><literalValue>Submitted</literalValue><name>Set Submitted</name><notifyAssignee>false</notifyAssignee><operation>Literal</operation><protected>false</protected><reevaluateOnChange>false</reevaluateOnChange></fieldUpdates>
+<fieldUpdates><fullName>Set_Approved</fullName><field>Status__c</field><literalValue>Approved</literalValue><name>Set Approved</name><notifyAssignee>false</notifyAssignee><operation>Literal</operation><protected>false</protected><reevaluateOnChange>false</reevaluateOnChange></fieldUpdates>
+<fieldUpdates><fullName>Set_Rejected</fullName><field>Status__c</field><literalValue>Rejected</literalValue><name>Set Rejected</name><notifyAssignee>false</notifyAssignee><operation>Literal</operation><protected>false</protected><reevaluateOnChange>false</reevaluateOnChange></fieldUpdates>
+</Workflow>

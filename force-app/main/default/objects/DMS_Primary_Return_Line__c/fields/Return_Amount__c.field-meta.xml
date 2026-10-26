@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Return_Amount__c</fullName>
+    <description>Return Amount. DMS schema from the October 15 mentor recordings and SFA &amp; DMS deck. Calculated in Salesforce.</description>
+    <formula>ROUND(Cases__c * Case_Value__c, 2)</formula>
+    <formulaTreatBlanksAs>BlankAsZero</formulaTreatBlanksAs>
+    <label>Return Amount</label>
+    <precision>18</precision>
+    <scale>2</scale>
+    <type>Currency</type>
+</CustomField>

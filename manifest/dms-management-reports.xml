@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Package xmlns="http://soap.sforce.com/2006/04/metadata">
+  <types><members>DMS_Sales_Target__c</members><name>CustomObject</name></types>
+  <types><members>DMS_Sales_Target__c</members><name>CustomTab</name></types>
+  <types><members>DMS_Sales_Target__c-Sales Target Layout</members><name>Layout</name></types>
+  <types><members>DMS_Report_Reader</members><members>DMS_Target_Manager</members><members>DMS_Support_Admin</members><name>PermissionSet</name></types>
+  <types><members>DMS_Manage_Tickets</members><name>CustomPermission</name></types>
+  <types><members>DmsSalesTarget</members><name>ApexTrigger</name></types>
+  <types><members>DmsReportConfigurationTest</members><members>DmsTicketRules</members><name>ApexClass</name></types>
+  <types><members>DMS_Management</members><name>CustomApplication</name></types>
+  <version>65.0</version>
+</Package>

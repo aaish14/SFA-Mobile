@@ -1,17 +1,13 @@
 import React, { useEffect, useState } from "react";
-import {
-  Alert,
-  FlatList,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from "react-native";
+import { Alert, FlatList, StyleSheet, Text, TextInput, View } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { api } from "../api/client";
 import { Button, Card, Label } from "../components/ui";
 import { colors } from "../constants/theme";
 import type { Beat } from "../types";
+/**
+ * Display the employee beat choices and navigate into the selected beat workflow.
+ */
 export default function BeatsScreen() {
   const [beats, setBeats] = useState<Beat[]>([]),
     [search, setSearch] = useState("");
@@ -31,9 +27,7 @@ export default function BeatsScreen() {
         placeholder="Search assigned beats"
       />
       <FlatList
-        data={beats.filter((b) =>
-          b.name.toLowerCase().includes(search.toLowerCase()),
-        )}
+        data={beats.filter((b) => b.name.toLowerCase().includes(search.toLowerCase()))}
         keyExtractor={(b) => b.id}
         renderItem={({ item }) => (
           <Card>
@@ -44,10 +38,7 @@ export default function BeatsScreen() {
               <Text style={s.done}>{item.completed} Completed</Text>
               <Text>{item.pending} Pending</Text>
             </View>
-            <Button
-              title="VIEW OUTLETS"
-              onPress={() => nav.navigate("Stores", { beat: item })}
-            />
+            <Button title="VIEW OUTLETS" onPress={() => nav.navigate("Stores", { beat: item })} />
           </Card>
         )}
       />

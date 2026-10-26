@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<PermissionSet xmlns="http://soap.sforce.com/2006/04/metadata"><classAccesses><apexClass>DmsPortalApi</apexClass><enabled>true</enabled></classAccesses><customPermissions><enabled>true</enabled><name>DMS_Trusted_Backend</name></customPermissions><description>Trusted server transaction entry only. Do not assign to mobile end users.</description><fieldPermissions><editable>false</editable><field>DMS_Primary_Order_Line__c.Free_Product__c</field><readable>true</readable></fieldPermissions>
+<fieldPermissions><editable>false</editable><field>DMS_Primary_Order_Line__c.Free_Pieces_Per_Case__c</field><readable>true</readable></fieldPermissions>
+<fieldPermissions><editable>false</editable><field>DMS_Primary_Order__c.Order_Source__c</field><readable>true</readable></fieldPermissions>
+<label>DMS Backend Transactions</label></PermissionSet>

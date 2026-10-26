@@ -1,8 +1,13 @@
 public with sharing class BeatOutletSelectorController {
     public class OutletOption {
-        @AuraEnabled public Id value { get; set; }
-        @AuraEnabled public String label { get; set; }
+        @AuraEnabled
+        public Id value { get; set; }
+        @AuraEnabled
+        public String label { get; set; }
 
+        /**
+         * Copy an outlet into the lightweight option shown by the beat selector.
+         */
         public OutletOption(Retailer__c outlet) {
             value = outlet.Id;
             label = outlet.Name;
@@ -10,12 +15,19 @@ public with sharing class BeatOutletSelectorController {
     }
 
     public class SelectorData {
-        @AuraEnabled public String beatName { get; set; }
-        @AuraEnabled public String geographyName { get; set; }
-        @AuraEnabled public List<OutletOption> options { get; set; }
-        @AuraEnabled public List<Id> selectedOutletIds { get; set; }
+        @AuraEnabled
+        public String beatName { get; set; }
+        @AuraEnabled
+        public String geographyName { get; set; }
+        @AuraEnabled
+        public List<OutletOption> options { get; set; }
+        @AuraEnabled
+        public List<Id> selectedOutletIds { get; set; }
     }
 
+    /**
+     * Load the beat and its active, geography-matching outlets, including the current selection.
+     */
     @AuraEnabled(cacheable=true)
     public static SelectorData getSelectorData(Id beatId) {
         if (beatId == null) {
@@ -29,14 +41,15 @@ public with sharing class BeatOutletSelectorController {
             LIMIT 1
         ];
         if (beat.Geography__c == null) {
-            throw new AuraHandledException('Select a geography on the Beat before choosing outlets.');
+            throw new AuraHandledException(
+                'Select a geography on the Beat before choosing outlets.'
+            );
         }
 
         List<Retailer__c> availableOutlets = [
             SELECT Id, Name, Beat__c
             FROM Retailer__c
-            WHERE Geography__c = :beat.Geography__c
-              AND Active__c = true
+            WHERE Geography__c = :beat.Geography__c AND Active__c = TRUE
             ORDER BY Name
         ];
 
@@ -55,6 +68,10 @@ public with sharing class BeatOutletSelectorController {
         return result;
     }
 
+    /**
+     * Validate the maximum of ten selected outlets, clear removed assignments, and assign the
+     * selected outlets to this beat.
+     */
     @AuraEnabled
     public static Integer saveSelection(Id beatId, List<Id> selectedOutletIds) {
         if (beatId == null) {
@@ -75,22 +92,28 @@ public with sharing class BeatOutletSelectorController {
             LIMIT 1
         ];
         if (beat.Geography__c == null) {
-            throw new AuraHandledException('Select a geography on the Beat before choosing outlets.');
+            throw new AuraHandledException(
+                'Select a geography on the Beat before choosing outlets.'
+            );
         }
 
         Map<Id, Retailer__c> selectedOutlets = new Map<Id, Retailer__c>();
         if (!selectedIds.isEmpty()) {
-            selectedOutlets = new Map<Id, Retailer__c>([
-                SELECT Id, Geography__c, Active__c, Beat__c
-                FROM Retailer__c
-                WHERE Id IN :selectedIds
-            ]);
+            selectedOutlets = new Map<Id, Retailer__c>(
+                [
+                    SELECT Id, Geography__c, Active__c, Beat__c
+                    FROM Retailer__c
+                    WHERE Id IN :selectedIds
+                ]
+            );
             if (selectedOutlets.size() != selectedIds.size()) {
                 throw new AuraHandledException('One or more selected outlets could not be found.');
             }
             for (Retailer__c outlet : selectedOutlets.values()) {
                 if (!outlet.Active__c || outlet.Geography__c != beat.Geography__c) {
-                    throw new AuraHandledException('Only active outlets from the Beat geography can be selected.');
+                    throw new AuraHandledException(
+                        'Only active outlets from the Beat geography can be selected.'
+                    );
                 }
             }
         }

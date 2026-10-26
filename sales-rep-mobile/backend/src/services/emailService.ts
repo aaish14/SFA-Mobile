@@ -2,6 +2,10 @@ import nodemailer from "nodemailer";
 import { env } from "../config/env.js";
 import { salesforce } from "../salesforce/SalesforceService.js";
 
+/**
+ * Report whether SMTP is configured or Salesforce email can be attempted; this is not proof of
+ * inbox delivery.
+ */
 export function emailDeliveryIsConfigured() {
   const smtpIsConfigured = Boolean(
     env.SMTP_HOST && env.SMTP_USER && env.SMTP_PASSWORD && env.EMAIL_FROM,
@@ -9,12 +13,11 @@ export function emailDeliveryIsConfigured() {
   return smtpIsConfigured || !env.USE_MOCK_DATA;
 }
 
-async function sendEmail(
-  recipient: string,
-  subject: string,
-  text: string,
-  html: string,
-) {
+/**
+ * Send through configured SMTP or the Salesforce email action. Raise a delivery-acceptance error
+ * when no transport is available or Salesforce rejects the request.
+ */
+async function sendEmail(recipient: string, subject: string, text: string, html: string) {
   const smtpIsConfigured = Boolean(
     env.SMTP_HOST && env.SMTP_USER && env.SMTP_PASSWORD && env.EMAIL_FROM,
   );
@@ -58,11 +61,10 @@ async function sendEmail(
   }
 }
 
-export async function sendEmployeeLoginCode(
-  recipient: string,
-  employeeName: string,
-  code: string,
-) {
+/**
+ * Compose and send the employee sign-in-code email with the configured expiry wording.
+ */
+export async function sendEmployeeLoginCode(recipient: string, employeeName: string, code: string) {
   await sendEmail(
     recipient,
     "Your SFA Mobile sign-in code",
@@ -71,10 +73,11 @@ export async function sendEmployeeLoginCode(
   );
 }
 
-export async function sendDistributorInvitation(
-  recipient: string,
-  employeeName: string,
-) {
+/**
+ * Send the existing SFA application-link invitation template to the supplied recipient; despite
+ * the method name, its content is an SFA invitation.
+ */
+export async function sendDistributorInvitation(recipient: string, employeeName: string) {
   const link = env.APP_PUBLIC_URL;
   await sendEmail(
     recipient,
@@ -84,6 +87,9 @@ export async function sendDistributorInvitation(
   );
 }
 
+/**
+ * Email the outlet order lines, total and scheme summary after order processing.
+ */
 export async function sendRetailerOrderSummary(
   recipient: string,
   outletName: string,
@@ -92,10 +98,15 @@ export async function sendRetailerOrderSummary(
   schemes: string[],
 ) {
   const itemText = items
-    .map((item) => `${item.productName} - Qty ${item.quantity} - ₹${Number(item.amount).toFixed(2)}`)
+    .map(
+      (item) => `${item.productName} - Qty ${item.quantity} - ₹${Number(item.amount).toFixed(2)}`,
+    )
     .join("\n");
   const itemRows = items
-    .map((item) => `<tr><td>${item.productName}</td><td>${item.quantity}</td><td>₹${Number(item.amount).toFixed(2)}</td></tr>`)
+    .map(
+      (item) =>
+        `<tr><td>${item.productName}</td><td>${item.quantity}</td><td>₹${Number(item.amount).toFixed(2)}</td></tr>`,
+    )
     .join("");
   const schemeText = schemes.length ? schemes.join(", ") : "No active product scheme";
   await sendEmail(

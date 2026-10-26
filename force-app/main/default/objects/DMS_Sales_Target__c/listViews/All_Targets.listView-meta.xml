@@ -1,0 +1,2 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ListView xmlns="http://soap.sforce.com/2006/04/metadata"><fullName>All_Targets</fullName><columns>NAME</columns><columns>Distributor__c</columns><columns>Month__c</columns><columns>Target_Amount__c</columns><columns>Employee__c</columns><columns>Geography__c</columns><columns>Product__c</columns><filterScope>Everything</filterScope><label>All Sales Targets</label></ListView>

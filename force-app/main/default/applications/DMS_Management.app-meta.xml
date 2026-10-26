@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomApplication xmlns="http://soap.sforce.com/2006/04/metadata">
+    <brand>
+        <headerColor>#16734B</headerColor>
+        <logo>NestleBrandLogo</logo>
+        <logoVersion>1</logoVersion>
+        <shouldOverrideOrgTheme>true</shouldOverrideOrgTheme>
+    </brand>
+    <description>Salesforce records for distributor orders, receipts, stock, invoices, returns and credit notes. Mobile integration and automatic stock posting are not part of this schema release.</description>
+    <formFactors>Large</formFactors>
+    <isNavAutoTempTabsDisabled>false</isNavAutoTempTabsDisabled>
+    <isNavPersonalizationDisabled>false</isNavPersonalizationDisabled>
+    <isNavTabPersistenceDisabled>false</isNavTabPersistenceDisabled>
+    <isOmniPinnedViewEnabled>false</isOmniPinnedViewEnabled>
+    <label>DMS Management</label>
+    <navType>Standard</navType>
+    <tabs>DMS_Distributor__c</tabs>
+    <tabs>DMS_Sales_Target__c</tabs>
+    <tabs>DMS_Support_Ticket__c</tabs>
+    <tabs>DMS_Distributor_Survey__c</tabs>
+    <tabs>DMS_Primary_Order__c</tabs>
+    <tabs>DMS_Goods_Receipt__c</tabs>
+    <tabs>DMS_Inventory__c</tabs>
+    <tabs>DMS_Invoice__c</tabs>
+    <tabs>DMS_Primary_Return__c</tabs>
+    <tabs>DMS_Credit_Note__c</tabs>
+    <tabs>Retailer__c</tabs>
+    <tabs>Product__c</tabs>
+    <tabs>Scheme__c</tabs>
+    <tabs>Sales_Order__c</tabs>
+    <tabs>Product_Return__c</tabs>
+    <uiType>Lightning</uiType>
+</CustomApplication>

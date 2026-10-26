@@ -1,0 +1,2 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata"><fullName>Free_Product__c</fullName><deleteConstraint>Restrict</deleteConstraint><description>Free product snapshotted from the scheme.</description><label>Free Product</label><referenceTo>Product__c</referenceTo><relationshipLabel>Primary Free Product Lines</relationshipLabel><relationshipName>Primary_Free_Product_Lines</relationshipName><required>false</required><type>Lookup</type></CustomField>

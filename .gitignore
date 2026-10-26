@@ -25,9 +25,16 @@ credentials.json
 *.jks
 *.keystore
 .expo/
+.runtime/
 node_modules.incomplete/
 diagnostics/
 releases/
+backups/
+tmp/
+output/
+*.hprof
+*.dmp
+.npmrc
 *.apk
 *.aab
 *.zip

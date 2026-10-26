@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ValidationRule xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Credit_Amounts_Valid</fullName>
+    <active>true</active>
+    <errorConditionFormula>OR(ISBLANK(Quantity__c), Quantity__c &lt;= 0, ISBLANK(Unit_Credit__c), Unit_Credit__c &lt; 0, Tax_Percent__c &lt; 0, Tax_Percent__c &gt; 100)</errorConditionFormula>
+    <errorMessage>Enter a positive quantity, nonnegative unit credit and tax from zero to 100.</errorMessage>
+</ValidationRule>

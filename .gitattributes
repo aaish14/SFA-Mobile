@@ -1,0 +1,8 @@
+# Preserve binary assets and shareable documents without line-ending conversion.
+*.pdf binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.asset binary

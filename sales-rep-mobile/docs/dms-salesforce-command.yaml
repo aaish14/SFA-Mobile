@@ -1,0 +1,70 @@
+openapi: 3.0.3
+info:
+  title: DMS Salesforce command dependency
+  version: 1.0.0
+servers:
+  - url: /
+paths:
+  /services/apexrest/dms/portal/:
+    post:
+      summary: Atomic command implemented by DmsPortalApi
+      security:
+        - salesforceToken: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [action, distributorId]
+              properties:
+                action: {type: string, enum: [ticket, secondaryDecision, returnDecision, receiveGoods, primaryOrder, primaryReturn, distributorPrimaryOrder]}
+                employeeId: {type: string, description: Supplied by the trusted backend from the authenticated employee session}
+                receiptKind: {type: string, enum: [Paid, Free], default: Paid}
+                lines:
+                  type: array
+                  minItems: 1
+                  maxItems: 50
+                  items:
+                    type: object
+                    required: [cases]
+                    properties:
+                      productId: {type: string}
+                      receiptLineId: {type: string}
+                      schemeId: {type: string, description: Optional single active Primary scheme linked to this product. Salesforce computes discounts and free cases per complete Minimum Cases block; no client prices accepted.}
+                      cases: {type: integer, minimum: 1, maximum: 100000}
+                      reason: {type: string, enum: [Damaged, Expired, Delayed Delivery, No Demand, Other]}
+                      notes: {type: string, maxLength: 1000}
+                distributorId: {type: string}
+                requestKey: {type: string}
+                recordId: {type: string}
+                subject: {type: string}
+                description: {type: string}
+                category: {type: string}
+                decision: {type: string}
+                notes: {type: string}
+                cases: {type: number}
+                batch: {type: string}
+                expiry: {type: string, format: date}
+      responses:
+        '200':
+          description: Saved or replayed command
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [id, status]
+                properties:
+                  id: {type: string}
+                  status: {type: string}
+        '400':
+          description: Validation failed, transaction rolled back
+          content:
+            application/json:
+              schema: {type: object, properties: {error: {type: string}}}
+        '403': {description: Integration permission required}
+        '500': {description: Salesforce transaction failed and was rolled back}
+        '530': {description: Non-JSON proxy failure; outcome unknown, retry the same key}
+components:
+  securitySchemes:
+    salesforceToken: {type: http, scheme: bearer}

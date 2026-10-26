@@ -18,11 +18,15 @@ import ModuleListScreen from "./src/screens/ModuleListScreen";
 import ExpensesScreen from "./src/screens/ExpensesScreen";
 import DayScreen from "./src/screens/DayScreen";
 import SurveyScreen from "./src/screens/SurveyScreen";
+import PrimaryScreen from "./src/screens/PrimaryScreen";
 import type { RootStack } from "./src/types";
 import { flushQueue } from "./src/storage/syncQueue";
 
 const Stack = createNativeStackNavigator<RootStack>();
 
+/**
+ * Initialize the SFA navigation and session-aware application shell.
+ */
 export default function App() {
   useEffect(() => {
     void flushQueue();
@@ -52,6 +56,7 @@ export default function App() {
           <Stack.Screen name="Expenses" component={ExpensesScreen} options={{ title: "Expenses" }} />
           <Stack.Screen name="Day" component={DayScreen} options={{ title: "Start / End Day" }} />
           <Stack.Screen name="Survey" component={SurveyScreen} options={{ title: "Outlet Survey" }} />
+          <Stack.Screen name="Primary" component={PrimaryScreen} options={{ title: "Primary orders / returns" }} />
         </Stack.Navigator>
       </NavigationContainer>
     </>

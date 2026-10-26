@@ -6,11 +6,7 @@
     <lookupFilter>
         <active>true</active>
         <booleanFilter>1</booleanFilter>
-        <filterItems>
-            <field>Distributor__c.Beat__c</field>
-            <operation>equals</operation>
-            <valueField>$Source.Beat__c</valueField>
-        </filterItems>
+        <filterItems><field>Distributor__c.Beat__c</field><operation>equals</operation><valueField>$Source.Beat__c</valueField></filterItems>
         <infoMessage>Select a sales representative belonging to the selected Beat.</infoMessage>
         <isOptional>false</isOptional>
     </lookupFilter>
@@ -19,6 +15,5 @@
     <relationshipName>Outlet_Allocations</relationshipName>
     <required>false</required>
     <trackHistory>true</trackHistory>
-    <trackTrending>false</trackTrending>
     <type>Lookup</type>
 </CustomField>

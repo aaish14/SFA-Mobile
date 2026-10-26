@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Gross_Amount__c</fullName>
+    <description>Gross Amount. DMS schema from the October 15 mentor recordings and SFA &amp; DMS deck. Calculated in Salesforce.</description>
+    <formula>BLANKVALUE(Snapshot_Gross__c, ROUND(Quantity_Pieces__c * Unit_Price__c, 2))</formula>
+    <formulaTreatBlanksAs>BlankAsZero</formulaTreatBlanksAs>
+    <label>Gross Amount</label>
+    <precision>18</precision>
+    <scale>2</scale>
+    <type>Currency</type>
+</CustomField>

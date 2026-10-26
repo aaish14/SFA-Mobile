@@ -1,18 +1,13 @@
 import React, { useEffect, useState } from "react";
-import {
-  Alert,
-  FlatList,
-  Pressable,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from "react-native";
+import { Alert, FlatList, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { api } from "../api/client";
 import { Button, Card, Label, Money } from "../components/ui";
 import { colors } from "../constants/theme";
 import type { RootStack, Store } from "../types";
+/**
+ * Display stores for the selected beat and navigate to the chosen outlet workflow.
+ */
 export default function StoresScreen({
   route,
   navigation,

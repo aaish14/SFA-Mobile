@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ValidationRule xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Primary_Scheme_Only</fullName>
+    <active>true</active>
+    <errorConditionFormula>AND(NOT(ISBLANK(Scheme__c)), NOT(ISPICKVAL(Scheme__r.Sales_Channel__c, 'Primary')))</errorConditionFormula>
+    <errorMessage>Select a scheme classified as Primary.</errorMessage>
+</ValidationRule>

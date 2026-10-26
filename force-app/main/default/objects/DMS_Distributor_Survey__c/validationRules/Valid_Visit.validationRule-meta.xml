@@ -1,0 +1,2 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ValidationRule xmlns="http://soap.sforce.com/2006/04/metadata"><fullName>Valid_Visit</fullName><active>true</active><errorConditionFormula>OR(Visit_Date__c &gt; TODAY(), Stock_Cases__c &lt; 0, ISBLANK(Demand_Notes__c))</errorConditionFormula><errorMessage>Enter a current/past visit date, non-negative stock and product movement/demand notes.</errorMessage></ValidationRule>

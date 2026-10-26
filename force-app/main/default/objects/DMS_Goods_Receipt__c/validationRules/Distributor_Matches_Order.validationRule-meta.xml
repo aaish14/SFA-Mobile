@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ValidationRule xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Distributor_Matches_Order</fullName>
+    <active>true</active>
+    <errorConditionFormula>Distributor__c &lt;&gt; Primary_Order__r.Distributor__c</errorConditionFormula>
+    <errorMessage>Select the distributor on the original primary order.</errorMessage>
+</ValidationRule>

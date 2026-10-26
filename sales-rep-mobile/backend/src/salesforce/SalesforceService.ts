@@ -1,51 +1,50 @@
 import { env } from "../config/env.js";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
+import { loadCliSession } from "./cliSession.js";
 
 const execFileAsync = promisify(execFile);
 
 type Token = { accessToken: string; instanceUrl: string; expiresAt: number };
 export class SalesforceService {
   private token?: Token;
+  /**
+   * Acquire or reuse the configured Salesforce session before making REST requests.
+   */
   private async authenticate() {
-    if (this.token && this.token.expiresAt > Date.now() + 60000)
-      return this.token;
+    if (this.token && this.token.expiresAt > Date.now() + 60000) return this.token;
     if (!env.SALESFORCE_CLIENT_ID || !env.SALESFORCE_CLIENT_SECRET) {
       // Local development can safely reuse the existing Salesforce CLI login.
       // The access token remains on the backend and never reaches the phone.
       const executable = process.platform === "win32" ? "cmd.exe" : "sf";
-      const argumentsForCli =
-        process.platform === "win32"
-          ? [
-              "/d",
-              "/s",
-              "/c",
-              `sf org auth show-access-token --target-org ${env.SALESFORCE_ORG_ALIAS} --json`,
-            ]
-          : [
-              "org",
-              "auth",
-              "show-access-token",
-              "--target-org",
-              env.SALESFORCE_ORG_ALIAS,
-              "--json",
-            ];
-      const { stdout } = await execFileAsync(executable, argumentsForCli, {
-        env: { ...process.env, SF_DISABLE_TELEMETRY: "true" },
-        windowsHide: true,
-        maxBuffer: 2 * 1024 * 1024,
-      });
-      const result = JSON.parse(stdout.slice(stdout.indexOf("{"))).result;
+      const result = await loadCliSession(async (command) => {
+        const argumentsForCli =
+          process.platform === "win32"
+            ? [
+                "/d",
+                "/s",
+                "/c",
+                `sf ${command.join(" ")} --target-org ${env.SALESFORCE_ORG_ALIAS} --json`,
+              ]
+            : [...command, "--target-org", env.SALESFORCE_ORG_ALIAS, "--json"];
+        const { stdout } = await execFileAsync(executable, argumentsForCli, {
+          env: { ...process.env, SF_DISABLE_TELEMETRY: "true" },
+          windowsHide: true,
+          maxBuffer: 2 * 1024 * 1024,
+          timeout: 30000,
+        });
+        const response = JSON.parse(stdout.slice(stdout.indexOf("{")));
+        if (response.status !== 0) throw new Error("Salesforce CLI login could not be loaded.");
+        return response.result;
+      }, env.SALESFORCE_INSTANCE_URL);
       this.token = {
         accessToken: result.accessToken,
-        instanceUrl: result.instanceUrl || env.SALESFORCE_INSTANCE_URL!,
+        instanceUrl: result.instanceUrl,
         expiresAt: Date.now() + 10 * 60 * 1000,
       };
       return this.token;
     }
-    const usePasswordFlow = Boolean(
-      env.SALESFORCE_USERNAME && env.SALESFORCE_PASSWORD,
-    );
+    const usePasswordFlow = Boolean(env.SALESFORCE_USERNAME && env.SALESFORCE_PASSWORD);
     const body = new URLSearchParams(
       usePasswordFlow
         ? {
@@ -61,14 +60,11 @@ export class SalesforceService {
             client_secret: env.SALESFORCE_CLIENT_SECRET,
           },
     );
-    const response = await fetch(
-      `${env.SALESFORCE_LOGIN_URL}/services/oauth2/token`,
-      {
-        method: "POST",
-        headers: { "content-type": "application/x-www-form-urlencoded" },
-        body,
-      },
-    );
+    const response = await fetch(`${env.SALESFORCE_LOGIN_URL}/services/oauth2/token`, {
+      method: "POST",
+      headers: { "content-type": "application/x-www-form-urlencoded" },
+      body,
+    });
     if (!response.ok) throw new Error("Salesforce authentication failed");
     const result: any = await response.json();
     this.token = {
@@ -78,6 +74,10 @@ export class SalesforceService {
     };
     return this.token;
   }
+  /**
+   * Make an authenticated Salesforce REST request, handling session renewal and propagating
+   * upstream failures.
+   */
   private async request(
     path: string,
     init: RequestInit = {},
@@ -101,35 +101,74 @@ export class SalesforceService {
     }
     if (!response.ok) {
       const details = await response.text();
-      throw new Error(
-        `Salesforce request failed (${response.status}): ${details.slice(0, 500)}`,
-      );
+      throw new Error(`Salesforce request failed (${response.status}): ${details.slice(0, 500)}`);
     }
     return response.status === 204 ? null : response.json();
   }
+  /**
+   * Execute a SOQL query and return its Salesforce query response.
+   */
   query(soql: string) {
     return this.request(`/query?q=${encodeURIComponent(soql)}`);
   }
+  /**
+   * Collect all records from a SOQL query, following Salesforce pagination rather than stopping
+   * at the first page.
+   */
   async records(soql: string) {
-    const result = (await this.query(soql)) as { records: any[] };
-    return result.records;
+    let result = await this.query(soql);
+    const records = [...result.records];
+    while (!result.done && result.nextRecordsUrl) {
+      result = await this.request(result.nextRecordsUrl.replace(/^\/services\/data\/v[\d.]+/, ""));
+      records.push(...result.records);
+    }
+    return records;
   }
+  /** Commit the order, all lines, and visit totals together or roll them all back. */
+  async composite(compositeRequest: unknown[]) {
+    const result = await this.request("/composite", {
+      method: "POST",
+      body: JSON.stringify({ allOrNone: true, compositeRequest }),
+    });
+    const failed = result.compositeResponse.find(
+      (part: any) =>
+        part.httpStatusCode >= 400 ||
+        (Array.isArray(part.body) && part.body.some((row: any) => row.success === false)),
+    );
+    if (failed)
+      throw new Error(
+        `Salesforce transaction failed: ${JSON.stringify(failed.body).slice(0, 700)}`,
+      );
+    return result.compositeResponse;
+  }
+  /**
+   * Insert one Salesforce record through the sObject REST endpoint and return the create result.
+   */
   create(objectName: string, record: unknown) {
     return this.request(`/sobjects/${objectName}`, {
       method: "POST",
       body: JSON.stringify(record),
     });
   }
+  /**
+   * Patch the specified Salesforce record with the supplied fields.
+   */
   update(objectName: string, id: string, record: unknown) {
     return this.request(`/sobjects/${objectName}/${id}`, {
       method: "PATCH",
       body: JSON.stringify(record),
     });
   }
+  /**
+   * Read a Salesforce record by object API name and record ID.
+   */
   retrieve(objectName: string, id: string) {
     return this.request(`/sobjects/${objectName}/${id}`);
   }
 
+  /**
+   * Invoke a Salesforce standard action, such as emailSimple, with the supplied action inputs.
+   */
   invokeStandardAction(actionName: string, inputs: unknown[]) {
     return this.request(`/actions/standard/${encodeURIComponent(actionName)}`, {
       method: "POST",
@@ -137,8 +176,17 @@ export class SalesforceService {
     });
   }
 
+  /**
+   * Discard the cached Salesforce session so the next request obtains fresh authentication.
+   */
   clearCachedSession() {
     this.token = undefined;
+  }
+
+  /** Server-side only: used by the isolated DMS transport, never returned to clients. */
+  async dmsSession(refresh = false) {
+    if (refresh) this.token = undefined;
+    return this.authenticate();
   }
 }
 export const salesforce = new SalesforceService();

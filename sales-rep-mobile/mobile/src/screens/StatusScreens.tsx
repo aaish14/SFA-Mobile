@@ -3,6 +3,9 @@ import { StyleSheet, Text, View } from "react-native";
 import { Card, Label } from "../components/ui";
 import { colors } from "../constants/theme";
 import { flushQueue, pendingCount } from "../storage/syncQueue";
+/**
+ * Render the legacy static visit-progress example; these counts are not loaded from Salesforce.
+ */
 export function VisitsScreen() {
   return (
     <View style={s.root}>
@@ -10,13 +13,14 @@ export function VisitsScreen() {
       <Card>
         <Label>Route progress</Label>
         <Text style={s.big}>1 completed · 3 pending</Text>
-        <Text style={s.muted}>
-          Open Beats to continue the Lakeside Market route.
-        </Text>
+        <Text style={s.muted}>Open Beats to continue the Lakeside Market route.</Text>
       </Card>
     </View>
   );
 }
+/**
+ * Render the legacy order-status placeholder; this component does not fetch order records.
+ */
 export function OrdersScreen() {
   return (
     <View style={s.root}>
@@ -24,19 +28,24 @@ export function OrdersScreen() {
       <Card>
         <Label>Today</Label>
         <Text style={s.big}>Orders appear here after checkout</Text>
-        <Text style={s.muted}>
-          PDF and Excel sharing is available from the completed visit.
-        </Text>
+        <Text style={s.muted}>PDF and Excel sharing is available from the completed visit.</Text>
       </Card>
     </View>
   );
 }
+/**
+ * Render the legacy static profile heading with the live local pending-queue count and retry
+ * action.
+ */
 export function ProfileScreen() {
   const [pending, setPending] = useState(0),
     [message, setMessage] = useState("Ready");
   useEffect(() => {
     pendingCount().then(setPending);
   }, []);
+  /**
+   * Flush pending mobile actions and refresh the status shown in the profile view.
+   */
   const sync = async () => {
     const r = await flushQueue();
     setPending(r.failed);

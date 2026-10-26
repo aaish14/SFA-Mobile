@@ -1,0 +1,5 @@
+simulation: dms-salesforce
+routing: path
+mocks:
+  - routeKey: salesforce
+    path: ../mocks/salesforce/config.yaml

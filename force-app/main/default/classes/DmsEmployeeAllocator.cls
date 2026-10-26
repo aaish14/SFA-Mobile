@@ -3,15 +3,21 @@
  * all employee creators must use the same distributor pool and locked cursor.
  */
 public without sharing class DmsEmployeeAllocator {
-    public class ConfigurationException extends Exception {}
+    public class ConfigurationException extends Exception {
+    }
 
+    /**
+     * Assign unallocated employees to active distributors in round-robin order. Lock and update
+     * the shared cursor in the same transaction; preserve manual assignments.
+     */
     public static void allocate(Set<Id> employeeIds) {
         if (employeeIds == null || employeeIds.isEmpty()) {
             return;
         }
         List<DMS_Distributor__c> pool = [
-            SELECT Id, Employee_Allocation_Order__c FROM DMS_Distributor__c
-            WHERE Active__c = true AND Employee_Allocation_Order__c > 0
+            SELECT Id, Employee_Allocation_Order__c
+            FROM DMS_Distributor__c
+            WHERE Active__c = TRUE AND Employee_Allocation_Order__c > 0
             ORDER BY Employee_Allocation_Order__c
         ];
         // No configured pool: normal Employee creation remains available.
@@ -21,19 +27,26 @@ public without sharing class DmsEmployeeAllocator {
         // Serialize concurrent transactions. Initialization is a separate admin
         // step, preventing competing first-time transactions creating cursors.
         List<DMS_Allocation_State__c> states = [
-            SELECT Id, Last_Allocated_Order__c FROM DMS_Allocation_State__c
-            WHERE Allocation_Key__c = 'EmployeeDistributor' LIMIT 1 FOR UPDATE
+            SELECT Id, Last_Allocated_Order__c
+            FROM DMS_Allocation_State__c
+            WHERE Allocation_Key__c = 'EmployeeDistributor'
+            LIMIT 1
+            FOR UPDATE
         ];
         if (states.isEmpty()) {
-            throw new ConfigurationException('Employee allocation is not initialized. Ask your administrator to initialize the DMS allocation state.');
+            throw new ConfigurationException(
+                'Employee allocation is not initialized. Ask your administrator to initialize the DMS allocation state.'
+            );
         }
         DMS_Allocation_State__c state = states[0];
         Decimal lastOrder = state.Last_Allocated_Order__c;
         List<Employee__c> changes = new List<Employee__c>();
         // Read after the lock. Retries skip assigned rows; Id breaks timestamp ties.
         for (Employee__c employee : [
-            SELECT Id, DMS_Distributor__c FROM Employee__c
-            WHERE Id IN :employeeIds AND DMS_Distributor__c = null ORDER BY CreatedDate, Id
+            SELECT Id, DMS_Distributor__c
+            FROM Employee__c
+            WHERE Id IN :employeeIds AND DMS_Distributor__c = NULL
+            ORDER BY CreatedDate, Id
         ]) {
             DMS_Distributor__c nextDistributor = pool[0];
             for (DMS_Distributor__c candidate : pool) {

@@ -1,0 +1,11 @@
+version: 1
+id: 8d9bc7c1-a239-431a-9865-c25be6289a4a
+name: dms-salesforce
+slug: dms-salesforce
+protocol: http
+interceptRequests: true
+port: 4901
+scenarios:
+  - name: default
+    path: ./default.js
+    default: true

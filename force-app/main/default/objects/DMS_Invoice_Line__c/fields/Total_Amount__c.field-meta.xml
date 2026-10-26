@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Total_Amount__c</fullName>
+    <description>Line Total. DMS schema from the October 15 mentor recordings and SFA &amp; DMS deck. Calculated in Salesforce.</description>
+    <formula>BLANKVALUE(Snapshot_Total__c, Gross_Amount__c - BLANKVALUE(Discount_Amount__c, 0) + Tax_Amount__c)</formula>
+    <formulaTreatBlanksAs>BlankAsZero</formulaTreatBlanksAs>
+    <label>Line Total</label>
+    <precision>18</precision>
+    <scale>2</scale>
+    <type>Currency</type>
+</CustomField>

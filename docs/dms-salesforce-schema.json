@@ -1,0 +1,1099 @@
+{
+  "scope": "Salesforce objects, fields, related lists, list views and permission set only. Mobile, backend and stock-posting automation paused by user.",
+  "sources": [
+    "SFA & DMS on Salesforce.pptx slides 11-15",
+    "Mentor Meeting 2026-10-15 11:29:05 recording",
+    "Mentor Meeting 2026-10-15 05:33:59 UTC recording"
+  ],
+  "decisions": [
+    "Employees book primary orders in SFA; distributors manage orders separately.",
+    "Reuse existing Product, Retailer, Sales Order, Order Item, Scheme and secondary Product Return objects.",
+    "Do not repurpose Distributor__c, which is the legacy Sales Representative object.",
+    "No business records, example prices or outlet ownership are invented."
+  ],
+  "objects": [
+    {
+      "name": "DMS_Distributor__c",
+      "label": "DMS Distributor",
+      "plural": "DMS Distributors",
+      "existing": true,
+      "fields": [
+        {
+          "name": "Distributor_Code__c",
+          "label": "Distributor Code",
+          "type": "Text",
+          "length": 40
+        },
+        {
+          "name": "Partner_Type__c",
+          "label": "Partner Type",
+          "type": "Picklist",
+          "values": [
+            "Distributor",
+            "Super Stockist"
+          ]
+        },
+        {
+          "name": "Parent_Distributor__c",
+          "label": "Super Stockist",
+          "type": "Lookup",
+          "target": "DMS_Distributor__c",
+          "relationship": "Child_Distributors",
+          "required": false
+        },
+        {
+          "name": "Assigned_Employee__c",
+          "label": "Assigned Employee",
+          "type": "Lookup",
+          "target": "Employee__c",
+          "relationship": "DMS_Distributors",
+          "required": false
+        },
+        {
+          "name": "Geography__c",
+          "label": "Geography",
+          "type": "Lookup",
+          "target": "Geography__c",
+          "relationship": "DMS_Distributors",
+          "required": false
+        },
+        {
+          "name": "GSTIN__c",
+          "label": "GSTIN",
+          "type": "Text",
+          "length": 15
+        },
+        {
+          "name": "Credit_Limit__c",
+          "label": "Credit Limit",
+          "type": "Currency",
+          "scale": 2
+        },
+        {
+          "name": "Location__c",
+          "label": "Distributor Location",
+          "type": "Location"
+        }
+      ]
+    },
+    {
+      "name": "DMS_Primary_Order__c",
+      "label": "Primary Order",
+      "plural": "Primary Orders",
+      "existing": true,
+      "fields": [
+        {
+          "name": "Order_Date__c",
+          "label": "Order Date",
+          "type": "Date"
+        },
+        {
+          "name": "Expected_Delivery_Date__c",
+          "label": "Expected Delivery Date",
+          "type": "Date"
+        },
+        {
+          "name": "Fulfilment_Status__c",
+          "label": "Fulfilment Status",
+          "type": "Picklist",
+          "values": [
+            "Not Dispatched",
+            "Partially Dispatched",
+            "Dispatched",
+            "Partially Received",
+            "Received"
+          ]
+        },
+        {
+          "name": "Rejection_Reason__c",
+          "label": "Rejection Reason",
+          "type": "Text",
+          "length": 255
+        }
+      ]
+    },
+    {
+      "name": "DMS_Primary_Order_Line__c",
+      "label": "Primary Order Line",
+      "plural": "Primary Order Lines",
+      "existing": true,
+      "fields": [
+        {
+          "name": "Scheme__c",
+          "label": "Primary Scheme",
+          "type": "Lookup",
+          "target": "Scheme__c",
+          "relationship": "Primary_Order_Lines",
+          "required": false
+        },
+        {
+          "name": "Free_Cases__c",
+          "label": "Free Cases",
+          "type": "Number",
+          "scale": 0
+        },
+        {
+          "name": "Free_Gift__c",
+          "label": "Free Gift",
+          "type": "Text",
+          "length": 120
+        },
+        {
+          "name": "Gift_Quantity__c",
+          "label": "Gift Quantity",
+          "type": "Number",
+          "scale": 0
+        },
+        {
+          "name": "Discount_Amount__c",
+          "label": "Line Discount Amount",
+          "type": "Currency",
+          "scale": 2
+        },
+        {
+          "name": "Total_Pieces__c",
+          "label": "Total Pieces",
+          "type": "Number",
+          "formula": "(Cases__c + BLANKVALUE(Free_Cases__c, 0)) * Pieces_Per_Case__c",
+          "scale": 0
+        },
+        {
+          "name": "Net_Amount__c",
+          "label": "Net Line Amount",
+          "type": "Currency",
+          "formula": "ROUND((Cases__c * Case_Price__c - BLANKVALUE(Discount_Amount__c, 0)) * (1 + BLANKVALUE(Tax_Percent__c, 0) / 100), 2)",
+          "scale": 2
+        }
+      ]
+    },
+    {
+      "name": "DMS_Goods_Receipt__c",
+      "label": "Goods Receipt",
+      "plural": "Goods Receipts",
+      "prefix": "GRN",
+      "fields": [
+        {
+          "name": "Distributor__c",
+          "label": "DMS Distributor",
+          "type": "Lookup",
+          "target": "DMS_Distributor__c",
+          "relationship": "Goods_Receipts",
+          "required": true
+        },
+        {
+          "name": "Primary_Order__c",
+          "label": "Primary Order",
+          "type": "Lookup",
+          "target": "DMS_Primary_Order__c",
+          "relationship": "Goods_Receipts",
+          "required": true
+        },
+        {
+          "name": "Received_Date__c",
+          "label": "Received Date",
+          "type": "Date"
+        },
+        {
+          "name": "Status__c",
+          "label": "Status",
+          "type": "Picklist",
+          "values": [
+            "Draft",
+            "Received",
+            "Cancelled"
+          ]
+        },
+        {
+          "name": "Supplier_Invoice_Number__c",
+          "label": "Supplier Invoice Number",
+          "type": "Text",
+          "length": 80
+        },
+        {
+          "name": "Received_By__c",
+          "label": "Received By",
+          "type": "Lookup",
+          "target": "User",
+          "relationship": "DMS_Goods_Receipts",
+          "required": false
+        },
+        {
+          "name": "Notes__c",
+          "label": "Notes",
+          "type": "Text",
+          "length": 255
+        },
+        {
+          "name": "Total_Pieces__c",
+          "label": "Total Received Pieces",
+          "type": "Summary",
+          "target": "DMS_Goods_Receipt_Line__c.Goods_Receipt__c",
+          "field": "DMS_Goods_Receipt_Line__c.Received_Pieces__c",
+          "operation": "sum"
+        },
+        {
+          "name": "Total_Value__c",
+          "label": "Total Received Value",
+          "type": "Summary",
+          "target": "DMS_Goods_Receipt_Line__c.Goods_Receipt__c",
+          "field": "DMS_Goods_Receipt_Line__c.Received_Value__c",
+          "operation": "sum"
+        }
+      ]
+    },
+    {
+      "name": "DMS_Goods_Receipt_Line__c",
+      "label": "Goods Receipt Line",
+      "plural": "Goods Receipt Lines",
+      "prefix": "GRNL",
+      "fields": [
+        {
+          "name": "Goods_Receipt__c",
+          "label": "Goods Receipt",
+          "type": "MasterDetail",
+          "target": "DMS_Goods_Receipt__c",
+          "relationship": "Receipt_Lines"
+        },
+        {
+          "name": "Primary_Order_Line__c",
+          "label": "Primary Order Line",
+          "type": "Lookup",
+          "target": "DMS_Primary_Order_Line__c",
+          "relationship": "Receipt_Lines",
+          "required": false
+        },
+        {
+          "name": "Product__c",
+          "label": "Product",
+          "type": "Lookup",
+          "target": "Product__c",
+          "relationship": "DMS_Receipt_Lines",
+          "required": true
+        },
+        {
+          "name": "Batch_Number__c",
+          "label": "Batch Number",
+          "type": "Text",
+          "length": 80
+        },
+        {
+          "name": "Manufacturing_Date__c",
+          "label": "Manufacturing Date",
+          "type": "Date"
+        },
+        {
+          "name": "Expiry_Date__c",
+          "label": "Expiry Date",
+          "type": "Date"
+        },
+        {
+          "name": "Received_Cases__c",
+          "label": "Received Cases",
+          "type": "Number",
+          "scale": 0
+        },
+        {
+          "name": "Free_Cases__c",
+          "label": "Free Cases",
+          "type": "Number",
+          "scale": 0
+        },
+        {
+          "name": "Pieces_Per_Case__c",
+          "label": "Pieces Per Case",
+          "type": "Number",
+          "scale": 0
+        },
+        {
+          "name": "Received_Pieces__c",
+          "label": "Received Pieces",
+          "type": "Number",
+          "formula": "(Received_Cases__c + BLANKVALUE(Free_Cases__c, 0)) * Pieces_Per_Case__c",
+          "scale": 0
+        },
+        {
+          "name": "Case_Cost__c",
+          "label": "Cost Per Case",
+          "type": "Currency",
+          "scale": 2
+        },
+        {
+          "name": "Received_Value__c",
+          "label": "Received Value",
+          "type": "Currency",
+          "formula": "ROUND(Received_Cases__c * Case_Cost__c, 2)",
+          "scale": 2
+        }
+      ]
+    },
+    {
+      "name": "DMS_Inventory__c",
+      "label": "Distributor Inventory",
+      "plural": "Distributor Inventory",
+      "prefix": "INVST",
+      "fields": [
+        {
+          "name": "Distributor__c",
+          "label": "DMS Distributor",
+          "type": "Lookup",
+          "target": "DMS_Distributor__c",
+          "relationship": "Inventory",
+          "required": true
+        },
+        {
+          "name": "Product__c",
+          "label": "Product",
+          "type": "Lookup",
+          "target": "Product__c",
+          "relationship": "DMS_Inventory",
+          "required": true
+        },
+        {
+          "name": "Batch_Number__c",
+          "label": "Batch Number",
+          "type": "Text",
+          "length": 80
+        },
+        {
+          "name": "Manufacturing_Date__c",
+          "label": "Manufacturing Date",
+          "type": "Date"
+        },
+        {
+          "name": "Expiry_Date__c",
+          "label": "Expiry Date",
+          "type": "Date"
+        },
+        {
+          "name": "Warehouse__c",
+          "label": "Warehouse",
+          "type": "Text",
+          "length": 120
+        },
+        {
+          "name": "On_Hand_Pieces__c",
+          "label": "On Hand Pieces",
+          "type": "Number",
+          "scale": 0
+        },
+        {
+          "name": "Reserved_Pieces__c",
+          "label": "Reserved Pieces",
+          "type": "Number",
+          "scale": 0
+        },
+        {
+          "name": "Reorder_Level_Pieces__c",
+          "label": "Reorder Level Pieces",
+          "type": "Number",
+          "scale": 0
+        },
+        {
+          "name": "Available_Pieces__c",
+          "label": "Available Pieces",
+          "type": "Number",
+          "formula": "On_Hand_Pieces__c - BLANKVALUE(Reserved_Pieces__c, 0)",
+          "scale": 0
+        },
+        {
+          "name": "Low_Stock__c",
+          "label": "Low Stock",
+          "type": "Checkbox",
+          "formula": "Available_Pieces__c <= BLANKVALUE(Reorder_Level_Pieces__c, 0)",
+          "scale": 0
+        },
+        {
+          "name": "Expired__c",
+          "label": "Expired",
+          "type": "Checkbox",
+          "formula": "AND(NOT(ISBLANK(Expiry_Date__c)), Expiry_Date__c < TODAY())",
+          "scale": 0
+        },
+        {
+          "name": "Last_Stock_Update__c",
+          "label": "Last Stock Update",
+          "type": "DateTime"
+        }
+      ]
+    },
+    {
+      "name": "DMS_Invoice__c",
+      "label": "DMS Invoice",
+      "plural": "DMS Invoices",
+      "prefix": "INV",
+      "fields": [
+        {
+          "name": "Distributor__c",
+          "label": "DMS Distributor",
+          "type": "Lookup",
+          "target": "DMS_Distributor__c",
+          "relationship": "Invoices",
+          "required": true
+        },
+        {
+          "name": "Outlet__c",
+          "label": "Outlet",
+          "type": "Lookup",
+          "target": "Retailer__c",
+          "relationship": "DMS_Invoices",
+          "required": true
+        },
+        {
+          "name": "Sales_Order__c",
+          "label": "Secondary Sales Order",
+          "type": "Lookup",
+          "target": "Sales_Order__c",
+          "relationship": "DMS_Invoices",
+          "required": true
+        },
+        {
+          "name": "Invoice_Date__c",
+          "label": "Invoice Date",
+          "type": "Date"
+        },
+        {
+          "name": "Due_Date__c",
+          "label": "Due Date",
+          "type": "Date"
+        },
+        {
+          "name": "Status__c",
+          "label": "Status",
+          "type": "Picklist",
+          "values": [
+            "Draft",
+            "Issued",
+            "Cancelled"
+          ]
+        },
+        {
+          "name": "Payment_Status__c",
+          "label": "Payment Status",
+          "type": "Picklist",
+          "values": [
+            "Unpaid",
+            "Partially Paid",
+            "Paid"
+          ]
+        },
+        {
+          "name": "Paid_Amount__c",
+          "label": "Paid Amount",
+          "type": "Currency",
+          "scale": 2
+        },
+        {
+          "name": "Notes__c",
+          "label": "Notes",
+          "type": "Text",
+          "length": 255
+        },
+        {
+          "name": "Gross_Amount__c",
+          "label": "Gross Amount",
+          "type": "Summary",
+          "target": "DMS_Invoice_Line__c.Invoice__c",
+          "field": "DMS_Invoice_Line__c.Gross_Amount__c",
+          "operation": "sum"
+        },
+        {
+          "name": "Discount_Amount__c",
+          "label": "Discount Amount",
+          "type": "Summary",
+          "target": "DMS_Invoice_Line__c.Invoice__c",
+          "field": "DMS_Invoice_Line__c.Discount_Amount__c",
+          "operation": "sum"
+        },
+        {
+          "name": "Tax_Amount__c",
+          "label": "Tax Amount",
+          "type": "Summary",
+          "target": "DMS_Invoice_Line__c.Invoice__c",
+          "field": "DMS_Invoice_Line__c.Tax_Amount__c",
+          "operation": "sum"
+        },
+        {
+          "name": "Total_Amount__c",
+          "label": "Invoice Total",
+          "type": "Summary",
+          "target": "DMS_Invoice_Line__c.Invoice__c",
+          "field": "DMS_Invoice_Line__c.Total_Amount__c",
+          "operation": "sum"
+        },
+        {
+          "name": "Balance_Due__c",
+          "label": "Balance Due",
+          "type": "Currency",
+          "formula": "Total_Amount__c - BLANKVALUE(Paid_Amount__c, 0)",
+          "scale": 2
+        }
+      ]
+    },
+    {
+      "name": "DMS_Invoice_Line__c",
+      "label": "DMS Invoice Line",
+      "plural": "DMS Invoice Lines",
+      "prefix": "INVL",
+      "fields": [
+        {
+          "name": "Invoice__c",
+          "label": "Invoice",
+          "type": "MasterDetail",
+          "target": "DMS_Invoice__c",
+          "relationship": "Invoice_Lines"
+        },
+        {
+          "name": "Order_Item__c",
+          "label": "Order Item",
+          "type": "Lookup",
+          "target": "Order_Item__c",
+          "relationship": "DMS_Invoice_Lines",
+          "required": false
+        },
+        {
+          "name": "Product__c",
+          "label": "Product",
+          "type": "Lookup",
+          "target": "Product__c",
+          "relationship": "DMS_Invoice_Lines",
+          "required": true
+        },
+        {
+          "name": "Inventory__c",
+          "label": "Distributor Inventory",
+          "type": "Lookup",
+          "target": "DMS_Inventory__c",
+          "relationship": "Invoice_Lines",
+          "required": false
+        },
+        {
+          "name": "Scheme__c",
+          "label": "Scheme",
+          "type": "Lookup",
+          "target": "Scheme__c",
+          "relationship": "DMS_Invoice_Lines",
+          "required": false
+        },
+        {
+          "name": "Batch_Number__c",
+          "label": "Batch Number",
+          "type": "Text",
+          "length": 80
+        },
+        {
+          "name": "Expiry_Date__c",
+          "label": "Expiry Date",
+          "type": "Date"
+        },
+        {
+          "name": "Quantity_Pieces__c",
+          "label": "Billed Pieces",
+          "type": "Number",
+          "scale": 0
+        },
+        {
+          "name": "Free_Pieces__c",
+          "label": "Free Pieces",
+          "type": "Number",
+          "scale": 0
+        },
+        {
+          "name": "Unit_Price__c",
+          "label": "Price Per Piece",
+          "type": "Currency",
+          "scale": 2
+        },
+        {
+          "name": "Discount_Amount__c",
+          "label": "Line Discount Amount",
+          "type": "Currency",
+          "scale": 2
+        },
+        {
+          "name": "Tax_Percent__c",
+          "label": "Tax Percent",
+          "type": "Number",
+          "scale": 2
+        },
+        {
+          "name": "Gross_Amount__c",
+          "label": "Gross Amount",
+          "type": "Currency",
+          "formula": "ROUND(Quantity_Pieces__c * Unit_Price__c, 2)",
+          "scale": 2
+        },
+        {
+          "name": "Tax_Amount__c",
+          "label": "Tax Amount",
+          "type": "Currency",
+          "formula": "ROUND((Gross_Amount__c - BLANKVALUE(Discount_Amount__c, 0)) * BLANKVALUE(Tax_Percent__c, 0) / 100, 2)",
+          "scale": 2
+        },
+        {
+          "name": "Total_Amount__c",
+          "label": "Line Total",
+          "type": "Currency",
+          "formula": "Gross_Amount__c - BLANKVALUE(Discount_Amount__c, 0) + Tax_Amount__c",
+          "scale": 2
+        },
+        {
+          "name": "Stock_Out_Pieces__c",
+          "label": "Stock Out Pieces",
+          "type": "Number",
+          "formula": "Quantity_Pieces__c + BLANKVALUE(Free_Pieces__c, 0)",
+          "scale": 0
+        }
+      ]
+    },
+    {
+      "name": "DMS_Primary_Return__c",
+      "label": "Primary Return",
+      "plural": "Primary Returns",
+      "prefix": "PR",
+      "fields": [
+        {
+          "name": "Distributor__c",
+          "label": "DMS Distributor",
+          "type": "Lookup",
+          "target": "DMS_Distributor__c",
+          "relationship": "Primary_Returns",
+          "required": true
+        },
+        {
+          "name": "Employee__c",
+          "label": "Employee",
+          "type": "Lookup",
+          "target": "Employee__c",
+          "relationship": "DMS_Primary_Returns",
+          "required": true
+        },
+        {
+          "name": "Primary_Order__c",
+          "label": "Original Primary Order",
+          "type": "Lookup",
+          "target": "DMS_Primary_Order__c",
+          "relationship": "Primary_Returns",
+          "required": false
+        },
+        {
+          "name": "Officer__c",
+          "label": "Company Distributor Officer",
+          "type": "Lookup",
+          "target": "User",
+          "relationship": "DMS_Primary_Returns",
+          "required": false
+        },
+        {
+          "name": "Return_Date__c",
+          "label": "Return Date",
+          "type": "Date"
+        },
+        {
+          "name": "Status__c",
+          "label": "Status",
+          "type": "Picklist",
+          "values": [
+            "Draft",
+            "Submitted",
+            "Approved",
+            "Rejected"
+          ]
+        },
+        {
+          "name": "Rejection_Reason__c",
+          "label": "Rejection Reason",
+          "type": "Text",
+          "length": 255
+        },
+        {
+          "name": "Notes__c",
+          "label": "Notes",
+          "type": "Text",
+          "length": 255
+        },
+        {
+          "name": "Total_Cases__c",
+          "label": "Total Return Cases",
+          "type": "Summary",
+          "target": "DMS_Primary_Return_Line__c.Primary_Return__c",
+          "field": "DMS_Primary_Return_Line__c.Cases__c",
+          "operation": "sum"
+        },
+        {
+          "name": "Total_Amount__c",
+          "label": "Total Return Amount",
+          "type": "Summary",
+          "target": "DMS_Primary_Return_Line__c.Primary_Return__c",
+          "field": "DMS_Primary_Return_Line__c.Return_Amount__c",
+          "operation": "sum"
+        }
+      ]
+    },
+    {
+      "name": "DMS_Primary_Return_Line__c",
+      "label": "Primary Return Line",
+      "plural": "Primary Return Lines",
+      "prefix": "PRL",
+      "fields": [
+        {
+          "name": "Primary_Return__c",
+          "label": "Primary Return",
+          "type": "MasterDetail",
+          "target": "DMS_Primary_Return__c",
+          "relationship": "Return_Lines"
+        },
+        {
+          "name": "Product__c",
+          "label": "Product",
+          "type": "Lookup",
+          "target": "Product__c",
+          "relationship": "DMS_Primary_Return_Lines",
+          "required": true
+        },
+        {
+          "name": "Receipt_Line__c",
+          "label": "Original Receipt Line",
+          "type": "Lookup",
+          "target": "DMS_Goods_Receipt_Line__c",
+          "relationship": "Primary_Return_Lines",
+          "required": false
+        },
+        {
+          "name": "Batch_Number__c",
+          "label": "Batch Number",
+          "type": "Text",
+          "length": 80
+        },
+        {
+          "name": "Expiry_Date__c",
+          "label": "Expiry Date",
+          "type": "Date"
+        },
+        {
+          "name": "Cases__c",
+          "label": "Return Cases",
+          "type": "Number",
+          "scale": 0
+        },
+        {
+          "name": "Pieces_Per_Case__c",
+          "label": "Pieces Per Case",
+          "type": "Number",
+          "scale": 0
+        },
+        {
+          "name": "Reason__c",
+          "label": "Return Reason",
+          "type": "Picklist",
+          "values": [
+            "Damaged",
+            "Expired",
+            "Delayed Delivery",
+            "No Demand",
+            "Other"
+          ]
+        },
+        {
+          "name": "Notes__c",
+          "label": "Return Details",
+          "type": "Text",
+          "length": 255
+        },
+        {
+          "name": "Case_Value__c",
+          "label": "Value Per Case",
+          "type": "Currency",
+          "scale": 2
+        },
+        {
+          "name": "Total_Pieces__c",
+          "label": "Return Pieces",
+          "type": "Number",
+          "formula": "Cases__c * Pieces_Per_Case__c",
+          "scale": 0
+        },
+        {
+          "name": "Return_Amount__c",
+          "label": "Return Amount",
+          "type": "Currency",
+          "formula": "ROUND(Cases__c * Case_Value__c, 2)",
+          "scale": 2
+        }
+      ]
+    },
+    {
+      "name": "DMS_Credit_Note__c",
+      "label": "Credit Note",
+      "plural": "Credit Notes",
+      "prefix": "CN",
+      "fields": [
+        {
+          "name": "Sales_Channel__c",
+          "label": "Sales Channel",
+          "type": "Picklist",
+          "values": [
+            "Primary",
+            "Secondary"
+          ]
+        },
+        {
+          "name": "Distributor__c",
+          "label": "DMS Distributor",
+          "type": "Lookup",
+          "target": "DMS_Distributor__c",
+          "relationship": "Credit_Notes",
+          "required": true
+        },
+        {
+          "name": "Outlet__c",
+          "label": "Outlet",
+          "type": "Lookup",
+          "target": "Retailer__c",
+          "relationship": "DMS_Credit_Notes",
+          "required": false
+        },
+        {
+          "name": "Invoice__c",
+          "label": "Secondary Invoice",
+          "type": "Lookup",
+          "target": "DMS_Invoice__c",
+          "relationship": "Credit_Notes",
+          "required": false
+        },
+        {
+          "name": "Primary_Return__c",
+          "label": "Primary Return",
+          "type": "Lookup",
+          "target": "DMS_Primary_Return__c",
+          "relationship": "Credit_Notes",
+          "required": false
+        },
+        {
+          "name": "Secondary_Return__c",
+          "label": "Secondary Return",
+          "type": "Lookup",
+          "target": "Product_Return__c",
+          "relationship": "DMS_Credit_Notes",
+          "required": false
+        },
+        {
+          "name": "Scheme__c",
+          "label": "Scheme",
+          "type": "Lookup",
+          "target": "Scheme__c",
+          "relationship": "DMS_Credit_Notes",
+          "required": false
+        },
+        {
+          "name": "Credit_Date__c",
+          "label": "Credit Date",
+          "type": "Date"
+        },
+        {
+          "name": "Reason__c",
+          "label": "Credit Reason",
+          "type": "Picklist",
+          "values": [
+            "Return",
+            "Scheme Claim",
+            "Price Correction",
+            "Other"
+          ]
+        },
+        {
+          "name": "Status__c",
+          "label": "Status",
+          "type": "Picklist",
+          "values": [
+            "Draft",
+            "Issued",
+            "Cancelled"
+          ]
+        },
+        {
+          "name": "Notes__c",
+          "label": "Notes",
+          "type": "Text",
+          "length": 255
+        },
+        {
+          "name": "Total_Amount__c",
+          "label": "Total Credit Amount",
+          "type": "Summary",
+          "target": "DMS_Credit_Note_Line__c.Credit_Note__c",
+          "field": "DMS_Credit_Note_Line__c.Total_Amount__c",
+          "operation": "sum"
+        }
+      ]
+    },
+    {
+      "name": "DMS_Credit_Note_Line__c",
+      "label": "Credit Note Line",
+      "plural": "Credit Note Lines",
+      "prefix": "CNL",
+      "fields": [
+        {
+          "name": "Credit_Note__c",
+          "label": "Credit Note",
+          "type": "MasterDetail",
+          "target": "DMS_Credit_Note__c",
+          "relationship": "Credit_Lines"
+        },
+        {
+          "name": "Product__c",
+          "label": "Product",
+          "type": "Lookup",
+          "target": "Product__c",
+          "relationship": "DMS_Credit_Lines",
+          "required": false
+        },
+        {
+          "name": "Invoice_Line__c",
+          "label": "Original Invoice Line",
+          "type": "Lookup",
+          "target": "DMS_Invoice_Line__c",
+          "relationship": "Credit_Lines",
+          "required": false
+        },
+        {
+          "name": "Description__c",
+          "label": "Description",
+          "type": "Text",
+          "length": 255
+        },
+        {
+          "name": "Quantity_Unit__c",
+          "label": "Quantity Unit",
+          "type": "Picklist",
+          "values": [
+            "Case",
+            "Piece",
+            "Adjustment"
+          ]
+        },
+        {
+          "name": "Quantity__c",
+          "label": "Quantity",
+          "type": "Number",
+          "scale": 0
+        },
+        {
+          "name": "Unit_Credit__c",
+          "label": "Credit Per Unit",
+          "type": "Currency",
+          "scale": 2
+        },
+        {
+          "name": "Tax_Percent__c",
+          "label": "Tax Percent",
+          "type": "Number",
+          "scale": 2
+        },
+        {
+          "name": "Net_Amount__c",
+          "label": "Net Credit",
+          "type": "Currency",
+          "formula": "ROUND(Quantity__c * Unit_Credit__c, 2)",
+          "scale": 2
+        },
+        {
+          "name": "Tax_Amount__c",
+          "label": "Tax Credit",
+          "type": "Currency",
+          "formula": "ROUND(Net_Amount__c * BLANKVALUE(Tax_Percent__c, 0) / 100, 2)",
+          "scale": 2
+        },
+        {
+          "name": "Total_Amount__c",
+          "label": "Total Credit",
+          "type": "Currency",
+          "formula": "Net_Amount__c + Tax_Amount__c",
+          "scale": 2
+        }
+      ]
+    }
+  ],
+  "existingObjectAdditions": {
+    "Product__c": [
+      {
+        "name": "Boxes_Per_Case__c",
+        "label": "Boxes Per Case",
+        "type": "Number",
+        "scale": 0
+      },
+      {
+        "name": "Pieces_Per_Box__c",
+        "label": "Pieces Per Box",
+        "type": "Number",
+        "scale": 0
+      },
+      {
+        "name": "Box_Conversion_Pieces__c",
+        "label": "Pieces From Box Conversion",
+        "type": "Number",
+        "formula": "Boxes_Per_Case__c * Pieces_Per_Box__c",
+        "scale": 0
+      }
+    ],
+    "Scheme__c": [
+      {
+        "name": "Minimum_Cases__c",
+        "label": "Minimum Cases",
+        "type": "Number",
+        "scale": 0
+      },
+      {
+        "name": "Free_Cases__c",
+        "label": "Free Cases",
+        "type": "Number",
+        "scale": 0
+      },
+      {
+        "name": "Free_Gift__c",
+        "label": "Free Gift",
+        "type": "Text",
+        "length": 120
+      },
+      {
+        "name": "Gift_Quantity__c",
+        "label": "Gift Quantity",
+        "type": "Number",
+        "scale": 0
+      }
+    ],
+    "Product_Return__c": [
+      {
+        "name": "DMS_Distributor__c",
+        "label": "DMS Distributor",
+        "type": "Lookup",
+        "target": "DMS_Distributor__c",
+        "relationship": "Secondary_Returns",
+        "required": false
+      },
+      {
+        "name": "Invoice_Line__c",
+        "label": "Original Invoice Line",
+        "type": "Lookup",
+        "target": "DMS_Invoice_Line__c",
+        "relationship": "Secondary_Returns",
+        "required": false
+      },
+      {
+        "name": "DMS_Status__c",
+        "label": "Distributor Decision",
+        "type": "Picklist",
+        "values": [
+          "Pending",
+          "Approved",
+          "Rejected"
+        ]
+      },
+      {
+        "name": "DMS_Decision_Notes__c",
+        "label": "Distributor Decision Notes",
+        "type": "Text",
+        "length": 255
+      }
+    ]
+  }
+}

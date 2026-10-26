@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ValidationRule xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Credit_Source_Matches</fullName>
+    <active>true</active>
+    <errorConditionFormula>OR(AND(NOT(ISBLANK(Invoice__c)), OR(Distributor__c &lt;&gt; Invoice__r.Distributor__c, Outlet__c &lt;&gt; Invoice__r.Outlet__c)), AND(NOT(ISBLANK(Primary_Return__c)), Distributor__c &lt;&gt; Primary_Return__r.Distributor__c), AND(NOT(ISBLANK(Secondary_Return__c)), Outlet__c &lt;&gt; Secondary_Return__r.Outlet__c))</errorConditionFormula>
+    <errorMessage>The source invoice or return must match the credit recipient.</errorMessage>
+</ValidationRule>

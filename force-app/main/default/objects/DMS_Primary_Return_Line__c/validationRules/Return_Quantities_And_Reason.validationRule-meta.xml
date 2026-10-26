@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ValidationRule xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Return_Quantities_And_Reason</fullName>
+    <active>true</active>
+    <errorConditionFormula>OR(ISBLANK(Cases__c), Cases__c &lt;= 0, ISBLANK(Pieces_Per_Case__c), Pieces_Per_Case__c &lt;= 0, Case_Value__c &lt; 0, ISBLANK(TEXT(Reason__c)), AND(ISPICKVAL(Reason__c,'Other'), ISBLANK(Notes__c)))</errorConditionFormula>
+    <errorMessage>Enter return cases, pieces per case and reason. Explain Other in Return Details.</errorMessage>
+</ValidationRule>

@@ -1,0 +1,2 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata"><fullName>Salesforce_User__c</fullName><deleteConstraint>SetNull</deleteConstraint><description>Distributor login, separate from the company officer. Linking does not grant record access.</description><label>Distributor Salesforce User</label><referenceTo>User</referenceTo><relationshipLabel>Linked DMS Distributors</relationshipLabel><relationshipName>Linked_DMS_Distributors</relationshipName><required>false</required><type>Lookup</type></CustomField>

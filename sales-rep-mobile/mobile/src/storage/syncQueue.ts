@@ -14,14 +14,16 @@ export type Queued = {
   status: "PENDING" | "FAILED";
 };
 const MAX_ATTEMPTS = 5;
+/**
+ * Persist an offline mobile action in the local queue for later transmission.
+ */
 export async function enqueue(
   path: string,
   payload: any,
   options: { operation?: string; dependsOn?: string[] } = {},
 ) {
   const rows: Queued[] = JSON.parse((await AsyncStorage.getItem(KEY)) || "[]");
-  const id =
-    payload.requestId || `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  const id = payload.requestId || `${Date.now()}-${Math.random().toString(36).slice(2)}`;
   if (rows.some((row) => row.id === id)) return id;
   rows.push({
     id,
@@ -36,23 +38,37 @@ export async function enqueue(
   await AsyncStorage.setItem(KEY, JSON.stringify(rows));
   return id;
 }
+/**
+ * Return the number of saved actions waiting in the local synchronization queue.
+ */
 export async function pendingCount() {
   return JSON.parse((await AsyncStorage.getItem(KEY)) || "[]").length as number;
 }
+/**
+ * Replay stored mobile actions through the API and retain work that has not been successfully
+ * sent.
+ */
 export async function flushQueue() {
-  if (!(await NetInfo.fetch()).isConnected)
-    return { synced: 0, failed: await pendingCount() };
+  if (!(await NetInfo.fetch()).isConnected) return { synced: 0, failed: await pendingCount() };
   const rows: Queued[] = JSON.parse((await AsyncStorage.getItem(KEY)) || "[]"),
     failed: Queued[] = [],
     syncedIds = new Set<string>();
   let synced = 0;
   for (const row of rows) {
     if (row.dependsOn?.some((dependency) => !syncedIds.has(dependency))) {
-      failed.push({ ...row, status: "PENDING", lastError: "Waiting for a dependent record to synchronize" });
+      failed.push({
+        ...row,
+        status: "PENDING",
+        lastError: "Waiting for a dependent record to synchronize",
+      });
       continue;
     }
     if (row.attempts >= MAX_ATTEMPTS) {
-      failed.push({ ...row, status: "FAILED", lastError: row.lastError || "Maximum retry count reached" });
+      failed.push({
+        ...row,
+        status: "FAILED",
+        lastError: row.lastError || "Maximum retry count reached",
+      });
       continue;
     }
     try {

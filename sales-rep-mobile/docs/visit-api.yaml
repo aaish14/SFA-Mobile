@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: SFA External Mobile API
-  version: 1.5.0
+  version: 1.6.0
   description: Backend contract for the sales-representative-isolated SFA mobile application.
 servers:
   - url: http://localhost:4000/api
@@ -73,7 +73,25 @@ paths:
     get:
       summary: List sellable Salesforce products
       responses:
-        "200": { description: Product catalogue }
+        "200":
+          description: Product catalogue with Salesforce brand, sub-brand and alias for each product; empty values are returned as empty strings
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      required: [id, name, brand, subBrand, brandAlias]
+                      properties:
+                        id: { type: string }
+                        name: { type: string }
+                        brand: { type: string, description: Product__c.Brand__c }
+                        subBrand: { type: string, description: Product__c.Sub_Brand__c }
+                        brandAlias: { type: string, description: Product__c.Brand_Alias__c }
   /outlets:
     get:
       summary: List outlets belonging to the authenticated distributor
@@ -90,7 +108,7 @@ paths:
       responses:
         "200": { description: Distributor orders }
     post:
-      summary: Create one Salesforce order with validated order items
+      summary: Atomically create one Salesforce order per visit with validated order items and visit totals; retries reuse the persisted order
       responses:
         "200": { description: Order created or idempotently reused }
   /beats:
@@ -145,6 +163,48 @@ paths:
       summary: Complete the visit in Salesforce
       responses:
         "200": { description: Visit completed; response separately reports retailerEmailSent or retailerEmailError so email failure never reverses visit completion }
+        "409": { description: A saved order draft must be submitted before checkout }
+  /visits/{visitId}:
+    get:
+      summary: Restore the signed-in employee's visit, submitted order or draft, saved actions and refusals from Salesforce
+      parameters:
+        - in: path
+          name: visitId
+          required: true
+          schema: { type: string }
+      responses:
+        "200": { description: Owned visit restored even after a backend restart }
+        "404": { description: Visit missing or owned by another employee }
+  /visits/{visitId}/order-draft:
+    post:
+      summary: Replace the recoverable order draft; final submission remains POST /orders followed by checkout
+      parameters:
+        - in: path
+          name: visitId
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [items]
+              properties:
+                items:
+                  type: array
+                  maxItems: 200
+                  items:
+                    type: object
+                    required: [productId, quantity]
+                    properties:
+                      productId: { type: string }
+                      quantity: { type: number, exclusiveMinimum: true, minimum: 0 }
+      responses:
+        "200": { description: Draft persisted to Salesforce; safe to retry the same snapshot }
+        "400": { description: Invalid quantities or more than 200 lines }
+        "404": { description: Visit missing or owned by another employee }
+        "409": { description: Visit completed or order already submitted }
   /documents/{kind}/{visitId}:
     get:
       summary: Generate an authenticated visit PDF or Excel file for download or native sharing

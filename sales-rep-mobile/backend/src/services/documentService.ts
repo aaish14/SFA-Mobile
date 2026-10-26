@@ -1,6 +1,10 @@
 import PDFDocument from "pdfkit";
 import ExcelJS from "exceljs";
 import type { VisitPayload } from "../types.js";
+/**
+ * Render a visit summary and its order lines to an in-memory PDF buffer; this is a visit
+ * document, not an issued invoice.
+ */
 export async function createPdf(visit: VisitPayload) {
   return new Promise<Buffer>((resolve, reject) => {
     const doc = new PDFDocument({ margin: 42 });
@@ -28,17 +32,20 @@ export async function createPdf(visit: VisitPayload) {
     const appliedSchemes = visit.orderLines.filter((line) => line.schemeName);
     if (appliedSchemes.length) {
       doc.moveDown().fontSize(14).text("Applied schemes");
-      appliedSchemes.forEach((line) => doc.fontSize(10).text(`${line.productName}: ${line.schemeName}`));
+      appliedSchemes.forEach((line) =>
+        doc.fontSize(10).text(`${line.productName}: ${line.schemeName}`),
+      );
     }
-    doc
-      .moveDown()
-      .text(`Total: INR ${visit.orderLines.reduce((s, l) => s + l.amount, 0)}`);
+    doc.moveDown().text(`Total: INR ${visit.orderLines.reduce((s, l) => s + l.amount, 0)}`);
     doc.text(
       `Returns: ${visit.returns.length}  Competitor activities: ${visit.competitors.length}  Tickets: ${visit.tickets.length}`,
     );
     doc.end();
   });
 }
+/**
+ * Build an Excel workbook containing the visit summary, orders and recorded visit activities.
+ */
 export async function createExcel(visit: VisitPayload) {
   const book = new ExcelJS.Workbook();
   const summary = book.addWorksheet("Visit Summary");

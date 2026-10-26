@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Primary_Order_Line__c</fullName>
+    <deleteConstraint>Restrict</deleteConstraint>
+    <label>Primary Order Line</label>
+    <referenceTo>DMS_Primary_Order_Line__c</referenceTo>
+    <relationshipLabel>Primary_Invoice_Lines</relationshipLabel>
+    <relationshipName>Primary_Invoice_Lines</relationshipName>
+    <required>false</required>
+    <type>Lookup</type>
+</CustomField>

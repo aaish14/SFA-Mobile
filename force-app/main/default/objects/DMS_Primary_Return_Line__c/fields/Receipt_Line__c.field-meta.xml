@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Receipt_Line__c</fullName>
+    <deleteConstraint>Restrict</deleteConstraint>
+    <description>Original Receipt Line. DMS schema from the October 15 mentor recordings and SFA &amp; DMS deck. Inventory posting and application sync are separate automation, not performed by this field.</description>
+    <label>Original Receipt Line</label>
+    <referenceTo>DMS_Goods_Receipt_Line__c</referenceTo>
+    <relationshipLabel>Primary Return Lines</relationshipLabel>
+    <relationshipName>Primary_Return_Lines</relationshipName>
+    <required>false</required>
+    <type>Lookup</type>
+</CustomField>

@@ -1,0 +1,3 @@
+# Prettier 3.9.10 debug-check reports an unstable method-chain layout here.
+# Leave the existing test untouched rather than force a formatter discrepancy.
+../../sales-rep-mobile/backend/src/visitRecovery.test.ts

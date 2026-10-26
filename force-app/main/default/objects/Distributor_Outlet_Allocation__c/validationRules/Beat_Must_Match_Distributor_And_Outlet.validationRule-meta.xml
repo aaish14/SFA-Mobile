@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ValidationRule xmlns="http://soap.sforce.com/2006/04/metadata">
-    <fullName>Beat_Must_Match_Distributor_And_Outlet</fullName>
-    <active>true</active>
+    <fullName>Beat_Must_Match_Distributor_And_Outlet</fullName><active>true</active>
     <description>Keep the outlet and any optional legacy representative in the allocation beat.</description>
     <errorConditionFormula>OR(Beat__c &lt;&gt; Outlet__r.Beat__c, AND(NOT(ISBLANK(Distributor__c)), Beat__c &lt;&gt; Distributor__r.Beat__c))</errorConditionFormula>
     <errorDisplayField>Beat__c</errorDisplayField>

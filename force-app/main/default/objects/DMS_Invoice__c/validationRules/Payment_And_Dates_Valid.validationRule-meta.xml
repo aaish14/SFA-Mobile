@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ValidationRule xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Payment_And_Dates_Valid</fullName>
+    <active>true</active>
+    <errorConditionFormula>OR(Paid_Amount__c &lt; 0, Paid_Amount__c &gt; Total_Amount__c, AND(NOT(ISBLANK(Due_Date__c)), NOT(ISBLANK(Invoice_Date__c)), Due_Date__c &lt; Invoice_Date__c))</errorConditionFormula>
+    <errorMessage>Paid amount must be between zero and invoice total; due date cannot precede invoice date.</errorMessage>
+</ValidationRule>

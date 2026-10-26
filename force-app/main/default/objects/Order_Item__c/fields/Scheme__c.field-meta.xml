@@ -8,6 +8,5 @@
     <relationshipLabel>Order Items</relationshipLabel>
     <relationshipName>Order_Items</relationshipName>
     <required>false</required>
-    <trackTrending>false</trackTrending>
     <type>Lookup</type>
 </CustomField>

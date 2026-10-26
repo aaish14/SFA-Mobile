@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ValidationRule xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Valid_Line_Amounts</fullName>
+    <active>true</active>
+    <errorConditionFormula>OR(ISBLANK(Quantity_Pieces__c), Quantity_Pieces__c &lt;= 0, Free_Pieces__c &lt; 0, ISBLANK(Unit_Price__c), Unit_Price__c &lt; 0, Discount_Amount__c &lt; 0, Discount_Amount__c &gt; Gross_Amount__c, Tax_Percent__c &lt; 0, Tax_Percent__c &gt; 100)</errorConditionFormula>
+    <errorMessage>Enter positive billed pieces, a price, and valid discounts and tax (0 to 100).</errorMessage>
+</ValidationRule>

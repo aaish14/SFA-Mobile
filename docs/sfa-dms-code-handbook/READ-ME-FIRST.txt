@@ -1,0 +1,27 @@
+SFA MOBILE + DMS CODE HANDBOOK
+Snapshot: 26 October 2026
+
+1. Extract the entire ZIP to a folder. Keep the files/ folder and style.css together.
+2. Open index.html in your browser for the complete searchable file explorer.
+3. Open Manager-Explanation.html for the shorter process/logic walkthrough.
+4. Click a file to see exact source line numbers and explanations beside the code.
+5. Use Print / save as PDF on a chapter page or source page if you need a PDF.
+
+The process chapters are curated explanations. Numbered line notes are generated
+reading aids explaining syntax and local operations, not a manual correctness
+proof for every line. The guide includes explicit limitations and test evidence.
+
+INTERNAL USE: this includes project source and business configuration. Do not
+publish it publicly. Credentials, dependencies, builds and old backups are excluded.
+
+Local source was made more readable; three trigger handlers and focused tests
+were added, and existing Apex compilation errors were repaired. Salesforce
+check-only validation passed 50 tests. No actual deployment was performed.
+The guide is not an APK, a running application or a Salesforce deployment package.
+
+BACKUP: backups/code-readability-20261026 in the project folder.
+REBUILD: node tools/code-quality/build-code-guide.cjs from the project root.
+VALIDATE GUIDE: node tools/code-quality/check-code-guide.cjs
+
+The coverage.json file lists every included file and its SHA-256 hash.
+The changes.json file compares backed-up sources with this snapshot.

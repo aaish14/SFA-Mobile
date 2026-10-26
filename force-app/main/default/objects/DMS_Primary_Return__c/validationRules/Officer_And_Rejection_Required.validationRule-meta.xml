@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ValidationRule xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Officer_And_Rejection_Required</fullName>
+    <active>true</active>
+    <errorConditionFormula>OR(AND(ISPICKVAL(Status__c, 'Submitted'), ISBLANK(Officer__c)), AND(ISPICKVAL(Status__c, 'Rejected'), ISBLANK(Rejection_Reason__c)))</errorConditionFormula>
+    <errorMessage>Select a company officer before submission and enter a reason when rejecting.</errorMessage>
+</ValidationRule>

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Distributor_Status__c</fullName>
+    <description>Read-only lifecycle message based on the Discontinued and Active fields.</description>
+    <formula>IF(Discontinued__c, "Distributor is discontinued", IF(Active__c, "Active", "Inactive"))</formula>
+    <formulaTreatBlanksAs>BlankAsZero</formulaTreatBlanksAs>
+    <label>Distributor Status</label>
+    <type>Text</type>
+</CustomField>

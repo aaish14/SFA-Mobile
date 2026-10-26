@@ -1,5 +1,9 @@
 @IsTest
 private class SfaAllocationEmployeeServiceTest {
+    /**
+     * Regression scenario: links allocation to employee using salesforce user. Arrange isolated
+     * test data, exercise the workflow and assert the expected outcome.
+     */
     @IsTest
     static void linksAllocationToEmployeeUsingSalesforceUser() {
         Geography__c geography = new Geography__c(

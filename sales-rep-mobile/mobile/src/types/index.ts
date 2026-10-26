@@ -110,6 +110,7 @@ export type OrderLine = {
   configurationType?: string;
 };
 export type RootStack = {
+  Primary: undefined;
   Login: undefined;
   Main: undefined;
   Beats: undefined;

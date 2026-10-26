@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Package xmlns="http://soap.sforce.com/2006/04/metadata">
+  <types><members>DMS_Primary_Order__c.Order_Source__c</members><name>CustomField</name></types>
+  <types><members>DmsEmployeeTransactions</members><members>DmsPortalApi</members><members>DmsPrimaryWorkflow</members><members>DmsDistributorOrderTest</members><name>ApexClass</name></types>
+  <types><members>DMS_Primary_Order__c-Primary Order Layout</members><name>Layout</name></types>
+  <types><members>DMS_Backend_Transactions</members><members>DMS_Distributor_Officer</members><name>PermissionSet</name></types>
+  <version>67.0</version>
+</Package>

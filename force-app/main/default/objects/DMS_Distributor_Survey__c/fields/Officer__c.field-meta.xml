@@ -1,0 +1,2 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata"><deleteConstraint>SetNull</deleteConstraint><fullName>Officer__c</fullName><label>Surveying Company Officer</label><referenceTo>User</referenceTo><relationshipLabel>Distributor Surveys</relationshipLabel><relationshipName>Distributor_Surveys</relationshipName><required>false</required><type>Lookup</type></CustomField>

@@ -1,0 +1,6 @@
+{
+  "tabWidth": 4,
+  "useTabs": false,
+  "printWidth": 100,
+  "overrides": [{ "files": ["*.js", "*.cjs", "*.ts", "*.tsx", "*.json", "*.css", "*.html"], "options": { "tabWidth": 2 } }]
+}

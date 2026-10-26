@@ -6,8 +6,5 @@
     <referenceTo>Employee__c</referenceTo>
     <relationshipLabel>Attendance Records</relationshipLabel>
     <relationshipName>Attendance_Records</relationshipName>
-    <required>false</required>
-    <trackHistory>false</trackHistory>
-    <trackTrending>false</trackTrending>
     <type>Lookup</type>
 </CustomField>

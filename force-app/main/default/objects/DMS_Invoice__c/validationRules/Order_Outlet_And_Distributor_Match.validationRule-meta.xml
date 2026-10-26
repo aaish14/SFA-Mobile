@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ValidationRule xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Order_Outlet_And_Distributor_Match</fullName>
+    <active>true</active>
+    <errorConditionFormula>OR(AND(ISBLANK(Primary_Order__c), OR(ISBLANK(Sales_Order__c), ISBLANK(Outlet__c), Outlet__c &lt;&gt; Sales_Order__r.Retailer__c, AND(NOT(ISBLANK(Sales_Order__r.DMS_Distributor__c)), Distributor__c &lt;&gt; Sales_Order__r.DMS_Distributor__c))), AND(NOT(ISBLANK(Primary_Order__c)), OR(NOT(ISBLANK(Sales_Order__c)), NOT(ISBLANK(Outlet__c)), Distributor__c &lt;&gt; Primary_Order__r.Distributor__c, NOT(ISPICKVAL(Primary_Order__r.Status__c, 'Approved')))))</errorConditionFormula>
+    <errorMessage>The invoice must use the outlet and assigned distributor from the sales order.</errorMessage>
+</ValidationRule>

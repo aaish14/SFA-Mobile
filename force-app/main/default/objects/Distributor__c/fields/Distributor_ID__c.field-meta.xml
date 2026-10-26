@@ -2,9 +2,7 @@
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>Distributor_ID__c</fullName>
     <displayFormat>DIST-{0000}</displayFormat>
-    <externalId>false</externalId>
     <label>Sales Representative ID</label>
-    <trackHistory>false</trackHistory>
-    <trackTrending>false</trackTrending>
+    <startingNumber>1</startingNumber>
     <type>AutoNumber</type>
 </CustomField>

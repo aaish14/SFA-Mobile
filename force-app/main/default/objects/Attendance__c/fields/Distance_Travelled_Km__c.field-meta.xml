@@ -2,15 +2,10 @@
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>Distance_Travelled_Km__c</fullName>
     <description>Automatically calculated from the end odometer minus the start odometer.</description>
-    <externalId>false</externalId>
     <formula>IF(OR(ISBLANK(Start_Odometer__c), ISBLANK(End_Odometer__c)), NULL, End_Odometer__c - Start_Odometer__c)</formula>
     <formulaTreatBlanksAs>BlankAsZero</formulaTreatBlanksAs>
     <label>Distance Travelled (KM)</label>
-    <precision>18</precision>
-    <required>false</required>
+    <precision>10</precision>
     <scale>1</scale>
-    <trackHistory>false</trackHistory>
-    <trackTrending>false</trackTrending>
     <type>Number</type>
-    <unique>false</unique>
 </CustomField>

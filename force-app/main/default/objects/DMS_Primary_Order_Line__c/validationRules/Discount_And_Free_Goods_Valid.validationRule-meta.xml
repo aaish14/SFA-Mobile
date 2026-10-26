@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ValidationRule xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Discount_And_Free_Goods_Valid</fullName>
+    <active>true</active>
+    <errorConditionFormula>OR(Discount_Amount__c &lt; 0, Discount_Amount__c &gt; Cases__c * Case_Price__c, Free_Cases__c &lt; 0, Gift_Quantity__c &lt; 0)</errorConditionFormula>
+    <errorMessage>Discount cannot exceed the gross line value. Free quantities cannot be negative.</errorMessage>
+</ValidationRule>

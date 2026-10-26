@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ValidationRule xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Original_Line_And_Stock_Match</fullName>
+    <active>true</active>
+    <errorConditionFormula>OR(AND(NOT(ISBLANK(Order_Item__c)), OR(Product__c &lt;&gt; Order_Item__r.Product__c, Invoice__r.Sales_Order__c &lt;&gt; Order_Item__r.Sales_Order__c)), AND(NOT(ISBLANK(Inventory__c)), OR(Product__c &lt;&gt; Inventory__r.Product__c, Invoice__r.Distributor__c &lt;&gt; Inventory__r.Distributor__c)))</errorConditionFormula>
+    <errorMessage>The order item and stock must match this product, sales order and distributor.</errorMessage>
+</ValidationRule>

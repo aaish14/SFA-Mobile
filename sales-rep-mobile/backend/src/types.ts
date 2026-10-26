@@ -28,4 +28,8 @@ export type VisitPayload = {
   tickets: any[];
   remarks?: string;
   status: string;
+  orderSubmitted?: boolean;
+  stocks?: any[];
+  assets?: any[];
+  refusedProductIds?: string[];
 };

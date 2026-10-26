@@ -2,6 +2,14 @@
 
 These standards apply to the SFA project under `force-app/main/default`. They are intended to keep the code readable for a new developer, safe for Salesforce governor limits, and predictable during deployment.
 
+## Documentation pass: 26 October 2026
+
+This pass adds method-purpose comments to the existing Apex, LWC, backend, SFA mobile and DMS source, plus trigger entry-point descriptions. It applies the pinned Apex formatter. It does **not** change business rules, sharing keywords, permissions, record APIs or data. It does not deploy to Salesforce or rebuild an APK.
+
+The rules below are development/review requirements, not a claim that every legacy path already satisfies them. In particular, `Employee__c` currently has separate allocation and invitation triggers; their consolidation needs a separately tested change. Legacy controllers and REST endpoints also require their own authorization/CRUD/FLS review. Documentation does not make them security-certified.
+
+Scope: application source under `force-app/main/default/{classes,triggers,lwc}`, `sales-rep-mobile/backend/src`, `sales-rep-mobile/mobile/src`, `dms-mobile/src`, and the two app entry components. Dependencies, generated bundles, generated handbook pages, metadata XML, secrets and third-party code are not rewritten. Anonymous callbacks remain part of their documented enclosing method; this is method documentation, not a comment on every syntax line.
+
 ## 1. Naming conventions
 
 Use names that describe the business purpose instead of implementation details.
@@ -93,6 +101,7 @@ Map<Id, Beat__c> beatsById = new Map<Id, Beat__c>([
 ## 5. Salesforce security
 
 - Use `with sharing` to respect record access.
+- `with sharing` alone does not enforce object CRUD or field-level permissions. Do not describe a method as permission-safe solely because its class uses this keyword.
 - Before returning data to Lightning or an external client, enforce object and field access where appropriate with `WITH USER_MODE`, user-mode database operations, or `Security.stripInaccessible`.
 - Never place credentials, access tokens, passwords, SMTP secrets, or connected-app secrets in Apex, JavaScript, Git, or a ZIP file.
 - Use Named Credentials for Salesforce callouts.
@@ -168,3 +177,60 @@ Before committing Salesforce code, confirm:
 - Tests cover success, failure, and bulk behavior.
 - Existing metadata and mobile API contracts remain compatible.
 - No secrets, build output, dependencies, or temporary files are staged.
+
+## 12. Method documentation convention
+
+- Place an ApexDoc/JSDoc `/** ... */` block immediately above the method, before annotations or decorators.
+- Start with the method's actual business purpose. Mention significant writes, ownership checks, workflow restrictions, retry behavior and return/error behavior when relevant.
+- Explain case quantities versus piece quantities, saved invoice snapshots versus current catalogue prices, and local drafts versus confirmed Salesforce records explicitly.
+- Add `@param`, `@returns` and `@throws` details when a non-obvious public contract needs them; do not repeat a parameter name as its explanation.
+- Preserve useful existing comments. Update comments whenever the implementation changes; misleading comments are worse than missing ones.
+- Test comments describe the scenario being asserted, not a promise that a test has passed.
+- Do not call mock data live, an email accepted by a provider delivered, or a queued write saved in Salesforce.
+
+Example:
+
+```apex
+/**
+ * Derive the employee/outlet pair used to deduplicate allocation requests.
+ * @param employeeId Employee whose outlet allocation is being considered.
+ * @param outletId Outlet being allocated to that employee.
+ * @return Stable pair key for this transaction's allocation map.
+ */
+private static String allocationKey(Id employeeId, Id outletId) {
+    return String.valueOf(employeeId) + ':' + String.valueOf(outletId);
+}
+```
+
+## 13. Backend, SFA mobile, DMS and LWC conventions
+
+- Use the repository's two-space JavaScript/TypeScript indentation and shared formatter; keep four-space Apex indentation.
+- Keep network requests in the established API/transport layer. Keep credentials on the backend; never include tokens or sign-in codes in comments or logs.
+- Prefer explicit request/response types for new contracts. Do not remove existing types or rename exported APIs as part of formatting.
+- Preserve hook order, dependency arrays, React keys and event handlers. Documentation edits must not alter JSX text or rendering expressions.
+- Keep distributor/employee identity checks on the server. UI visibility and disabled buttons are not authorization.
+- Persist retryable actions with a stable key before transmission. Only acknowledge a save after the server confirms it; retain failed work for correction.
+- Treat display helpers, derived filters and draft edits as local operations, not Salesforce writes.
+- Maintain account-scoped caches and prevent delayed responses from an old session replacing the current account's data.
+- Keep accessible field labels and meaningful errors. Preserve loading, empty, expired-session and offline states.
+- LWC controllers should keep the existing cacheability/decorator contracts, refresh record notifications after writes, and surface Apex errors as readable messages.
+
+## 14. Local verification and safe rollout
+
+From `tools/code-quality`:
+
+```text
+npm run check:apex
+npm run verify:apex-format
+npm run check:methods
+```
+
+`check:methods` compares executable syntax trees against the 26 October pre-edit baseline and checks documentation on named functions/methods. It ignores comments and source positions, not string literals or executable expressions. It is a guard for this documentation pass, not a replacement for tests or a permanent ban on future behavior changes. The original files are in `backups/method-comments-20261026`; audit results are in `diagnostics/method-comments/verification.json`. Neither directory is an application runtime dependency.
+
+Run the backend build/tests, both app type checks, SFA component/storage tests and DMS UI/logout checks after changes. An Apex parser/formatter check is not an org compile or an Apex test run. Functional Salesforce changes still require an explicit deployment validation and the relevant Apex tests in the target org.
+
+## Salesforce references
+
+- [Bulk trigger patterns](https://trailhead.salesforce.com/content/learn/modules/apex_triggers/apex_triggers_bulk)
+- [CRUD and field-level security](https://developer.salesforce.com/docs/platform/secure-coding/guide/secure-coding-access-control-protect-from-crud-fls-vulnerabilities.html)
+- [Record sharing enforcement](https://developer.salesforce.com/docs/platform/secure-coding/guide/secure-coding-access-control-protect-from-sharing-violations.html)

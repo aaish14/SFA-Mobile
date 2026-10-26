@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ValidationRule xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Original_Line_Matches</fullName>
+    <active>true</active>
+    <errorConditionFormula>AND(NOT(ISBLANK(Primary_Order_Line__c)), OR(IF(AND(Received_Cases__c = 0, Free_Cases__c &gt; 0), Product__c &lt;&gt; Primary_Order_Line__r.Free_Product__c, Product__c &lt;&gt; Primary_Order_Line__r.Product__c), Goods_Receipt__r.Primary_Order__c &lt;&gt; Primary_Order_Line__r.Order__c))</errorConditionFormula>
+    <errorMessage>The product and original order line must belong to the receipt's primary order.</errorMessage>
+</ValidationRule>

@@ -8,10 +8,7 @@ const schema = z.object({
     .default("true")
     .transform((value) => value === "true"),
   JWT_SECRET: z.string().min(16).default("development-secret-change-me"),
-  SALESFORCE_LOGIN_URL: z
-    .string()
-    .url()
-    .default("https://login.salesforce.com"),
+  SALESFORCE_LOGIN_URL: z.string().url().default("https://login.salesforce.com"),
   SALESFORCE_INSTANCE_URL: z.string().url().optional(),
   SALESFORCE_CLIENT_ID: z.string().optional(),
   SALESFORCE_CLIENT_SECRET: z.string().optional(),
@@ -46,8 +43,7 @@ export const env = schema.parse(process.env);
 export const objectMap = {
   distributor: process.env.DISTRIBUTOR_OBJECT || "Distributor__c",
   distributorAllocation:
-    process.env.DISTRIBUTOR_ALLOCATION_OBJECT ||
-    "Distributor_Outlet_Allocation__c",
+    process.env.DISTRIBUTOR_ALLOCATION_OBJECT || "Distributor_Outlet_Allocation__c",
   salesRep: process.env.SALES_REP_OBJECT || "Employee__c",
   beat: process.env.BEAT_OBJECT || "Beat__c",
   store: process.env.STORE_OBJECT || "Retailer__c",
@@ -55,8 +51,7 @@ export const objectMap = {
   order: process.env.ORDER_OBJECT || "Sales_Order__c",
   orderItem: process.env.ORDER_ITEM_OBJECT || "Order_Item__c",
   returns: process.env.RETURN_OBJECT || "Product_Return__c",
-  competitor:
-    process.env.COMPETITOR_ACTIVITY_OBJECT || "Competitor_Activity__c",
+  competitor: process.env.COMPETITOR_ACTIVITY_OBJECT || "Competitor_Activity__c",
   ticket: process.env.TICKET_OBJECT || "SFA_Ticket__c",
   scheme: process.env.SCHEME_OBJECT || "Scheme__c",
   product: process.env.PRODUCT_OBJECT || "Product__c",

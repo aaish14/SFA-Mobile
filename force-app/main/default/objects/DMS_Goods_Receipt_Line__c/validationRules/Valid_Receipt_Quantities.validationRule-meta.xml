@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ValidationRule xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Valid_Receipt_Quantities</fullName>
+    <active>true</active>
+    <errorConditionFormula>OR(ISBLANK(Received_Cases__c), Received_Cases__c &lt; 0, Free_Cases__c &lt; 0, Received_Cases__c + BLANKVALUE(Free_Cases__c,0) &lt;= 0, MOD(Received_Cases__c,1) &lt;&gt; 0, MOD(BLANKVALUE(Free_Cases__c,0),1) &lt;&gt; 0, ISBLANK(Pieces_Per_Case__c), Pieces_Per_Case__c &lt;= 0, Case_Cost__c &lt; 0)</errorConditionFormula>
+    <errorMessage>Enter positive received cases and pieces per case. Free cases and cost cannot be negative.</errorMessage>
+</ValidationRule>
