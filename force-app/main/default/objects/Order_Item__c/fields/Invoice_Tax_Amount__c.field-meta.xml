@@ -3,6 +3,8 @@
     <fullName>Invoice_Tax_Amount__c</fullName>
     <label>Invoice Tax Amount</label>
     <precision>18</precision>
+    <required>false</required>
     <scale>2</scale>
+    <trackTrending>false</trackTrending>
     <type>Currency</type>
 </CustomField>

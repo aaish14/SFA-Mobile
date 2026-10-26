@@ -14,39 +14,28 @@
     </classAccesses>
     <description>Access to the SFA Mobile app, its tabs, records and Apex services.</description>
     <fieldPermissions>
-        <editable>true</editable>
-        <field>Employee__c.Email__c</field>
+        <editable>false</editable>
+        <field>Attendance__c.Distance_Travelled_Km__c</field>
         <readable>true</readable>
     </fieldPermissions>
-    <fieldPermissions><editable>true</editable><field>Employee__c.Alternate_Phone__c</field><readable>true</readable></fieldPermissions>
-    <fieldPermissions><editable>true</editable><field>Employee__c.Address__c</field><readable>true</readable></fieldPermissions>
-    <fieldPermissions><editable>true</editable><field>Employee__c.Beat__c</field><readable>true</readable></fieldPermissions>
-    <fieldPermissions><editable>true</editable><field>Employee__c.Joining_Date__c</field><readable>true</readable></fieldPermissions>
-    <fieldPermissions><editable>false</editable><field>Employee__c.Login_Email__c</field><readable>true</readable></fieldPermissions>
-    <fieldPermissions><editable>true</editable><field>Employee__c.Application_Access_Email__c</field><readable>true</readable></fieldPermissions>
-    <fieldPermissions><editable>true</editable><field>Employee__c.Remarks__c</field><readable>true</readable></fieldPermissions>
-    <fieldPermissions><editable>false</editable><field>Employee__c.Status__c</field><readable>true</readable></fieldPermissions>
-    <fieldPermissions><editable>false</editable><field>Employee__c.User_Status__c</field><readable>true</readable></fieldPermissions>
-    <fieldPermissions><editable>true</editable><field>Distributor_Outlet_Allocation__c.Employee__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Attendance__c.Employee__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
     <fieldPermissions>
         <editable>true</editable>
         <field>Attendance__c.End_Latitude__c</field>
         <readable>true</readable>
     </fieldPermissions>
-    <fieldPermissions><editable>false</editable><field>Attendance__c.Distance_Travelled_Km__c</field><readable>true</readable></fieldPermissions>
-    <fieldPermissions><editable>true</editable><field>Attendance__c.Start_Odometer__c</field><readable>true</readable></fieldPermissions>
-    <fieldPermissions><editable>true</editable><field>Attendance__c.End_Odometer__c</field><readable>true</readable></fieldPermissions>
-    <fieldPermissions><editable>true</editable><field>Attendance__c.Employee__c</field><readable>true</readable></fieldPermissions>
-    <fieldPermissions><editable>true</editable><field>Attendance__c.Odometer_Entry_Mode__c</field><readable>true</readable></fieldPermissions>
-    <fieldPermissions><editable>true</editable><field>Attendance__c.Travel_Rate_Per_Km__c</field><readable>true</readable></fieldPermissions>
-    <fieldPermissions><editable>false</editable><field>Attendance__c.Travel_Amount__c</field><readable>true</readable></fieldPermissions>
-    <fieldPermissions><editable>true</editable><field>Attendance__c.Odometer_Evidence_URL__c</field><readable>true</readable></fieldPermissions>
-    <fieldPermissions><editable>true</editable><field>Attendance__c.Transport_Mode__c</field><readable>true</readable></fieldPermissions>
-    <fieldPermissions><editable>true</editable><field>Attendance__c.Vehicle_Ownership__c</field><readable>true</readable></fieldPermissions>
-    <fieldPermissions><editable>true</editable><field>Attendance__c.Planned_Activity__c</field><readable>true</readable></fieldPermissions>
     <fieldPermissions>
         <editable>true</editable>
         <field>Attendance__c.End_Longitude__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Attendance__c.End_Odometer__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
@@ -56,7 +45,22 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>true</editable>
+        <field>Attendance__c.Odometer_Entry_Mode__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Attendance__c.Odometer_Evidence_URL__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
         <field>Attendance__c.Offline_Key__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Attendance__c.Planned_Activity__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
@@ -81,12 +85,37 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>true</editable>
+        <field>Attendance__c.Start_Odometer__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
         <field>Attendance__c.Start_Time__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
         <editable>true</editable>
         <field>Attendance__c.Status__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Attendance__c.Transport_Mode__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
+        <field>Attendance__c.Travel_Amount__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Attendance__c.Travel_Rate_Per_Km__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Attendance__c.Vehicle_Ownership__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
@@ -127,6 +156,11 @@
     <fieldPermissions>
         <editable>true</editable>
         <field>Beat__c.Sales_Representative__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Distributor_Outlet_Allocation__c.Employee__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
@@ -186,6 +220,56 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>true</editable>
+        <field>Employee__c.Address__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Employee__c.Alternate_Phone__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Employee__c.Application_Access_Email__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Employee__c.Beat__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Employee__c.Email__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Employee__c.Joining_Date__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
+        <field>Employee__c.Login_Email__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Employee__c.Remarks__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
+        <field>Employee__c.Status__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
+        <field>Employee__c.User_Status__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
         <field>Order_Item__c.Case_Quantity__c</field>
         <readable>true</readable>
     </fieldPermissions>
@@ -197,6 +281,16 @@
     <fieldPermissions>
         <editable>true</editable>
         <field>Order_Item__c.Piece_Quantity__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Order_Item__c.Product_Sales_Configuration__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Order_Item__c.Scheme__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
@@ -220,13 +314,13 @@
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
-        <editable>true</editable>
-        <field>Permanent_Journey_Plan__c.Approver__c</field>
+        <editable>false</editable>
+        <field>Permanent_Journey_Plan__c.Approved_Outlet_Names__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
-        <editable>false</editable>
-        <field>Permanent_Journey_Plan__c.Approved_Outlet_Names__c</field>
+        <editable>true</editable>
+        <field>Permanent_Journey_Plan__c.Approver__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
@@ -277,6 +371,26 @@
     <fieldPermissions>
         <editable>false</editable>
         <field>Permanent_Journey_Plan__c.Submitted_Date__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Product_Sales_Configuration__c.Active__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Product_Sales_Configuration__c.End_Date__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Product_Sales_Configuration__c.Minimum_Quantity__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Product_Sales_Configuration__c.Target_Quantity__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
@@ -446,6 +560,11 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>true</editable>
+        <field>Scheme_Product__c.Active__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
         <field>Scheme__c.Active__c</field>
         <readable>true</readable>
     </fieldPermissions>
@@ -599,20 +718,8 @@
         <field>Visit__c.Visit_Number__c</field>
         <readable>true</readable>
     </fieldPermissions>
-    <fieldPermissions><editable>true</editable><field>Order_Item__c.Product_Sales_Configuration__c</field><readable>true</readable></fieldPermissions>
-    <fieldPermissions><editable>true</editable><field>Order_Item__c.Scheme__c</field><readable>true</readable></fieldPermissions>
-    <fieldPermissions><editable>true</editable><field>Product_Sales_Configuration__c.Active__c</field><readable>true</readable></fieldPermissions>
-    <fieldPermissions><editable>true</editable><field>Product_Sales_Configuration__c.End_Date__c</field><readable>true</readable></fieldPermissions>
-    <fieldPermissions><editable>true</editable><field>Product_Sales_Configuration__c.Minimum_Quantity__c</field><readable>true</readable></fieldPermissions>
-    <fieldPermissions><editable>true</editable><field>Product_Sales_Configuration__c.Target_Quantity__c</field><readable>true</readable></fieldPermissions>
-    <fieldPermissions><editable>true</editable><field>Scheme_Product__c.Active__c</field><readable>true</readable></fieldPermissions>
     <hasActivationRequired>false</hasActivationRequired>
     <label>SFA Mobile User</label>
-    <objectPermissions><allowCreate>true</allowCreate><allowDelete>false</allowDelete><allowEdit>true</allowEdit><allowRead>true</allowRead><modifyAllRecords>false</modifyAllRecords><object>Product_Sales_Configuration__c</object><viewAllFields>true</viewAllFields><viewAllRecords>true</viewAllRecords></objectPermissions>
-    <objectPermissions><allowCreate>true</allowCreate><allowDelete>false</allowDelete><allowEdit>true</allowEdit><allowRead>true</allowRead><modifyAllRecords>false</modifyAllRecords><object>Survey__c</object><viewAllFields>true</viewAllFields><viewAllRecords>true</viewAllRecords></objectPermissions>
-    <objectPermissions><allowCreate>true</allowCreate><allowDelete>false</allowDelete><allowEdit>true</allowEdit><allowRead>true</allowRead><modifyAllRecords>false</modifyAllRecords><object>Survey_Question__c</object><viewAllFields>true</viewAllFields><viewAllRecords>true</viewAllRecords></objectPermissions>
-    <objectPermissions><allowCreate>true</allowCreate><allowDelete>false</allowDelete><allowEdit>true</allowEdit><allowRead>true</allowRead><modifyAllRecords>false</modifyAllRecords><object>Survey_Response__c</object><viewAllFields>true</viewAllFields><viewAllRecords>false</viewAllRecords></objectPermissions>
-    <objectPermissions><allowCreate>true</allowCreate><allowDelete>false</allowDelete><allowEdit>true</allowEdit><allowRead>true</allowRead><modifyAllRecords>false</modifyAllRecords><object>Survey_Answer__c</object><viewAllFields>true</viewAllFields><viewAllRecords>false</viewAllRecords></objectPermissions>
     <objectPermissions>
         <allowCreate>true</allowCreate>
         <allowDelete>false</allowDelete>
@@ -689,6 +796,26 @@
         <allowEdit>true</allowEdit>
         <allowRead>true</allowRead>
         <modifyAllRecords>false</modifyAllRecords>
+        <object>Expense_Claim__c</object>
+        <viewAllFields>true</viewAllFields>
+        <viewAllRecords>false</viewAllRecords>
+    </objectPermissions>
+    <objectPermissions>
+        <allowCreate>false</allowCreate>
+        <allowDelete>false</allowDelete>
+        <allowEdit>false</allowEdit>
+        <allowRead>true</allowRead>
+        <modifyAllRecords>false</modifyAllRecords>
+        <object>Expense_Policy__c</object>
+        <viewAllFields>true</viewAllFields>
+        <viewAllRecords>true</viewAllRecords>
+    </objectPermissions>
+    <objectPermissions>
+        <allowCreate>true</allowCreate>
+        <allowDelete>false</allowDelete>
+        <allowEdit>true</allowEdit>
+        <allowRead>true</allowRead>
+        <modifyAllRecords>false</modifyAllRecords>
         <object>Geography__c</object>
         <viewAllFields>true</viewAllFields>
         <viewAllRecords>true</viewAllRecords>
@@ -739,6 +866,16 @@
         <allowEdit>true</allowEdit>
         <allowRead>true</allowRead>
         <modifyAllRecords>false</modifyAllRecords>
+        <object>Product_Sales_Configuration__c</object>
+        <viewAllFields>true</viewAllFields>
+        <viewAllRecords>true</viewAllRecords>
+    </objectPermissions>
+    <objectPermissions>
+        <allowCreate>true</allowCreate>
+        <allowDelete>false</allowDelete>
+        <allowEdit>true</allowEdit>
+        <allowRead>true</allowRead>
+        <modifyAllRecords>false</modifyAllRecords>
         <object>Product__c</object>
         <viewAllFields>false</viewAllFields>
         <viewAllRecords>false</viewAllRecords>
@@ -775,6 +912,16 @@
     </objectPermissions>
     <objectPermissions>
         <allowCreate>true</allowCreate>
+        <allowDelete>true</allowDelete>
+        <allowEdit>true</allowEdit>
+        <allowRead>true</allowRead>
+        <modifyAllRecords>false</modifyAllRecords>
+        <object>Scheme_Product__c</object>
+        <viewAllFields>false</viewAllFields>
+        <viewAllRecords>false</viewAllRecords>
+    </objectPermissions>
+    <objectPermissions>
+        <allowCreate>true</allowCreate>
         <allowDelete>false</allowDelete>
         <allowEdit>true</allowEdit>
         <allowRead>true</allowRead>
@@ -782,9 +929,6 @@
         <object>Scheme__c</object>
         <viewAllFields>false</viewAllFields>
         <viewAllRecords>false</viewAllRecords>
-    </objectPermissions>
-    <objectPermissions>
-        <allowCreate>true</allowCreate><allowDelete>true</allowDelete><allowEdit>true</allowEdit><allowRead>true</allowRead><modifyAllRecords>false</modifyAllRecords><object>Scheme_Product__c</object><viewAllFields>false</viewAllFields><viewAllRecords>false</viewAllRecords>
     </objectPermissions>
     <objectPermissions>
         <allowCreate>true</allowCreate>
@@ -802,21 +946,54 @@
         <allowEdit>true</allowEdit>
         <allowRead>true</allowRead>
         <modifyAllRecords>false</modifyAllRecords>
+        <object>Survey_Answer__c</object>
+        <viewAllFields>true</viewAllFields>
+        <viewAllRecords>false</viewAllRecords>
+    </objectPermissions>
+    <objectPermissions>
+        <allowCreate>true</allowCreate>
+        <allowDelete>false</allowDelete>
+        <allowEdit>true</allowEdit>
+        <allowRead>true</allowRead>
+        <modifyAllRecords>false</modifyAllRecords>
+        <object>Survey_Question__c</object>
+        <viewAllFields>true</viewAllFields>
+        <viewAllRecords>true</viewAllRecords>
+    </objectPermissions>
+    <objectPermissions>
+        <allowCreate>true</allowCreate>
+        <allowDelete>false</allowDelete>
+        <allowEdit>true</allowEdit>
+        <allowRead>true</allowRead>
+        <modifyAllRecords>false</modifyAllRecords>
+        <object>Survey_Response__c</object>
+        <viewAllFields>true</viewAllFields>
+        <viewAllRecords>false</viewAllRecords>
+    </objectPermissions>
+    <objectPermissions>
+        <allowCreate>true</allowCreate>
+        <allowDelete>false</allowDelete>
+        <allowEdit>true</allowEdit>
+        <allowRead>true</allowRead>
+        <modifyAllRecords>false</modifyAllRecords>
+        <object>Survey__c</object>
+        <viewAllFields>true</viewAllFields>
+        <viewAllRecords>true</viewAllRecords>
+    </objectPermissions>
+    <objectPermissions>
+        <allowCreate>true</allowCreate>
+        <allowDelete>false</allowDelete>
+        <allowEdit>true</allowEdit>
+        <allowRead>true</allowRead>
+        <modifyAllRecords>false</modifyAllRecords>
         <object>Visit__c</object>
         <viewAllFields>false</viewAllFields>
         <viewAllRecords>false</viewAllRecords>
     </objectPermissions>
-    <objectPermissions><allowCreate>false</allowCreate><allowDelete>false</allowDelete><allowEdit>false</allowEdit><allowRead>true</allowRead><modifyAllRecords>false</modifyAllRecords><object>Expense_Policy__c</object><viewAllFields>true</viewAllFields><viewAllRecords>true</viewAllRecords></objectPermissions>
-    <objectPermissions><allowCreate>true</allowCreate><allowDelete>false</allowDelete><allowEdit>true</allowEdit><allowRead>true</allowRead><modifyAllRecords>false</modifyAllRecords><object>Expense_Claim__c</object><viewAllFields>true</viewAllFields><viewAllRecords>false</viewAllRecords></objectPermissions>
-    <tabSettings><tab>Expense_Policy__c</tab><visibility>Visible</visibility></tabSettings>
-    <tabSettings><tab>Expense_Claim__c</tab><visibility>Visible</visibility></tabSettings>
-    <tabSettings><tab>Product_Sales_Configuration__c</tab><visibility>Visible</visibility></tabSettings>
     <tabSettings>
         <tab>Asset_Survey__c</tab>
         <visibility>Visible</visibility>
     </tabSettings>
-    <tabSettings><tab>Survey__c</tab><visibility>Visible</visibility></tabSettings>
-    <tabSettings><tab>Survey_Response__c</tab><visibility>Visible</visibility></tabSettings>
     <tabSettings>
         <tab>Attendance__c</tab>
         <visibility>Visible</visibility>
@@ -839,6 +1016,14 @@
     </tabSettings>
     <tabSettings>
         <tab>Employee__c</tab>
+        <visibility>Visible</visibility>
+    </tabSettings>
+    <tabSettings>
+        <tab>Expense_Claim__c</tab>
+        <visibility>Visible</visibility>
+    </tabSettings>
+    <tabSettings>
+        <tab>Expense_Policy__c</tab>
         <visibility>Visible</visibility>
     </tabSettings>
     <tabSettings>
@@ -866,6 +1051,10 @@
         <visibility>Visible</visibility>
     </tabSettings>
     <tabSettings>
+        <tab>Product_Sales_Configuration__c</tab>
+        <visibility>Visible</visibility>
+    </tabSettings>
+    <tabSettings>
         <tab>Product__c</tab>
         <visibility>Visible</visibility>
     </tabSettings>
@@ -887,6 +1076,14 @@
     </tabSettings>
     <tabSettings>
         <tab>Stock_Check__c</tab>
+        <visibility>Visible</visibility>
+    </tabSettings>
+    <tabSettings>
+        <tab>Survey_Response__c</tab>
+        <visibility>Visible</visibility>
+    </tabSettings>
+    <tabSettings>
+        <tab>Survey__c</tab>
         <visibility>Visible</visibility>
     </tabSettings>
     <tabSettings>

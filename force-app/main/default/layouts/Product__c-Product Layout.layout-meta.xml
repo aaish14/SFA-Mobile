@@ -1,14 +1,29 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Layout xmlns="http://soap.sforce.com/2006/04/metadata">
-        <layoutSections>
-        <customLabel>true</customLabel><detailHeading>true</detailHeading><editHeading>true</editHeading><label>DMS Information</label>
+    <layoutSections>
+        <customLabel>true</customLabel>
+        <detailHeading>true</detailHeading>
+        <editHeading>true</editHeading>
+        <label>DMS Information</label>
         <layoutColumns>
-            <layoutItems><behavior>Edit</behavior><field>DMS_Case_Price__c</field></layoutItems>
-            <layoutItems><behavior>Edit</behavior><field>Pieces_Per_Box__c</field></layoutItems>
+            <layoutItems>
+                <behavior>Edit</behavior>
+                <field>DMS_Case_Price__c</field>
+            </layoutItems>
+            <layoutItems>
+                <behavior>Edit</behavior>
+                <field>Pieces_Per_Box__c</field>
+            </layoutItems>
         </layoutColumns>
         <layoutColumns>
-            <layoutItems><behavior>Edit</behavior><field>Boxes_Per_Case__c</field></layoutItems>
-            <layoutItems><behavior>Readonly</behavior><field>Box_Conversion_Pieces__c</field></layoutItems>
+            <layoutItems>
+                <behavior>Edit</behavior>
+                <field>Boxes_Per_Case__c</field>
+            </layoutItems>
+            <layoutItems>
+                <behavior>Readonly</behavior>
+                <field>Box_Conversion_Pieces__c</field>
+            </layoutItems>
         </layoutColumns>
         <style>TwoColumnsTopToBottom</style>
     </layoutSections>
@@ -138,12 +153,34 @@
         <fields>Active__c</fields>
         <relatedList>Scheme__c.Free_Product__c</relatedList>
     </relatedLists>
-        <relatedLists><fields>NAME</fields><fields>Cases__c</fields><relatedList>DMS_Primary_Return_Line__c.Product__c</relatedList></relatedLists>
-    <relatedLists><fields>NAME</fields><fields>Cases__c</fields><relatedList>DMS_Primary_Order_Line__c.Product__c</relatedList></relatedLists>
-    <relatedLists><fields>NAME</fields><fields>Total_Amount__c</fields><relatedList>DMS_Invoice_Line__c.Product__c</relatedList></relatedLists>
-    <relatedLists><fields>NAME</fields><fields>Total_Amount__c</fields><relatedList>DMS_Credit_Note_Line__c.Product__c</relatedList></relatedLists>
-    <relatedLists><fields>NAME</fields><relatedList>DMS_Goods_Receipt_Line__c.Product__c</relatedList></relatedLists>
-    <relatedLists><fields>NAME</fields><relatedList>DMS_Inventory__c.Product__c</relatedList></relatedLists>
+    <relatedLists>
+        <fields>NAME</fields>
+        <fields>Cases__c</fields>
+        <relatedList>DMS_Primary_Return_Line__c.Product__c</relatedList>
+    </relatedLists>
+    <relatedLists>
+        <fields>NAME</fields>
+        <fields>Cases__c</fields>
+        <relatedList>DMS_Primary_Order_Line__c.Product__c</relatedList>
+    </relatedLists>
+    <relatedLists>
+        <fields>NAME</fields>
+        <fields>Total_Amount__c</fields>
+        <relatedList>DMS_Invoice_Line__c.Product__c</relatedList>
+    </relatedLists>
+    <relatedLists>
+        <fields>NAME</fields>
+        <fields>Total_Amount__c</fields>
+        <relatedList>DMS_Credit_Note_Line__c.Product__c</relatedList>
+    </relatedLists>
+    <relatedLists>
+        <fields>NAME</fields>
+        <relatedList>DMS_Goods_Receipt_Line__c.Product__c</relatedList>
+    </relatedLists>
+    <relatedLists>
+        <fields>NAME</fields>
+        <relatedList>DMS_Inventory__c.Product__c</relatedList>
+    </relatedLists>
     <showEmailCheckbox>false</showEmailCheckbox>
     <showHighlightsPanel>true</showHighlightsPanel>
     <showInteractionLogPanel>false</showInteractionLogPanel>

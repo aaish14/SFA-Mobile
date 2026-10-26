@@ -14,7 +14,10 @@
                 <behavior>Edit</behavior>
                 <field>Sales_Representative__c</field>
             </layoutItems>
-            <layoutItems><behavior>Edit</behavior><field>Employee__c</field></layoutItems>
+            <layoutItems>
+                <behavior>Edit</behavior>
+                <field>Employee__c</field>
+            </layoutItems>
             <layoutItems>
                 <behavior>Edit</behavior>
                 <field>Status__c</field>
@@ -31,11 +34,26 @@
                 <behavior>Edit</behavior>
                 <field>Start_Longitude__c</field>
             </layoutItems>
-            <layoutItems><behavior>Edit</behavior><field>Transport_Mode__c</field></layoutItems>
-            <layoutItems><behavior>Edit</behavior><field>Vehicle_Ownership__c</field></layoutItems>
-            <layoutItems><behavior>Edit</behavior><field>Planned_Activity__c</field></layoutItems>
-            <layoutItems><behavior>Edit</behavior><field>Start_Odometer__c</field></layoutItems>
-            <layoutItems><behavior>Edit</behavior><field>Odometer_Entry_Mode__c</field></layoutItems>
+            <layoutItems>
+                <behavior>Edit</behavior>
+                <field>Transport_Mode__c</field>
+            </layoutItems>
+            <layoutItems>
+                <behavior>Edit</behavior>
+                <field>Vehicle_Ownership__c</field>
+            </layoutItems>
+            <layoutItems>
+                <behavior>Edit</behavior>
+                <field>Planned_Activity__c</field>
+            </layoutItems>
+            <layoutItems>
+                <behavior>Edit</behavior>
+                <field>Start_Odometer__c</field>
+            </layoutItems>
+            <layoutItems>
+                <behavior>Edit</behavior>
+                <field>Odometer_Entry_Mode__c</field>
+            </layoutItems>
         </layoutColumns>
         <layoutColumns>
             <layoutItems>
@@ -50,11 +68,26 @@
                 <behavior>Edit</behavior>
                 <field>End_Longitude__c</field>
             </layoutItems>
-            <layoutItems><behavior>Edit</behavior><field>End_Odometer__c</field></layoutItems>
-            <layoutItems><behavior>Readonly</behavior><field>Distance_Travelled_Km__c</field></layoutItems>
-            <layoutItems><behavior>Edit</behavior><field>Travel_Rate_Per_Km__c</field></layoutItems>
-            <layoutItems><behavior>Readonly</behavior><field>Travel_Amount__c</field></layoutItems>
-            <layoutItems><behavior>Edit</behavior><field>Odometer_Evidence_URL__c</field></layoutItems>
+            <layoutItems>
+                <behavior>Edit</behavior>
+                <field>End_Odometer__c</field>
+            </layoutItems>
+            <layoutItems>
+                <behavior>Readonly</behavior>
+                <field>Distance_Travelled_Km__c</field>
+            </layoutItems>
+            <layoutItems>
+                <behavior>Edit</behavior>
+                <field>Travel_Rate_Per_Km__c</field>
+            </layoutItems>
+            <layoutItems>
+                <behavior>Readonly</behavior>
+                <field>Travel_Amount__c</field>
+            </layoutItems>
+            <layoutItems>
+                <behavior>Edit</behavior>
+                <field>Odometer_Evidence_URL__c</field>
+            </layoutItems>
             <layoutItems>
                 <behavior>Edit</behavior>
                 <field>Selfie_Content_Document_Id__c</field>
@@ -70,6 +103,8 @@
         <customLabel>false</customLabel>
         <detailHeading>false</detailHeading>
         <editHeading>false</editHeading>
+        <layoutColumns/>
+        <layoutColumns/>
         <layoutColumns/>
         <style>CustomLinks</style>
     </layoutSections>

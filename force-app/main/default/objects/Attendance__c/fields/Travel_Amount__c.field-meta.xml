@@ -5,5 +5,10 @@
     <formula>IF(OR(ISBLANK(Distance_Travelled_Km__c), ISBLANK(Travel_Rate_Per_Km__c)), 0, Distance_Travelled_Km__c * Travel_Rate_Per_Km__c)</formula>
     <formulaTreatBlanksAs>BlankAsZero</formulaTreatBlanksAs>
     <label>Total Travel Amount</label>
-    <precision>16</precision><scale>2</scale><type>Currency</type>
+    <precision>18</precision>
+    <required>false</required>
+    <scale>2</scale>
+    <trackHistory>false</trackHistory>
+    <trackTrending>false</trackTrending>
+    <type>Currency</type>
 </CustomField>

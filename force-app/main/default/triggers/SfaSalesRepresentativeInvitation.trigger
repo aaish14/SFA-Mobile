@@ -1,8 +1,4 @@
-/**
- * Normalize representative login email before saving and send eligible application invitations
- * after saving.
- */
-trigger SfaSalesRepresentativeInvitation on Distributor__c(
+trigger SfaSalesRepresentativeInvitation on Distributor__c (
     before insert,
     before update,
     after insert,

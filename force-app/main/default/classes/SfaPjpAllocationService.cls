@@ -1,24 +1,12 @@
 /** Materializes approved PJP beats into the allocations consumed by the mobile API. */
 public without sharing class SfaPjpAllocationService {
-    /**
-     * Identify approved plans whose approval-related values changed and pass only those plans to
-     * allocation synchronization.
-     */
-    public static void afterSave(
-        List<Permanent_Journey_Plan__c> plans,
-        Map<Id, Permanent_Journey_Plan__c> oldPlans
-    ) {
+    public static void afterSave(List<Permanent_Journey_Plan__c> plans, Map<Id, Permanent_Journey_Plan__c> oldPlans) {
         Set<Id> approvedIds = new Set<Id>();
         for (Permanent_Journey_Plan__c plan : plans) {
             Permanent_Journey_Plan__c previous = oldPlans == null ? null : oldPlans.get(plan.Id);
-            if (
-                plan.Status__c == 'Approved' &&
-                plan.Employee__c != null &&
-                (previous == null ||
-                previous.Status__c != 'Approved' ||
-                previous.Employee__c != plan.Employee__c ||
-                previous.Beat__c != plan.Beat__c)
-            ) {
+            if (plan.Status__c == 'Approved' && plan.Employee__c != null &&
+                (previous == null || previous.Status__c != 'Approved' ||
+                 previous.Employee__c != plan.Employee__c || previous.Beat__c != plan.Beat__c)) {
                 approvedIds.add(plan.Id);
             }
         }
@@ -27,22 +15,14 @@ public without sharing class SfaPjpAllocationService {
 
     // Also used by the one-time backfill. No approval state is changed here.
     // This is trigger-only system work, not an Aura/REST entry point.
-    /**
-     * Resolve active outlets from legacy and selected beats, deduplicate employee/outlet pairs,
-     * reactivate existing allocations and create missing ones in bulk while preserving manual
-     * notes.
-     */
     public static void syncApprovedPlans(Set<Id> planIds) {
-        if (planIds == null || planIds.isEmpty())
-            return;
+        if (planIds == null || planIds.isEmpty()) return;
         List<Permanent_Journey_Plan__c> plans = [
-            SELECT Id, Name, Employee__c, Beat__c, (SELECT Beat__c FROM Selected_Beats__r)
+            SELECT Id, Name, Employee__c, Beat__c,
+                   (SELECT Beat__c FROM Selected_Beats__r)
             FROM Permanent_Journey_Plan__c
-            WHERE
-                Id IN :planIds
-                AND Status__c = 'Approved'
-                AND Employee__c != NULL
-                AND Employee__r.Active__c = TRUE
+            WHERE Id IN :planIds AND Status__c = 'Approved'
+              AND Employee__c != null AND Employee__r.Active__c = true
             WITH SYSTEM_MODE
         ];
         Map<Id, Set<Id>> employeesByBeat = new Map<Id, Set<Id>>();
@@ -51,35 +31,24 @@ public without sharing class SfaPjpAllocationService {
             employeeIds.add(plan.Employee__c);
             Set<Id> selectedBeats = new Set<Id>();
             for (PJP_Selected_Beat__c selection : plan.Selected_Beats__r) {
-                if (selection.Beat__c != null)
-                    selectedBeats.add(selection.Beat__c);
+                if (selection.Beat__c != null) selectedBeats.add(selection.Beat__c);
             }
             // Older single-beat plans do not have junction records.
-            if (selectedBeats.isEmpty() && plan.Beat__c != null)
-                selectedBeats.add(plan.Beat__c);
+            if (selectedBeats.isEmpty() && plan.Beat__c != null) selectedBeats.add(plan.Beat__c);
             for (Id beatId : selectedBeats) {
-                if (!employeesByBeat.containsKey(beatId))
-                    employeesByBeat.put(beatId, new Set<Id>());
+                if (!employeesByBeat.containsKey(beatId)) employeesByBeat.put(beatId, new Set<Id>());
                 employeesByBeat.get(beatId).add(plan.Employee__c);
             }
         }
-        if (employeesByBeat.isEmpty())
-            return;
+        if (employeesByBeat.isEmpty()) return;
 
         // Serialize overlapping approvals for the same employee before looking up
         // existing allocations, so concurrent approvals cannot insert duplicates.
-        List<Employee__c> lockedEmployees = [
-            SELECT Id
-            FROM Employee__c
-            WHERE Id IN :employeeIds
-            WITH SYSTEM_MODE
-            FOR UPDATE
-        ];
+        List<Employee__c> lockedEmployees = [SELECT Id FROM Employee__c WHERE Id IN :employeeIds WITH SYSTEM_MODE FOR UPDATE];
         Set<Id> beatIds = employeesByBeat.keySet();
         List<Retailer__c> outlets = [
-            SELECT Id, Beat__c
-            FROM Retailer__c
-            WHERE Beat__c IN :beatIds AND Active__c = TRUE
+            SELECT Id, Beat__c FROM Retailer__c
+            WHERE Beat__c IN :beatIds AND Active__c = true
             WITH SYSTEM_MODE
         ];
         Map<String, Distributor_Outlet_Allocation__c> existingByPair = new Map<String, Distributor_Outlet_Allocation__c>();
@@ -103,20 +72,12 @@ public without sharing class SfaPjpAllocationService {
                 String key = pairKey(employeeId, outlet.Id);
                 Distributor_Outlet_Allocation__c existing = existingByPair.get(key);
                 if (existing == null) {
-                    inserts.add(
-                        new Distributor_Outlet_Allocation__c(
-                            Employee__c = employeeId,
-                            Outlet__c = outlet.Id,
-                            Beat__c = outlet.Beat__c,
-                            Allocation_Status__c = 'Active',
-                            Allocation_Date__c = Date.today(),
-                            Remarks__c = 'Automatically allocated from an approved Permanent Journey Plan.'
-                        )
-                    );
-                } else if (
-                    existing.Allocation_Status__c != 'Active' ||
-                    existing.Beat__c != outlet.Beat__c
-                ) {
+                    inserts.add(new Distributor_Outlet_Allocation__c(
+                        Employee__c = employeeId, Outlet__c = outlet.Id, Beat__c = outlet.Beat__c,
+                        Allocation_Status__c = 'Active', Allocation_Date__c = Date.today(),
+                        Remarks__c = 'Automatically allocated from an approved Permanent Journey Plan.'
+                    ));
+                } else if (existing.Allocation_Status__c != 'Active' || existing.Beat__c != outlet.Beat__c) {
                     existing.Allocation_Status__c = 'Active';
                     existing.Beat__c = outlet.Beat__c;
                     updates.add(existing);
@@ -125,16 +86,10 @@ public without sharing class SfaPjpAllocationService {
         }
         // Fail the approval transaction if allocation fails; do not silently approve
         // a plan whose outlets cannot be made available to its employee.
-        if (!inserts.isEmpty())
-            Database.insert(inserts, AccessLevel.SYSTEM_MODE);
-        if (!updates.isEmpty())
-            Database.update(updates, AccessLevel.SYSTEM_MODE);
+        if (!inserts.isEmpty()) Database.insert(inserts, AccessLevel.SYSTEM_MODE);
+        if (!updates.isEmpty()) Database.update(updates, AccessLevel.SYSTEM_MODE);
     }
 
-    /**
-     * Build the employee/outlet composite key used to deduplicate allocations within a
-     * transaction.
-     */
     private static String pairKey(Id employeeId, Id outletId) {
         return String.valueOf(employeeId) + ':' + String.valueOf(outletId);
     }

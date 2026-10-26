@@ -1,27 +1,10 @@
-/**
- * Validate editable primary lines before writes and recalculate affected parent totals after
- * line changes.
- */
-trigger DmsPrimaryOrderLineRules on DMS_Primary_Order_Line__c(
-    before insert,
-    before update,
-    before delete,
-    after insert,
-    after update,
-    after delete,
-    after undelete
-) {
-    if (Trigger.isBefore) {
-        DmsPrimaryWorkflow.prepareLines(
-            Trigger.isDelete ? Trigger.old : Trigger.new,
-            Trigger.isUpdate ? Trigger.oldMap : null,
-            false,
-            Trigger.isDelete
-        );
+trigger DmsPrimaryOrderLineRules on DMS_Primary_Order_Line__c
+    (before insert, before update, before delete, after insert, after update, after delete, after undelete) {
+    if(Trigger.isBefore) {
+        DmsPrimaryWorkflow.prepareLines(Trigger.isDelete ? Trigger.old : Trigger.new,
+            Trigger.isUpdate ? Trigger.oldMap : null, false, Trigger.isDelete);
     } else {
-        DmsPrimaryWorkflow.updateOrderTotals(
-            Trigger.isDelete ? Trigger.old : Trigger.new,
-            Trigger.isUpdate ? Trigger.oldMap : null
-        );
+        DmsPrimaryWorkflow.updateOrderTotals(Trigger.isDelete ? Trigger.old : Trigger.new,
+            Trigger.isUpdate ? Trigger.oldMap : null);
     }
 }

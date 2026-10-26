@@ -1,8 +1,5 @@
 @IsTest
 private class BeatOutletSelectorControllerTest {
-    /**
-     * Create isolated records used by the test scenarios in this class.
-     */
     @TestSetup
     static void createData() {
         Geography__c mgRoad = new Geography__c(
@@ -28,46 +25,35 @@ private class BeatOutletSelectorControllerTest {
 
         List<Retailer__c> outlets = new List<Retailer__c>();
         for (Integer index = 1; index <= 11; index++) {
-            outlets.add(
-                new Retailer__c(
-                    Name = 'MG Outlet ' + index,
-                    Geography__c = mgRoad.Id,
-                    Active__c = true
-                )
-            );
-        }
-        outlets.add(
-            new Retailer__c(
-                Name = 'Whitefield Outlet',
-                Geography__c = whitefield.Id,
+            outlets.add(new Retailer__c(
+                Name = 'MG Outlet ' + index,
+                Geography__c = mgRoad.Id,
                 Active__c = true
-            )
-        );
+            ));
+        }
+        outlets.add(new Retailer__c(
+            Name = 'Whitefield Outlet',
+            Geography__c = whitefield.Id,
+            Active__c = true
+        ));
         insert outlets;
     }
 
-    /**
-     * Regression scenario: filters by geography and maintains the count. Arrange isolated test
-     * data, exercise the workflow and assert the expected outcome.
-     */
     @IsTest
     static void filtersByGeographyAndMaintainsTheCount() {
         Beat__c beat = [SELECT Id FROM Beat__c WHERE Name = 'MG Road Test Beat'];
         List<Retailer__c> mgOutlets = [
-            SELECT Id
-            FROM Retailer__c
+            SELECT Id FROM Retailer__c
             WHERE Geography__r.Name = 'MG Road Geography'
             ORDER BY Name
             LIMIT 10
         ];
         List<Id> outletIds = new List<Id>();
-        for (Retailer__c outlet : mgOutlets)
-            outletIds.add(outlet.Id);
+        for (Retailer__c outlet : mgOutlets) outletIds.add(outlet.Id);
 
         Test.startTest();
-        BeatOutletSelectorController.SelectorData data = BeatOutletSelectorController.getSelectorData(
-            beat.Id
-        );
+        BeatOutletSelectorController.SelectorData data =
+            BeatOutletSelectorController.getSelectorData(beat.Id);
         Integer savedCount = BeatOutletSelectorController.saveSelection(beat.Id, outletIds);
         Test.stopTest();
 
@@ -77,20 +63,14 @@ private class BeatOutletSelectorControllerTest {
         System.assertEquals(10, refreshedBeat.Outlet_Count__c);
     }
 
-    /**
-     * Regression scenario: rejects more than ten outlets. Arrange isolated test data, exercise
-     * the workflow and assert the expected outcome.
-     */
     @IsTest
     static void rejectsMoreThanTenOutlets() {
         Beat__c beat = [SELECT Id FROM Beat__c WHERE Name = 'MG Road Test Beat'];
         List<Id> outletIds = new List<Id>();
         for (Retailer__c outlet : [
-            SELECT Id
-            FROM Retailer__c
+            SELECT Id FROM Retailer__c
             WHERE Geography__r.Name = 'MG Road Geography'
-        ])
-            outletIds.add(outlet.Id);
+        ]) outletIds.add(outlet.Id);
 
         Test.startTest();
         Boolean limitWasEnforced = false;
