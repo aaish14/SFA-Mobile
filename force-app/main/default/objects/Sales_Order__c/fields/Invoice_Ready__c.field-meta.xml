@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Invoice_Ready__c</fullName>
+    <defaultValue>false</defaultValue>
+    <description>Set only after all selected order lines are saved. Approved submitted orders are invoiced atomically.</description>
+    <label>Order Ready for Invoice</label>
+    <trackTrending>false</trackTrending>
+    <type>Checkbox</type>
+</CustomField>
