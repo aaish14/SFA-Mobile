@@ -16,7 +16,9 @@ global with sharing class DmsPortalApi {
             decision,
             notes,
             batch,
-            receiptKind;
+            receiptKind,
+            email,
+            code;
         public Id distributorId, recordId, employeeId;
         public Decimal cases;
         public Date expiry;
@@ -45,6 +47,9 @@ global with sharing class DmsPortalApi {
                 RestContext.request.requestBody.toString(),
                 Command.class
             );
+            if (cmd.action == 'sendLoginCode') {
+                return DmsLoginEmailService.requestCode(cmd.email, cmd.code);
+            }
             // A distributor lock serializes replay detection and inventory updates.
             List<DMS_Distributor__c> distributors = [
                 SELECT Id, Officer__c
