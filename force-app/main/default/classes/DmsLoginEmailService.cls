@@ -4,7 +4,32 @@
  * Email acceptance is not a guarantee of mailbox delivery.
  */
 public with sharing class DmsLoginEmailService {
+    private static final Integer RESEND_INTERVAL_SECONDS = 60;
     @TestVisible private static Map<Id, String> pendingCodes = new Map<Id, String>();
+    @TestVisible private static EmailSender sender = new EmailSender();
+
+    /** Platform email boundary. Tests replace only delivery, while exercising the real trigger. */
+    public virtual class EmailSender {
+        public virtual List<String> send(List<Messaging.SingleEmailMessage> messages) {
+            List<String> failures = new List<String>();
+            try {
+                for (Messaging.SendEmailResult result : Messaging.sendEmail(messages, false)) {
+                    failures.add(result.isSuccess() ? null : String.valueOf(result.getErrors()[0].getStatusCode()));
+                }
+            } catch (EmailException error) {
+                throw new DmsPortalApi.InputException(deliveryError(error.getMessage()));
+            }
+            return failures;
+        }
+    }
+
+    /** Return safe, actionable delivery errors without exposing email content or provider details. */
+    @TestVisible private static String deliveryError(String providerCode) {
+        if (providerCode != null && providerCode.contains('SINGLE_EMAIL_LIMIT_EXCEEDED')) {
+            return 'Salesforce daily email limit has been reached. A new code cannot be sent until the limit resets.';
+        }
+        return 'Salesforce could not accept the sign-in email. Check email delivery settings and limits.';
+    }
 
     /** Lock the active login, enforce the resend interval and invoke the distributor trigger. */
     public static Map<String, Object> requestCode(String email, String code) {
@@ -28,7 +53,7 @@ public with sharing class DmsLoginEmailService {
         DMS_Distributor__c distributor = matches[0];
         Datetime requestedAt = System.now();
         if (distributor.Login_Email_Requested_At__c != null &&
-            distributor.Login_Email_Requested_At__c > requestedAt.addSeconds(-60)) {
+            distributor.Login_Email_Requested_At__c > requestedAt.addSeconds(-RESEND_INTERVAL_SECONDS)) {
             throw new DmsPortalApi.InputException('Please wait before requesting another code.');
         }
         pendingCodes.put(distributor.Id, code);
@@ -38,6 +63,13 @@ public with sharing class DmsLoginEmailService {
             update distributor;
         } finally {
             pendingCodes.remove(distributor.Id);
+        }
+        // Only acknowledge a request when the trigger actually accepted its email.
+        // A disabled or changed trigger must not produce a false success in the portal.
+        DMS_Distributor__c saved = [SELECT Login_Email_Accepted__c
+            FROM DMS_Distributor__c WHERE Id = :distributor.Id];
+        if (!saved.Login_Email_Accepted__c) {
+            throw new DmsPortalApi.InputException('Salesforce did not accept the sign-in email.');
         }
         return new Map<String, Object>{ 'id' => distributor.Id, 'status' => 'Email accepted' };
     }
@@ -70,13 +102,13 @@ public with sharing class DmsLoginEmailService {
         if (messages.isEmpty()) {
             return;
         }
-        List<Messaging.SendEmailResult> results = Messaging.sendEmail(messages, false);
-        for (Integer index = 0; index < results.size(); index++) {
-            if (results[index].isSuccess()) {
+        List<String> failures = sender.send(messages);
+        for (Integer index = 0; index < failures.size(); index++) {
+            if (failures[index] == null) {
                 requested[index].Login_Email_Accepted__c = true;
             } else {
                 // Never persist or log the code, recipient or provider response body.
-                requested[index].addError('Salesforce could not accept the sign-in email. Check email delivery settings and limits.');
+                requested[index].addError(deliveryError(failures[index]));
             }
         }
     }
