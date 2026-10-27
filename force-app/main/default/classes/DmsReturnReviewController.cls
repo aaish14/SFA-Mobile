@@ -28,7 +28,7 @@ public with sharing class DmsReturnReviewController {
     public DmsReturnReviewController(ApexPages.StandardController controller) { initialize(String.valueOf(controller.getId())); }
     public String getBarcodeValue() { return recordId == null ? '' : 'R-' + String.valueOf(recordId); }
     public String getReviewUrl() { return URL.getOrgDomainUrl().toExternalForm() + '/apex/DmsReturnReview?id=' + String.valueOf(recordId); }
-    public String getRecordUrl() { return '/lightning/r/' + objectName + '/' + String.valueOf(recordId) + '/view'; }
+    public String getRecordUrl() { return URL.getOrgDomainUrl().toExternalForm() + '/lightning/r/' + objectName + '/' + String.valueOf(recordId) + '/view'; }
 
     /** Reject unsupported references and never show partially authorized results after a failed query. */
     private void initialize(String rawId) {
