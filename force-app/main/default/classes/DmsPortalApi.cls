@@ -74,6 +74,8 @@ global with sharing class DmsPortalApi {
                 return decision(cmd, false);
             if (cmd.action == 'returnDecision')
                 return decision(cmd, true);
+            if (cmd.action == 'returnGroupDecision')
+                return DmsDistributorReturns.decide(cmd);
             if (cmd.action == 'receiveGoods')
                 return receiveGoods(cmd);
             throw new InputException('Unsupported transaction.');

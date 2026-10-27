@@ -89,7 +89,7 @@ public with sharing class DmsEmployeeTransactions {
             cmd.notes.length() > 1000)
         )
             throw new DmsPortalApi.InputException(
-                'Add 1–50 lines and keep notes below 1000 characters.'
+                'Add 1â€“50 lines and keep notes below 1000 characters.'
             );
         Set<Id> productIds = new Set<Id>(), receiptIds = new Set<Id>(), seen = new Set<Id>();
         for (LineInput line : cmd.lines) {
@@ -234,6 +234,10 @@ public with sharing class DmsEmployeeTransactions {
                     )
                 );
             }
+            // One portal return is one complete approval request for one original order.
+            // Keep the existing SFA employee entry contract and replay fingerprints unchanged.
+            if (distributorEntry && originalOrders.size() > 1)
+                throw new DmsPortalApi.InputException('Choose products from one primary order per return.');
             DMS_Primary_Return__c returned = new DMS_Primary_Return__c(
                 Employee__c = cmd.employeeId,
                 Return_Source__c = distributorEntry ? 'Distributor DMS' : 'Employee SFA',

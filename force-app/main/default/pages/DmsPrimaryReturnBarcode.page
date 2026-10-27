@@ -1,0 +1,10 @@
+<apex:page standardController="DMS_Primary_Return__c" extensions="DmsReturnReviewController" showHeader="false" sidebar="false" standardStylesheets="false" docType="html-5.0">
+<div style="font:15px Arial;color:#173e32;padding:12px"><apex:includeScript value="{!URLFOR($Resource.DmsBarcodeAssets, 'bwip-js-min.js')}"/>
+<apex:outputPanel rendered="{!available}" layout="block">
+  <a href="{!reviewUrl}" target="_blank" rel="noopener" title="View ordered products and return reasons"><canvas id="return-barcode" aria-label="Return barcode" style="max-width:100%;height:auto"></canvas></a>
+  <div><a href="{!reviewUrl}" target="_blank" rel="noopener">View ordered products, return quantities and reasons</a></div>
+  <script>bwipjs.toCanvas('return-barcode',{bcid:'code128',text:'{!JSENCODE(barcodeValue)}',scale:2,height:12,paddingwidth:12,paddingheight:4,backgroundcolor:'FFFFFF',includetext:true,textxalign:'center',textsize:10});</script>
+</apex:outputPanel>
+<apex:outputText value="{!errorMessage}" rendered="{!NOT(available)}"/>
+</div>
+</apex:page>

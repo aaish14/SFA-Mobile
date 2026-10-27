@@ -3,6 +3,9 @@ private class DmsDistributorReturnsTest {
     @TestSetup
     static void permissions() {
         Id permissionId = [SELECT Id FROM PermissionSet WHERE Name='DMS_Backend_Transactions'].Id;
+        Id reviewPermission=[SELECT Id FROM PermissionSet WHERE Name='DMS_Return_Review'].Id;
+        if ([SELECT COUNT() FROM PermissionSetAssignment WHERE AssigneeId=:UserInfo.getUserId() AND PermissionSetId=:reviewPermission]==0)
+            insert new PermissionSetAssignment(AssigneeId=UserInfo.getUserId(),PermissionSetId=reviewPermission);
         if ([SELECT COUNT() FROM PermissionSetAssignment WHERE AssigneeId=:UserInfo.getUserId() AND PermissionSetId=:permissionId] == 0)
             insert new PermissionSetAssignment(AssigneeId=UserInfo.getUserId(), PermissionSetId=permissionId);
     }
@@ -26,6 +29,7 @@ private class DmsDistributorReturnsTest {
         DMS_Distributor__c distributor=supplier(); Product__c item=product();
         DMS_Primary_Order__c original=new DMS_Primary_Order__c(Distributor__c=distributor.Id, Order_Source__c='Distributor DMS');
         insert original;
+        insert new DMS_Primary_Order_Line__c(Order__c=original.Id,Product__c=item.Id,Cases__c=3,Pieces_Per_Case__c=10,Case_Price__c=100);
         DMS_Goods_Receipt__c receipt=new DMS_Goods_Receipt__c(Distributor__c=distributor.Id,
             Primary_Order__c=original.Id, Status__c='Received', Received_Date__c=Date.today());
         insert receipt;
@@ -48,6 +52,12 @@ private class DmsDistributorReturnsTest {
         decision.setWorkitemId(work.Id); decision.setAction('Approve');
         System.assert(Approval.process(decision).isSuccess());
         System.assertEquals('Approved',call(cmd).get('status'));
+        Test.setCurrentPage(Page.DmsReturnReview); ApexPages.currentPage().getParameters().put('id',String.valueOf(savedId));
+        DmsReturnReviewController review=new DmsReturnReviewController();
+        System.assert(review.available,review.errorMessage);
+        System.assertEquals(1,review.orderedProducts.size());
+        System.assertEquals('Damaged',review.returnedProducts[0].reason);
+        System.assertEquals('R-'+String.valueOf(savedId),review.getBarcodeValue());
         cmd.requestKey='primary-return-fixture-2';
         System.assert(call(cmd).containsKey('error'),'Pending/approved cases cannot be returned again.');
         cmd.distributorId=supplier().Id;
@@ -99,5 +109,53 @@ private class DmsDistributorReturnsTest {
         System.assertEquals(source.Id,returned.Order_Item__c); System.assertEquals(outlet.Id,returned.Outlet__c);
         System.assertEquals(item.Id,returned.Product__c);
         System.assertEquals(2,[SELECT COUNT() FROM Product_Return__c]);
+    }
+
+    /** A whole outlet order keeps product reasons together and receives one atomic distributor decision. */
+    @IsTest static void wholeOrderReviewAndDecision() {
+        DMS_Distributor__c distributor=supplier(); Product__c item=product();
+        Retailer__c outlet=new Retailer__c(Name='Whole return outlet',Active__c=true,DMS_Distributor__c=distributor.Id); insert outlet;
+        Employee__c employee=new Employee__c(Name='Whole return employee',Phone__c='9000000000',Active__c=true,DMS_Distributor__c=distributor.Id); insert employee;
+        Beat__c beat=new Beat__c(Name='Whole return beat',Active__c=true,Assigned_Employee__c=employee.Id); insert beat;
+        Permanent_Journey_Plan__c plan=new Permanent_Journey_Plan__c(Name='Whole return plan',Beat__c=beat.Id,Planned_Date__c=Date.today(),Status__c='Draft'); insert plan;
+        Visit__c visit=new Visit__c(Name='Whole return visit',Retailer__c=outlet.Id,Permanent_Journey_Plan__c=plan.Id,Visit_Date__c=Date.today(),Status__c='Checked In'); insert visit;
+        Sales_Order__c order=new Sales_Order__c(Retailer__c=outlet.Id,Visit__c=visit.Id,Order_Date__c=Date.today()); insert order;
+        List<Order_Item__c> sources=new List<Order_Item__c>{new Order_Item__c(Sales_Order__c=order.Id,Product__c=item.Id,Piece_Quantity__c=10),new Order_Item__c(Sales_Order__c=order.Id,Product__c=item.Id,Piece_Quantity__c=8)}; insert sources;
+        DmsDistributorReturns.Command cmd=new DmsDistributorReturns.Command(); cmd.action='distributorSecondaryReturn';
+        cmd.distributorId=distributor.Id; cmd.requestKey='whole-order-return-fixture'; cmd.lines=new List<DmsDistributorReturns.ReturnLine>();
+        for (Integer i=0;i<2;i++) { DmsDistributorReturns.ReturnLine line=new DmsDistributorReturns.ReturnLine();
+            line.orderItemId=sources[i].Id; line.pieces=i+2; line.reason=i==0?'Damaged':'Expired'; line.notes='Saved reason '+i; cmd.lines.add(line); }
+        Test.startTest();
+        Map<String,Object> result=call(cmd); System.assertEquals('Pending',result.get('status'),JSON.serialize(result));
+        Id returnId=(Id)result.get('id'); System.assertEquals(returnId,call(cmd).get('id'));
+        Test.setCurrentPage(Page.DmsReturnReview); ApexPages.currentPage().getParameters().put('id',String.valueOf(returnId));
+        DmsReturnReviewController review=new DmsReturnReviewController();
+        System.assert(review.available,review.errorMessage); System.assertEquals(2,review.returnedProducts.size()); System.assertEquals(2,review.orderedProducts.size());
+        Set<String> reasons=new Set<String>(); for (DmsReturnReviewController.ProductLine line:review.returnedProducts) reasons.add(line.reason);
+        System.assertEquals(new Set<String>{'Damaged','Expired'},reasons);
+        DmsPortalApi.Command decision=new DmsPortalApi.Command(); decision.action='returnGroupDecision'; decision.recordId=returnId;
+        decision.distributorId=distributor.Id; decision.decision='Rejected'; decision.notes='Return reviewed as one request';
+        System.assertEquals('Rejected',call(decision).get('status')); System.assertEquals('Rejected',call(decision).get('status'));
+        System.assertEquals(2,[SELECT COUNT() FROM Product_Return__c WHERE DMS_Status__c='Rejected']);
+        decision.decision='Approved'; System.assert(call(decision).containsKey('error'),'A conflicting decision cannot change part of the group.');
+        System.assertEquals(2,[SELECT COUNT() FROM Product_Return__c WHERE DMS_Status__c='Rejected']);
+        decision.distributorId=supplier().Id; System.assert(call(decision).containsKey('error'),'Another distributor cannot decide this request.');
+        Test.stopTest();
+    }
+    /** A page must not expose records to a Salesforce user with no object or field permissions. */
+    @IsTest static void reviewRequiresSalesforceAccess() {
+        User restricted=new User(Username='return-review-'+System.now().getTime()+'@example.invalid',Email='return-review@example.invalid',
+            LastName='Return reader',Alias='retread',TimeZoneSidKey='Asia/Kolkata',LocaleSidKey='en_US',EmailEncodingKey='UTF-8',LanguageLocaleKey='en_US',
+            ProfileId=[SELECT Id FROM Profile WHERE Name='Minimum Access - Salesforce'].Id);
+        insert restricted;
+        System.runAs(new User(Id=UserInfo.getUserId())) {
+            DMS_Distributor__c distributor=supplier(); Product__c item=product();
+            DMS_Primary_Return__c returned=new DMS_Primary_Return__c(Distributor__c=distributor.Id,Return_Source__c='Distributor DMS',Status__c='Draft'); insert returned;
+            Test.setCurrentPage(Page.DmsReturnReview); ApexPages.currentPage().getParameters().put('id',String.valueOf(returned.Id));
+            System.runAs(restricted) { DmsReturnReviewController review=new DmsReturnReviewController();
+                System.assertEquals(false,review.available); System.assertEquals(0,review.returnedProducts.size()); System.assertEquals(null,review.title); }
+            ApexPages.currentPage().getParameters().put('id',String.valueOf(UserInfo.getUserId()));
+            System.assertEquals(false,new DmsReturnReviewController().available);
+        }
     }
 }

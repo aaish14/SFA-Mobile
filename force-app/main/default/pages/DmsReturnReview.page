@@ -1,0 +1,20 @@
+<apex:page controller="DmsReturnReviewController" showHeader="false" sidebar="false" standardStylesheets="false" applyHtmlTag="false" applyBodyTag="false" docType="html-5.0">
+<html lang="en"><head><meta name="viewport" content="width=device-width, initial-scale=1"/><title>DMS return review</title>
+<style>body{font:16px Arial,sans-serif;background:#eff7f2;color:#173e32;margin:0;padding:28px}main{max-width:1250px;margin:auto}section{background:white;border:1px solid #c6ddcf;border-radius:14px;margin:22px 0;padding:24px}h1{margin-top:0}a{color:#16744e}table{width:100%;border-collapse:collapse}th,td{padding:14px 10px;border-bottom:1px solid #dcebe1;text-align:left;vertical-align:top}th{background:#e8f3ec}td{white-space:normal;overflow-wrap:anywhere}canvas{max-width:100%;height:auto}.product-code{max-width:260px}.table-wrap{overflow:auto}.notice{padding:20px;background:white;border-radius:12px}</style>
+<apex:includeScript value="{!URLFOR($Resource.DmsBarcodeAssets, 'bwip-js-min.js')}"/>
+</head><body><main>
+<apex:outputPanel rendered="{!NOT(available)}" layout="block" styleClass="notice"><apex:outputText value="{!errorMessage}"/></apex:outputPanel>
+<apex:outputPanel rendered="{!available}" layout="block">
+<section><h1>Return review · <apex:outputText value="{!title}"/></h1><p><strong>Distributor:</strong> <apex:outputText value="{!distributor}"/> · <strong>Status:</strong> <apex:outputText value="{!status}"/></p>
+<p><strong>Approval:</strong> <apex:outputText value="{!approver}"/></p>
+<a href="#return-products" title="View products requested for return"><canvas id="return-barcode" data-code="{!barcodeValue}" aria-label="Return barcode"></canvas></a>
+<p><a href="#return-products">View returned products and reasons</a> · <a href="{!recordUrl}" target="_top">Open Salesforce return record and approval history</a></p>
+<p>This page shows saved Salesforce records. Use the existing approval actions to approve or reject the request.</p></section>
+<section><h2>Original ordered products</h2><div class="table-wrap"><table><thead><tr><th>Order</th><th>Product</th><th>Ordered {!unit}</th><th>Free cases</th><th>Product barcode</th></tr></thead><tbody>
+<apex:repeat value="{!orderedProducts}" var="line"><tr><td><apex:outputText value="{!line.orderName}"/></td><td><apex:outputText value="{!line.product}"/></td><td>{!line.quantity}</td><td>{!line.freeQuantity}</td><td><a href="#return-products" title="View return quantities and reasons"><canvas class="product-code" data-code="{!line.productBarcode}" aria-label="Product barcode"></canvas></a></td></tr></apex:repeat>
+</tbody></table></div><apex:outputText value="No original order is linked to this record." rendered="{!orderedProducts.size == 0}"/></section>
+<section id="return-products"><h2>Products requested for return</h2><div class="table-wrap"><table><thead><tr><th>Order</th><th>Product</th><th>Return {!unit}</th><th>Reason</th><th>Notes</th><th>Batch / status</th></tr></thead><tbody>
+<apex:repeat value="{!returnedProducts}" var="line"><tr><td><apex:outputText value="{!line.orderName}"/></td><td><apex:outputText value="{!line.product}"/></td><td>{!line.quantity}</td><td><apex:outputText value="{!line.reason}"/></td><td><apex:outputText value="{!line.notes}"/></td><td><apex:outputText value="{!line.batch}"/> <apex:outputText value="{!line.status}"/></td></tr></apex:repeat>
+</tbody></table></div></section>
+<script>document.querySelectorAll('canvas[data-code]').forEach(function(canvas){var value=canvas.getAttribute('data-code');if(!/^[RP]-[A-Za-z0-9]{18}$/.test(value)){return;}bwipjs.toCanvas(canvas,{bcid:'code128',text:value,scale:2,height:12,paddingwidth:12,paddingheight:4,backgroundcolor:'FFFFFF',includetext:true,textxalign:'center',textsize:10});});</script>
+</apex:outputPanel></main></body></html></apex:page>
