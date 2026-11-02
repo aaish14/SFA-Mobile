@@ -46,6 +46,7 @@ export type Beat = {
   pending: number;
 };
 export type Product = {
+  barcode?: { format: "CODE128"; value: string; image: string; width: number; height: number } | null;
   id: string;
   name: string;
   code: string;

@@ -44,7 +44,7 @@ describe("network failure handling", () => {
     vi.useRealTimers();
   });
   it("never treats a failed write as a cached success", async () => {
-    storage.getItem.mockResolvedValue('{"id":"cached"}');
+    storage.getItem.mockImplementation(async (key: string) => key.startsWith("sfa-api-cache:") ? '{"id":"cached"}' : null);
     vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("offline")));
     await expect(post("/tickets", {})).rejects.toThrow("Cannot reach the server");
   });

@@ -9,6 +9,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "bwip-js": "4.11.4",
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",
     "exceljs": "^4.4.0",
@@ -26,8 +27,8 @@
     "@types/node": "^24.7.2",
     "@types/nodemailer": "^7.0.2",
     "@types/pdfkit": "^0.17.3",
-    "supertest": "^7.1.4",
     "@types/supertest": "^6.0.3",
+    "supertest": "^7.1.4",
     "tsx": "^4.20.6",
     "typescript": "^5.9.3",
     "vitest": "^5.0.3"

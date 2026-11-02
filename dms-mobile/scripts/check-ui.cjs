@@ -26,10 +26,10 @@ function load(file) {
     if (name === "react-native") return file.endsWith("PortalFrame.tsx")
       ? {...native, Platform: portalPlatform, useWindowDimensions: () => ({width: portalWidth, height: 900, scale: 1, fontScale: 1})} : {...native, Platform: portalPlatform};
     if (name === "react" && file.endsWith("PortalFrame.tsx")) return {...React, useState: initial => [initial, () => {}]};
-    if (name === "react" && file.endsWith("PrimaryOrderForm.tsx"))
+    if (name === "react" && (file.endsWith("PrimaryOrderForm.tsx") || file.endsWith("ReturnForm.tsx")))
       return { ...React, useEffect: () => {}, useState: initial => {
         const index = formStateIndex++;
-        return [index < formOverrides.length ? formOverrides[index] : initial, value => { if(index === 1) formError = value; }];
+        return [index < formOverrides.length ? formOverrides[index] : initial, value => { if(index === (file.endsWith("ReturnForm.tsx") ? 5 : 1)) formError = value; }];
       } };
     if (name === "react" && file.endsWith("DmsApp.tsx"))
       return {
@@ -395,3 +395,21 @@ portalPlatform.OS = "android";
 assert.doesNotMatch(renderToStaticMarkup(PortalFrame(portalProps)), /WORKSPACE/);
 assert.match(renderToStaticMarkup(PortalFrame(portalProps)), /DMS PORTAL/);
 console.log("PASS: full-browser portal at wide and narrow widths, native mobile navigation, existing routes, refresh, logout and login isolation.");
+const ReturnForm = load(path.join(root, "src/components/ReturnForm.tsx")).default;
+function returned(kind, quantity, reason = "Damaged", notes = "") {
+  formStateIndex = 0; formError = "";
+  formOverrides = [[{ id: "source", product: "Original ordered product", order: "ORDER-1", available: 3, reserved: 1, original: 4 }],
+    { source: { quantity, reason, notes } }, "", false, true, "", false];
+  // ReturnForm state order: items, selected, search, loading, loaded, error, hasMore.
+  let reviewed;
+  const tree = ReturnForm({ token: "synthetic", kind, disabled: false, onReview: body => { reviewed = body; }, onSignIn: () => {} });
+  const review = nodes(tree).find(node => node.props?.onPress && node.props?.children?.props?.children === "Review return for approval");
+  assert.ok(review); review.props.onPress();
+  return reviewed;
+}
+assert.deepEqual(returned("primary", "2").lines, [{receiptLineId: "source", cases: 2, reason: "Damaged", notes: ""}]);
+assert.deepEqual(returned("secondary", "3").lines, [{orderItemId: "source", pieces: 3, reason: "Damaged", notes: ""}]);
+for (const quantity of ["0", "-1", "1.5", "4", "text"]) assert.equal(returned("primary", quantity), undefined);
+assert.equal(returned("primary", "1", "Other"), undefined);
+assert.equal(returned("secondary", "1", "Other", "Wrong product supplied").lines[0].notes, "Wrong product supplied");
+console.log("PASS: ordered return selection, cases/pieces, remaining quantity, reason and review payload.");

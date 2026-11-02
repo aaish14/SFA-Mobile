@@ -7,9 +7,13 @@ import { salesforce } from "../salesforce/SalesforceService.js";
 import { escapeSoqlLiteral } from "../utils/salesforce.js";
 import { ok, fail } from "../utils/http.js";
 import { DmsTransport, DmsUpstreamError } from "./transport.js";
+import { sendDmsLoginCode } from "./loginEmail.js";
 import { distributorDashboard } from "./dashboard.js";
 import { distributorReports } from "./reports.js";
 import { primaryCatalogue } from "./primaryCatalogue.js";
+import { returnCatalogue } from "./returnCatalogue.js";
+import { recordBarcode } from "../services/barcode.js";
+import { groupSecondaryReturns, returnReview, secondaryReturnFields } from "./returnReview.js";
 import { createInvoiceRouter } from "../services/invoiceRouter.js";
 
 const audience = "dms-distributor";
@@ -36,23 +40,15 @@ type Dependencies = {
   records: (query: string) => Promise<any[]>;
   command: (body: Record<string, unknown>) => Promise<any>;
   sendCode: (email: string, code: string) => Promise<void>;
+  orgUrl?: () => Promise<string>;
 };
 const transport = new DmsTransport((refresh) => salesforce.dmsSession(refresh));
 const dependencies: Dependencies = {
+  orgUrl: async () => (await salesforce.dmsSession()).instanceUrl,
   records: (query) => transport.records(query, env.SALESFORCE_API_VERSION),
   command: (body) => transport.command(body),
-  sendCode: async (email, code) => {
-    const response = await salesforce.invokeStandardAction("emailSimple", [
-      {
-        recipientAddresses: [email],
-        emailSubject: "Your DMS distributor sign-in code",
-        emailBody: `Your one-use DMS sign-in code is ${code}. It expires in 10 minutes. Ignore this message if you did not request it.`,
-        sendRichBody: false,
-        senderType: "CurrentUser",
-      },
-    ]);
-    if (!response?.[0]?.isSuccess) throw new Error("Email delivery failed");
-  },
+  sendCode: (email, code) => sendDmsLoginCode(email, code,
+    (recipient, value) => transport.sendLoginCode(recipient, value, env.SALESFORCE_API_VERSION)),
 };
 
 /**
@@ -93,6 +89,13 @@ export function createDmsRouter(deps: Dependencies = dependencies) {
     if (limited(`ip:${req.ip}`, 20, 600_000) || limited(`email:${email}`, 1, 60_000))
       return fail(res, 429, "Please wait before requesting another code", "RATE_LIMITED");
     const distributor = await find(email);
+    if (!distributor) {
+      // Keep the public response uniform; administrators can diagnose a missing/duplicate login privately.
+      console.warn("DMS_LOGIN_EMAIL_SKIPPED", JSON.stringify({
+        reason: "NO_UNIQUE_ACTIVE_DISTRIBUTOR", at: new Date().toISOString(),
+        recipientHash: createHash("sha256").update(email).digest("hex").slice(0, 12),
+      }));
+    }
     if (distributor) {
       // A resend replaces the previous challenge only after the email is accepted.
       // Ensure the new value is different even in the unlikely event of an RNG repeat.
@@ -104,11 +107,15 @@ export function createDmsRouter(deps: Dependencies = dependencies) {
       if (codes.size >= 5000) return fail(res, 503, "Please retry later", "BUSY");
       try {
         await deps.sendCode(email, code);
-      } catch {
+      } catch (error) {
+        if (error instanceof DmsUpstreamError && error.message.includes("Salesforce daily email limit"))
+          return fail(res, 503,
+            "Salesforce's daily email limit has been reached. A new code cannot be sent until the limit resets.",
+            "EMAIL_LIMIT_REACHED");
         return fail(
           res,
           503,
-          "The sign-in email could not be sent. Please retry later.",
+          "The email service could not send the sign-in email. Please contact your administrator.",
           "EMAIL_FAILED",
         );
       }
@@ -180,8 +187,8 @@ export function createDmsRouter(deps: Dependencies = dependencies) {
       primaryOrders: `SELECT Id,Name,Status__c,Order_Date__c,Order_Source__c,Employee__r.Name,Total_Amount__c,(SELECT Id,Product__r.Name,Cases__c,Pieces_Per_Case__c,Case_Price__c,Net_Amount__c,Scheme__r.Name,Discount_Amount__c,Free_Cases__c,Free_Product__r.Name,Free_Gift__c,Gift_Quantity__c FROM Order_Lines__r) FROM DMS_Primary_Order__c WHERE Distributor__c='${id}'`,
       secondaryOrders: `SELECT Id,Name,DMS_Status__c,DMS_Decision_Notes__c,Retailer__r.Name,Order_Date__c,Total_Amount__c FROM Sales_Order__c WHERE DMS_Distributor__c='${id}'`,
       secondaryLines: `SELECT Id,Sales_Order__c,Product__r.Name,Piece_Quantity__c,Line_Amount__c FROM Order_Item__c WHERE Sales_Order__r.DMS_Distributor__c='${id}'`,
-      returns: `SELECT Id,Name,Outlet__r.Name,Product__r.Name,Quantity__c,Return_Reason__c,DMS_Status__c,DMS_Decision_Notes__c FROM Product_Return__c WHERE DMS_Distributor__c='${id}'`,
-      primaryReturns: `SELECT Id,Name,Status__c,Employee__r.Name,Total_Cases__c,Total_Amount__c FROM DMS_Primary_Return__c WHERE Distributor__c='${id}'`,
+      returns: `SELECT ${secondaryReturnFields} FROM Product_Return__c WHERE DMS_Distributor__c='${id}'`,
+      primaryReturns: `SELECT Id,Name,Status__c,Return_Source__c,Officer__r.Name,Rejection_Reason__c,Employee__r.Name,Total_Cases__c,Total_Amount__c,(SELECT Id,Product__r.Name,Cases__c,Reason__c,Notes__c,Batch_Number__c,Receipt_Line__r.Goods_Receipt__r.Primary_Order__r.Name FROM Return_Lines__r) FROM DMS_Primary_Return__c WHERE Distributor__c='${id}'`,
       inventory: `SELECT Id,Product__r.Name,Batch_Number__c,Expiry_Date__c,On_Hand_Pieces__c,Available_Pieces__c,Low_Stock__c,Expired__c,Reorder_Level_Pieces__c FROM DMS_Inventory__c WHERE Distributor__c='${id}'`,
       receipts: `SELECT Id,Name,Status__c,Received_Date__c,Total_Value__c,Total_Pieces__c FROM DMS_Goods_Receipt__c WHERE Distributor__c='${id}'`,
       invoices: `SELECT Id,Name,Status__c,Invoice_Date__c,Outlet__r.Name,Total_Amount__c,Balance_Due__c FROM DMS_Invoice__c WHERE Distributor__c='${id}'`,
@@ -202,6 +209,8 @@ export function createDmsRouter(deps: Dependencies = dependencies) {
       order.lines = result.secondaryLines.filter((line: any) => line.Sales_Order__c === order.Id);
     result.truncatedLists = Object.keys(queries).filter((name) => result[name].length === 200);
     delete result.secondaryLines;
+    result.returnRequests = await Promise.all(groupSecondaryReturns(result.returns).map(async row => ({ ...row, barcode: await recordBarcode("return", row.Id) })));
+    result.primaryReturns = await Promise.all(result.primaryReturns.map(async (row: any) => ({ ...row, barcode: await recordBarcode("return", row.Id) })));
     result.dashboard = await distributorDashboard(id, deps.records);
     return ok(res, result);
   });
@@ -242,6 +251,36 @@ export function createDmsRouter(deps: Dependencies = dependencies) {
   router.get("/reports", async (request, res) => {
     return ok(res, await distributorReports((request as Request).distributor.Id, deps.records));
   });
+  router.get("/returns/:kind/catalogue", async (request, res) => {
+    const kind = z.enum(["primary", "secondary"]).parse(request.params.kind);
+    const orderId = request.query.orderId === undefined ? undefined : idInput.parse(request.query.orderId);
+    return ok(res, await returnCatalogue((request as Request).distributor.Id, kind, deps.records, orderId));
+  });
+  router.get("/returns/:kind/:id", async (request, res) => {
+    const kind = z.enum(["primary", "secondary"]).parse(request.params.kind);
+    const id = idInput.parse(request.params.id);
+    res.setHeader("Cache-Control", "private, no-store");
+    return ok(res, await returnReview(kind, id, (request as Request).distributor.Id, deps.records, await deps.orgUrl?.()));
+  });
+  router.post("/returns/:kind", async (request, res) => {
+    const kind = z.enum(["primary", "secondary"]).parse(request.params.kind);
+    const common = {
+      reason: z.enum(["Damaged", "Expired", "Delayed Delivery", "No Demand", "Other", ...(kind === "secondary" ? ["Near Expiry", "Wrong Supply", "Quality Issue"] as const : [])]),
+      notes: z.string().trim().max(1000).optional(),
+    };
+    const quantity = z.number().int().positive().max(100000);
+    const line = kind === "primary"
+      ? z.object({ ...common, receiptLineId: idInput, cases: quantity }).strict()
+      : z.object({ ...common, orderItemId: idInput, pieces: quantity }).strict();
+    const body = z.object({ requestKey: keyInput, lines: z.array(line).min(1).max(50) }).strict().parse(request.body);
+    const identifiers = body.lines.map(entry => "receiptLineId" in entry ? entry.receiptLineId : entry.orderItemId);
+    if (new Set(identifiers).size !== identifiers.length || body.lines.some(entry => entry.reason === "Other" && !entry.notes))
+      return fail(res, 400, "Select each original line once and explain Other", "VALIDATION_ERROR");
+    return ok(res, await deps.command({ ...body,
+      action: kind === "primary" ? "distributorPrimaryReturn" : "distributorSecondaryReturn",
+      distributorId: (request as Request).distributor.Id,
+    }));
+  });
   router.post("/tickets", async (request, res) => {
     const body = z
       .object({
@@ -272,6 +311,11 @@ export function createDmsRouter(deps: Dependencies = dependencies) {
         z.object({
           ...base,
           action: z.literal("returnDecision"),
+          decision: z.enum(["Approved", "Rejected"]),
+        }),
+        z.object({
+          ...base,
+          action: z.literal("returnGroupDecision"),
           decision: z.enum(["Approved", "Rejected"]),
         }),
         z.object({

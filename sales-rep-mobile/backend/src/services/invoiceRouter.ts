@@ -1,6 +1,7 @@
 import express from "express";
 import { ok, fail } from "../utils/http.js";
 import { createInvoicePdf } from "./invoicePdf.js";
+import { decorateInvoice, invoiceIdFromBarcode } from "./barcode.js";
 
 type Records = (query: string) => Promise<any[]>;
 /**
@@ -25,24 +26,26 @@ export function createInvoiceRouter(records: Records, scope: (req: express.Reque
     if (orderId !== undefined && !validId(orderId)) return fail(res, 400, "Invalid order reference", "VALIDATION_ERROR");
     const orderFilter = orderId ? ` AND (Primary_Order__c='${orderId}' OR Sales_Order__c='${orderId}')` : "";
     const rows = await records(`SELECT ${fields} FROM DMS_Invoice__c WHERE Status__c='Issued' AND (${res.locals.invoiceScope})${orderFilter} ORDER BY CreatedDate DESC,Id DESC LIMIT 201`);
-    return ok(res, { items: rows.slice(0, 200), hasMore: rows.length > 200 });
+    return ok(res, { items: await Promise.all(rows.slice(0, 200).map(decorateInvoice)), hasMore: rows.length > 200 });
   });
   /**
    * Load one issued invoice within the authenticated scope, attach its saved lines and return
    * either JSON or a downloadable PDF.
    */
-  async function detail(req: express.Request, res: express.Response, pdf: boolean) {
-    if (!validId(req.params.id)) return fail(res, 400, "Invalid invoice reference", "VALIDATION_ERROR");
-    const rows = await records(`SELECT ${fields} FROM DMS_Invoice__c WHERE Id='${req.params.id}' AND Status__c='Issued' AND (${res.locals.invoiceScope}) LIMIT 1`);
+  async function detail(req: express.Request, res: express.Response, pdf: boolean, reference: unknown = req.params.id) {
+    if (!validId(reference)) return fail(res, 400, "Invalid invoice reference", "VALIDATION_ERROR");
+    const rows = await records(`SELECT ${fields} FROM DMS_Invoice__c WHERE Id='${reference}' AND Status__c='Issued' AND (${res.locals.invoiceScope}) LIMIT 1`);
     if (!rows[0]) return fail(res, 404, "Invoice not found for your account", "NOT_FOUND");
     const invoice = rows[0];
-    invoice.lines = await records(`SELECT Id,Product_Name__c,Product__r.Name,Cases__c,Case_Price__c,Quantity_Pieces__c,Unit_Price__c,Gross_Amount__c,Discount_Amount__c,Tax_Amount__c,Total_Amount__c,Scheme_Name__c,Bonus_Details__c FROM DMS_Invoice_Line__c WHERE Invoice__c='${invoice.Id}' ORDER BY CreatedDate,Id`);
+    invoice.lines = await records(`SELECT Id,Product__c,Product_Name__c,Product__r.Name,Product__r.Product_Code__c,Product__r.Brand__c,Product__r.Sub_Brand__c,Product__r.Brand_Alias__c,Cases__c,Case_Price__c,Quantity_Pieces__c,Unit_Price__c,Gross_Amount__c,Discount_Amount__c,Tax_Amount__c,Total_Amount__c,Scheme_Name__c,Bonus_Details__c FROM DMS_Invoice_Line__c WHERE Invoice__c='${invoice.Id}' ORDER BY CreatedDate,Id`);
     res.setHeader("Cache-Control", "private, no-store");
-    if (!pdf) return ok(res, invoice);
+    if (!pdf) return ok(res, await decorateInvoice(invoice));
     const buffer = await createInvoicePdf(invoice);
     res.setHeader("Content-Disposition", `attachment; filename="${String(invoice.Name).replace(/[^A-Za-z0-9_-]/g, "-")}.pdf"`);
     return res.type("pdf").send(buffer);
   }
+  // A scan uses exactly the same authorization and Issued-status gate as a direct read.
+  router.get("/barcode/:code", (req, res) => detail(req, res, false, invoiceIdFromBarcode(req.params.code)));
   router.get("/:id/pdf", (req, res) => detail(req, res, true));
   router.get("/:id", (req, res) => detail(req, res, false));
   router.use(((error: unknown, _req: express.Request, res: express.Response, _next: express.NextFunction) => {

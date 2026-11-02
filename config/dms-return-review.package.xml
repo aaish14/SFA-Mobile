@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Package xmlns="http://soap.sforce.com/2006/04/metadata">
+  <types><members>DmsReturnReviewController</members><members>DmsDistributorReturns</members><members>DmsDistributorReturnsTest</members><members>DmsEmployeeTransactions</members><members>DmsPortalApi</members><name>ApexClass</name></types>
+  <types><members>DmsReturnReview</members><members>DmsPrimaryReturnBarcode</members><members>DmsSecondaryReturnBarcode</members><name>ApexPage</name></types>
+  <types><members>DmsBarcodeAssets</members><name>StaticResource</name></types>
+  <types><members>DMS_Primary_Return__c.Return_Review__c</members><members>Product_Return__c.Return_Review__c</members><name>CustomField</name></types>
+  <types><members>DMS_Return_Review</members><name>PermissionSet</name></types>
+  <types><members>DMS_Primary_Return__c-Primary Return Layout</members><members>Product_Return__c-Product Return Layout</members><name>Layout</name></types>
+  <types><members>DMS_Primary_Return__c.Company_Officer_Return_Approval</members><name>ApprovalProcess</name></types>
+  <version>65.0</version>
+</Package>

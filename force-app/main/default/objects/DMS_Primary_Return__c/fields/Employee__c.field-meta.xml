@@ -7,6 +7,6 @@
     <referenceTo>Employee__c</referenceTo>
     <relationshipLabel>DMS Primary Returns</relationshipLabel>
     <relationshipName>DMS_Primary_Returns</relationshipName>
-    <required>true</required>
+    <required>false</required>
     <type>Lookup</type>
 </CustomField>

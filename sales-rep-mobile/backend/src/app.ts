@@ -25,6 +25,7 @@ import { escapeSoqlLiteral } from "./utils/salesforce.js";
 import { allocatedBeats } from "./services/allocatedBeats.js";
 import { restoreVisit } from "./services/visitRecovery.js";
 import { productIdentity } from "./services/productIdentity.js";
+import { recordBarcode } from "./services/barcode.js";
 import { createDmsRouter } from "./dms/router.js";
 import { createEmployeeDmsRouter } from "./dms/employeeRouter.js";
 import { createInvoiceRouter } from "./services/invoiceRouter.js";
@@ -529,6 +530,9 @@ app.get("/api/products", async (request, res) => {
     existing.push(configuration);
     configurationsByProduct.set(configuration.Product__c, existing);
   }
+  const productCodes = new Map(await Promise.all(rows.map(async row =>
+    [row.Id, await recordBarcode("product", row.Id)] as const,
+  )));
   ok(
     res,
     rows.map((row) => {
@@ -540,6 +544,7 @@ app.get("/api/products", async (request, res) => {
         id: row.Id,
         name: row.Name,
         code: row.Product_Code__c,
+        barcode: productCodes.get(row.Id),
         ...productIdentity(row),
         packSize: row.Package_Type__c,
         mrp: row.MRP__c || 0,

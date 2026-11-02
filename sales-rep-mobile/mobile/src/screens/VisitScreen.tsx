@@ -14,9 +14,11 @@ import * as FileSystem from "expo-file-system/legacy";
 import * as Sharing from "expo-sharing";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { api, post, postRecoverable } from "../api/client";
+import { getApiBaseUrl } from "../api/connection";
 import { Button, Card, Label, Money } from "../components/ui";
 import VisitField from "../components/VisitField";
 import ProductIdentityFields from "../components/ProductIdentityFields";
+import RecordBarcode from "../components/RecordBarcode";
 import { nextProduct } from "../utils/productSelection";
 import { colors } from "../constants/theme";
 import { clearVisitDraft, readVisitDraft, writeVisitDraft } from "../storage/visitDraft";
@@ -472,7 +474,7 @@ export default function VisitScreen({
     const token = await import("@react-native-async-storage/async-storage").then((m) =>
       m.default.getItem("token"),
     );
-    const apiBase = process.env.EXPO_PUBLIC_API_URL || "http://localhost:4000/api";
+    const apiBase = await getApiBaseUrl();
     const url = `${apiBase}/documents/${kind}/${visit.id}`;
     const extension = kind === "pdf" ? "pdf" : "xlsx";
     const fileName = `${route.params.store.code}-visit-${Date.now()}.${extension}`;
@@ -651,6 +653,12 @@ export default function VisitScreen({
               />
               <Label>Selected product details</Label>
               <ProductIdentityFields product={selectedProduct} />
+              <RecordBarcode key={selectedProduct?.id} barcode={selectedProduct?.barcode} label="Selected product barcode">
+                <Text style={s.productName}>{selectedProduct?.name}</Text>
+                <Text style={s.sub}>SKU: {selectedProduct?.code}</Text>
+                <ProductIdentityFields product={selectedProduct} />
+                <Text style={s.sub}>Price <Money value={selectedProduct?.price || 0} /> · Stock {selectedProduct?.stock || 0}</Text>
+              </RecordBarcode>
               <Button
                 title={showProductFilters ? "HIDE PRODUCT FILTERS" : "FILTER PRODUCTS"}
                 kind="secondary"

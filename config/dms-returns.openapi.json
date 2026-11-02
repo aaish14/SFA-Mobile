@@ -1,0 +1,329 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "DMS ordered-product returns",
+    "version": "1.1.0",
+    "description": "Authenticated distributor routes. Primary returns reference Received goods receipt lines in whole cases and submit to the assigned company officer. Secondary returns reference approved secondary order lines in whole pieces and remain Pending for distributor approval. No stock posting occurs on submission. Existing SFA entry points are unchanged. New distributor returns contain products from one original order only. Full-order selection uses remaining returnable quantities. Traditional Code128 return references match across the portal and authenticated Salesforce review page."
+  },
+  "servers": [
+    {
+      "url": "http://localhost:4001/api/dms"
+    }
+  ],
+  "security": [
+    {
+      "distributorSession": []
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "distributorSession": {
+        "type": "http",
+        "scheme": "bearer"
+      }
+    },
+    "schemas": {
+      "PrimaryLine": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "receiptLineId",
+          "cases",
+          "reason"
+        ],
+        "properties": {
+          "receiptLineId": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9]{18}$"
+          },
+          "cases": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100000
+          },
+          "reason": {
+            "type": "string",
+            "enum": [
+              "Damaged",
+              "Expired",
+              "Delayed Delivery",
+              "No Demand",
+              "Other"
+            ]
+          },
+          "notes": {
+            "type": "string",
+            "maxLength": 1000,
+            "description": "Required for Other"
+          }
+        }
+      },
+      "SecondaryLine": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "orderItemId",
+          "pieces",
+          "reason"
+        ],
+        "properties": {
+          "orderItemId": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9]{18}$"
+          },
+          "pieces": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100000
+          },
+          "reason": {
+            "type": "string",
+            "enum": [
+              "Damaged",
+              "Expired",
+              "Delayed Delivery",
+              "No Demand",
+              "Other",
+              "Near Expiry",
+              "Wrong Supply",
+              "Quality Issue"
+            ]
+          },
+          "notes": {
+            "type": "string",
+            "maxLength": 1000
+          }
+        }
+      }
+    }
+  },
+  "paths": {
+    "/returns/{kind}/catalogue": {
+      "parameters": [
+        {
+          "in": "path",
+          "name": "kind",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "enum": [
+              "primary",
+              "secondary"
+            ]
+          }
+        },
+        {
+          "in": "query",
+          "name": "orderId",
+          "required": false,
+          "schema": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9]{18}$"
+          },
+          "description": "Reload all eligible source lines of the chosen original order, still scoped to the session distributor."
+        }
+      ],
+      "get": {
+        "summary": "Read the latest 500 eligible source lines",
+        "responses": {
+          "200": {
+            "description": "data:{kind,unit,hasMore,items:[{id,productId,orderId,receiptId?,product,order,receipt?,outlet?,batch?,expiry?,original,reserved,available}]}. Up to 500 lines; hasMore means results are incomplete. Pending/approved returns reduce available quantities. Do not submit a full-order selection from an incomplete selected-order result."
+          },
+          "401": {
+            "description": "Sign in required"
+          },
+          "403": {
+            "description": "Inactive distributor"
+          },
+          "502": {
+            "description": "Salesforce read failed; never presented as an empty catalogue"
+          }
+        }
+      }
+    },
+    "/returns/{kind}": {
+      "parameters": [
+        {
+          "in": "path",
+          "name": "kind",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "enum": [
+              "primary",
+              "secondary"
+            ]
+          }
+        }
+      ],
+      "post": {
+        "summary": "Create returns atomically and enter approval",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "requestKey",
+                  "lines"
+                ],
+                "properties": {
+                  "requestKey": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "lines": {
+                    "type": "array",
+                    "minItems": 1,
+                    "maxItems": 50,
+                    "items": {
+                      "oneOf": [
+                        {
+                          "$ref": "#/components/schemas/PrimaryLine"
+                        },
+                        {
+                          "$ref": "#/components/schemas/SecondaryLine"
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "success:true,data:{id,status,count?}. Primary status Submitted; secondary Pending. Each secondary line creates a Product Return. Replay the same key and body after network failure; saved IDs are reused. Replays can return a later approval status."
+          },
+          "400": {
+            "description": "Invalid, duplicated, foreign, unreceived/unapproved or excessive quantity; conflicting retry key. No partial writes. Mixing original orders in one new request is rejected; legacy retries preserve their existing fingerprint."
+          },
+          "401": {
+            "description": "Sign in required"
+          },
+          "403": {
+            "description": "Inactive distributor"
+          },
+          "502": {
+            "description": "Unconfirmed upstream result. Preserve and retry original request key."
+          }
+        }
+      }
+    },
+    "/returns/{kind}/{id}": {
+      "parameters": [
+        {
+          "in": "path",
+          "name": "kind",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "enum": [
+              "primary",
+              "secondary"
+            ]
+          }
+        },
+        {
+          "in": "path",
+          "name": "id",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9]{18}$"
+          }
+        }
+      ],
+      "get": {
+        "summary": "Read saved returned products and the original order for a clickable return barcode",
+        "responses": {
+          "200": {
+            "description": "data:{id,title,status,approver,unit,lines:[{id,productId,product,quantity,reason,notes,batch?,status?,order}],orderedLines:[{product,quantity,free?,order}],barcode:{value,imageDataUrl},salesforceUrl?}. Code128 value is R- plus the Salesforce return ID. Private/no-store. Salesforce link requires independent Salesforce login and record permissions."
+          },
+          "400": {
+            "description": "Invalid identifier or kind"
+          },
+          "401": {
+            "description": "Sign in required"
+          },
+          "403": {
+            "description": "Inactive distributor"
+          },
+          "404": {
+            "description": "Missing or foreign return; no child data returned"
+          },
+          "409": {
+            "description": "Oversize request; open in Salesforce"
+          },
+          "502": {
+            "description": "Salesforce unavailable"
+          }
+        }
+      }
+    },
+    "/transactions": {
+      "post": {
+        "summary": "Approve or reject a saved secondary return request together",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "action",
+                  "recordId",
+                  "decision"
+                ],
+                "properties": {
+                  "action": {
+                    "type": "string",
+                    "enum": [
+                      "returnGroupDecision"
+                    ]
+                  },
+                  "recordId": {
+                    "type": "string",
+                    "pattern": "^[A-Za-z0-9]{18}$"
+                  },
+                  "decision": {
+                    "type": "string",
+                    "enum": [
+                      "Approved",
+                      "Rejected"
+                    ]
+                  },
+                  "notes": {
+                    "type": "string",
+                    "maxLength": 255,
+                    "description": "Nonblank required on rejection"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "data:{id,status,count}. Same request prefix, distributor and original order are resolved server-side; up to 50 lines change atomically. Same terminal decision is idempotent."
+          },
+          "400": {
+            "description": "Invalid decision, missing rejection notes, foreign record or conflicting existing decision; no partial writes"
+          },
+          "401": {
+            "description": "Sign in required"
+          },
+          "403": {
+            "description": "Inactive distributor"
+          },
+          "502": {
+            "description": "Unconfirmed upstream result"
+          }
+        }
+      }
+    }
+  }
+}

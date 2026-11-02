@@ -63,7 +63,7 @@ paths:
               properties:
                 email: {type: string, format: email}
       responses:
-        '200': {description: Generic delivery acknowledgement; no code is returned}
+        '200': {description: Generic acknowledgement after the configured sender accepts the email. DMS can use authenticated Gmail SMTP or the Salesforce Send Email action. Gmail credentials are backend-only; a Gmail failure never falls back to Salesforce. Salesforce org email limits still apply when Salesforce is the configured sender. No code is returned and acceptance does not guarantee inbox delivery. Verification never sends another email.}
         '429': {description: Retry after rate limit}
         '503': {description: Email service unavailable}
   /auth/verify-code:

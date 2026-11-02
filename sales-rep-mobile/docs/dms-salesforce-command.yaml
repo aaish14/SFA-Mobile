@@ -16,9 +16,18 @@ paths:
           application/json:
             schema:
               type: object
-              required: [action, distributorId]
+              required: [action]
+              oneOf:
+                - required: [email, code]
+                  properties:
+                    action: {enum: [sendLoginCode]}
+                - required: [distributorId]
+                  properties:
+                    action: {enum: [ticket, secondaryDecision, returnDecision, receiveGoods, primaryOrder, primaryReturn, distributorPrimaryOrder]}
               properties:
-                action: {type: string, enum: [ticket, secondaryDecision, returnDecision, receiveGoods, primaryOrder, primaryReturn, distributorPrimaryOrder]}
+                action: {type: string, enum: [sendLoginCode, ticket, secondaryDecision, returnDecision, receiveGoods, primaryOrder, primaryReturn, distributorPrimaryOrder]}
+                email: {type: string, format: email, description: Active unique distributor login; only accepted from the trusted backend}
+                code: {type: string, pattern: '^[0-9]{6}$', writeOnly: true, description: Transient code sent by the Apex trigger; never stored in a Salesforce field or returned}
                 employeeId: {type: string, description: Supplied by the trusted backend from the authenticated employee session}
                 receiptKind: {type: string, enum: [Paid, Free], default: Paid}
                 lines:

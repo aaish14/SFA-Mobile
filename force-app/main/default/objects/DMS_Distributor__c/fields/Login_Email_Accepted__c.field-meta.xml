@@ -1,0 +1,2 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata"><fullName>Login_Email_Accepted__c</fullName><defaultValue>false</defaultValue><description>Salesforce accepted the latest email request. This does not confirm delivery to the recipient inbox.</description><label>Login Email Accepted</label><type>Checkbox</type></CustomField>

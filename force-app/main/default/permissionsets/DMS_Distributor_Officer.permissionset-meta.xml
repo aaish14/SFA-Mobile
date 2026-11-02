@@ -2,6 +2,7 @@
 <PermissionSet xmlns="http://soap.sforce.com/2006/04/metadata">
 <applicationVisibilities><application>DMS_Management</application><visible>true</visible></applicationVisibilities>
 <description>Company officer reviews assigned primary orders and returns. No administrator or view-all privileges.</description>
+<fieldPermissions><editable>false</editable><field>DMS_Primary_Return__c.Return_Source__c</field><readable>true</readable></fieldPermissions>
 <fieldPermissions><editable>false</editable><field>DMS_Primary_Order__c.Order_Source__c</field><readable>true</readable></fieldPermissions>
 <fieldPermissions><editable>false</editable><field>DMS_Distributor__c.Active__c</field><readable>true</readable></fieldPermissions>
 <fieldPermissions><editable>false</editable><field>DMS_Distributor__c.Address__c</field><readable>true</readable></fieldPermissions>

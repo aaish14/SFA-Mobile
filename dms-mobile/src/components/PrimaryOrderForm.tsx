@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from "react";
-import { View, Text, TextInput, Pressable, StyleSheet } from "react-native";
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import RecordBarcode from "./RecordBarcode";
+import { AppState, View, Text, TextInput, Pressable, StyleSheet } from "react-native";
 import { request } from "../api";
 import { colors } from "../theme";
 
@@ -27,27 +28,47 @@ export default function PrimaryOrderForm({
   const [selected, setSelected] = useState<Record<string, Selection>>({});
   const [loading, setLoading] = useState(false);
   const [needsSignIn, setNeedsSignIn] = useState(false);
+  const catalogueRequest = useRef(0);
   /**
    * Refresh the primary product/scheme catalogue and request renewed sign-in when the API denies
    * the session.
    */
-  async function load() {
-    setLoading(true);
-    setError("");
-    try {
-      setCatalogue(await request("/primary/catalogue", token));
-      setNeedsSignIn(false);
-    } catch (failure: any) {
-      setCatalogue(null);
-      setError(failure.message);
-      setNeedsSignIn(failure.status === 401 || failure.status === 403);
-    } finally {
-      setLoading(false);
-    }
-  }
+  const load = useCallback(
+    async (background = false) => {
+      const requestId = ++catalogueRequest.current;
+      if (!background) setLoading(true);
+      try {
+        const latest = await request("/primary/catalogue", token);
+        if (requestId !== catalogueRequest.current) return;
+        setCatalogue(latest);
+        if (!background) setError("");
+        setNeedsSignIn(false);
+      } catch (failure: any) {
+        if (requestId !== catalogueRequest.current) return;
+        if (failure.status === 401 || failure.status === 403) setCatalogue(null);
+        setError(failure.message);
+        setNeedsSignIn(failure.status === 401 || failure.status === 403);
+      } finally {
+        if (requestId === catalogueRequest.current) setLoading(false);
+      }
+    },
+    [token],
+  );
   useEffect(() => {
     void load();
-  }, [token]);
+    // Refresh Salesforce offers without clearing the distributor's quantities or notes.
+    const timer = setInterval(() => {
+      if (AppState.currentState === "active") void load(true);
+    }, 60000);
+    const listener = AppState.addEventListener("change", (state) => {
+      if (state === "active") void load(true);
+    });
+    return () => {
+      catalogueRequest.current += 1;
+      clearInterval(timer);
+      listener.remove();
+    };
+  }, [load]);
   const products: Row[] = catalogue?.products || [];
   const chosen = products.filter((p) => selected[p.Id]);
   /**
@@ -170,9 +191,15 @@ export default function PrimaryOrderForm({
             <Text style={s.copy}>No active sellable products in Salesforce.</Text>
           )}
           <Text style={s.label}>Search product or code</Text>
+          <Text style={s.copy}>
+            Schemes appear under their linked products. Offers refresh automatically every minute
+            while this form is active. Only applicable Primary schemes can be selected.
+          </Text>
           <TextInput
             accessibilityLabel="Search primary products"
-            placeholder="Product name or code"
+            placeholder="Product name, code or P- barcode"
+            autoCapitalize="none"
+            autoCorrect={false}
             placeholderTextColor={colors.muted}
             style={s.input}
             value={search}
@@ -180,12 +207,31 @@ export default function PrimaryOrderForm({
           />
           {products
             .filter((p) =>
-              `${p.Name} ${p.Product_Code__c || ""}`.toLowerCase().includes(search.toLowerCase()),
+              `${p.Name} ${p.Product_Code__c || ""} ${p.barcode?.value || ""}`
+                .toLowerCase()
+                .includes(search.trim().toLowerCase()),
             )
             .map((product) => {
               const selection = selected[product.Id];
               return (
                 <View key={product.Id} style={s.product}>
+                  <RecordBarcode
+                    barcode={product.barcode}
+                    label={`Product barcode: ${product.Name}`}
+                  >
+                    <Text style={s.label}>{product.Name}</Text>
+                    <Text style={s.copy}>SKU: {product.Product_Code__c || "Not configured"}</Text>
+                    <Text style={s.copy}>
+                      Brand: {product.Brand__c || "Not configured"} · Sub-brand:{" "}
+                      {product.Sub_Brand__c || "Not configured"}
+                    </Text>
+                    <Text style={s.copy}>Alias: {product.Brand_Alias__c || "Not configured"}</Text>
+                    <Text style={s.copy}>
+                      ₹{Number(product.DMS_Case_Price__c || 0).toFixed(2)} per case ·{" "}
+                      {product.Units_Per_Case__c || "Not configured"} pieces per case · GST{" "}
+                      {product.GST_Percent__c || 0}%
+                    </Text>
+                  </RecordBarcode>
                   <Text style={s.name}>{product.Name}</Text>
                   <Text style={s.copy}>
                     {configured(product)
@@ -222,51 +268,115 @@ export default function PrimaryOrderForm({
                           }))
                         }
                       />
-                      <Text style={s.label}>Applicable Primary schemes</Text>
-                      {button(
-                        "No scheme",
-                        () =>
-                          setSelected((old) => ({
-                            ...old,
-                            [product.Id]: { ...old[product.Id], schemeId: undefined },
-                          })),
-                        disabled,
-                        !selection.schemeId,
-                      )}
-                      {!product.schemes?.length && (
-                        <Text style={s.copy}>
-                          No active Primary scheme applies to this product and distributor
-                          geography.
-                        </Text>
-                      )}
-                      {product.schemes?.map((scheme: Row) => (
-                        <View key={scheme.Id}>
-                          {button(
-                            scheme.Name,
+                    </>
+                  )}
+                  <View style={s.schemePanel}>
+                    <Text style={s.label}>Schemes for {product.Name}</Text>
+                    {selection && (
+                      <>
+                        {!!product.schemes?.length &&
+                          button(
+                            selection.schemeId ? "Continue without a scheme" : "No scheme selected",
                             () =>
                               setSelected((old) => ({
                                 ...old,
-                                [product.Id]: { ...old[product.Id], schemeId: scheme.Id },
+                                [product.Id]: { ...old[product.Id], schemeId: undefined },
                               })),
-                            disabled ||
-                              Number(scheme.Minimum_Cases__c) <= 0 ||
-                              Number(selection.cases) < Number(scheme.Minimum_Cases__c),
-                            selection.schemeId === scheme.Id,
+                            disabled,
+                            !selection.schemeId,
                           )}
+                        {!!selection.schemeId &&
+                          !product.schemes?.some(
+                            (scheme: Row) => scheme.Id === selection.schemeId,
+                          ) && (
+                            <Text accessibilityRole="alert" style={s.error}>
+                              The selected scheme is no longer available. Remove it or choose
+                              another offer.
+                            </Text>
+                          )}
+                        {!!selection.schemeId &&
+                          !product.schemes?.some(
+                            (scheme: Row) => scheme.Id === selection.schemeId,
+                          ) &&
+                          button(
+                            "Remove unavailable scheme",
+                            () =>
+                              setSelected((old) => ({
+                                ...old,
+                                [product.Id]: { ...old[product.Id], schemeId: undefined },
+                              })),
+                            disabled,
+                          )}
+                      </>
+                    )}
+                    {!product.schemes?.length && !product.linkedSchemes?.length && (
+                      <Text style={s.copy}>
+                        No scheme is linked to {product.Name} in Salesforce. A linked offer will
+                        appear here automatically.
+                      </Text>
+                    )}
+                    {product.schemes?.map((scheme: Row) => (
+                      <View key={scheme.Id} style={s.scheme}>
+                        {selection ? (
+                          <>
+                            {button(
+                              scheme.Name,
+                              () =>
+                                setSelected((old) => ({
+                                  ...old,
+                                  [product.Id]: { ...old[product.Id], schemeId: scheme.Id },
+                                })),
+                              disabled ||
+                                Number(scheme.Minimum_Cases__c) <= 0 ||
+                                Number(selection.cases) < Number(scheme.Minimum_Cases__c),
+                              selection.schemeId === scheme.Id,
+                            )}
+                            {Number(selection.cases) < Number(scheme.Minimum_Cases__c) && (
+                              <Text style={s.copy}>
+                                Order at least {scheme.Minimum_Cases__c} cases to use this scheme.
+                              </Text>
+                            )}
+                          </>
+                        ) : (
+                          <Text style={s.label}>{scheme.Name}</Text>
+                        )}
+                        <Text style={s.copy}>
+                          Minimum {scheme.Minimum_Cases__c || "not configured"} cases ·{" "}
+                          {scheme.Discount_Percent__c || 0}% discount · ₹
+                          {scheme.Discount_Amount__c || 0} discount / buy block ·{" "}
+                          {scheme.Free_Cases__c || 0} free cases of{" "}
+                          {scheme.Free_Product__r?.Name || product.Name} / buy block
+                          {scheme.Free_Gift__c
+                            ? ` · ${scheme.Gift_Quantity__c || 0} × ${scheme.Free_Gift__c} / buy block`
+                            : ""}
+                        </Text>
+                      </View>
+                    ))}
+                    {product.linkedSchemes
+                      ?.filter((scheme: Row) => !scheme.applicableToPrimary)
+                      .map((scheme: Row) => (
+                        <View key={scheme.Id} style={s.scheme}>
+                          <Text style={s.label}>{scheme.Name}</Text>
+                          <Text style={s.copy}>Not applicable to this primary order</Text>
+                          <Text style={s.copy}>{scheme.unavailableReasons.join(" ")}</Text>
                           <Text style={s.copy}>
-                            Minimum {scheme.Minimum_Cases__c || "not configured"} cases ·{" "}
-                            {scheme.Discount_Percent__c || 0}% discount · ₹
-                            {scheme.Discount_Amount__c || 0} discount / buy block ·{" "}
-                            {scheme.Free_Cases__c || 0} free cases of{" "}
-                            {scheme.Free_Product__r?.Name || product.Name} / buy block
-                            {scheme.Free_Gift__c
-                              ? ` · ${scheme.Gift_Quantity__c || 0} × ${scheme.Free_Gift__c} / buy block`
-                              : ""}
+                            Channel: {scheme.Sales_Channel__c || "Not set"} · Valid:{" "}
+                            {scheme.Start_Date__c || "No start date"} to{" "}
+                            {scheme.End_Date__c || "No end date"}
                           </Text>
+                          <Text style={s.copy}>
+                            {scheme.Discount_Percent__c || 0}% discount · ₹
+                            {scheme.Discount_Amount__c || 0} fixed discount
+                            {scheme.Sales_Channel__c === "Primary"
+                              ? ` · Minimum ${scheme.Minimum_Cases__c ?? "not set"} cases · ${scheme.Free_Cases__c || 0} free cases`
+                              : ` · Minimum quantity: ${scheme.Minimum_Quantity__c ?? "not set"} · Free quantity: ${scheme.Free_Quantity__c || 0}`}
+                          </Text>
+                          {!!scheme.Free_Product__r?.Name && (
+                            <Text style={s.copy}>Free product: {scheme.Free_Product__r.Name}</Text>
+                          )}
                         </View>
                       ))}
-                    </>
-                  )}
+                  </View>
                 </View>
               );
             })}
@@ -305,9 +415,15 @@ export default function PrimaryOrderForm({
             disabled || loading || !chosen.length || !catalogue.distributor?.Officer__r?.IsActive,
             true,
           )}
-          {!!error && <Text accessibilityRole="alert" style={s.error}>{error}</Text>}
+          {!!error && (
+            <Text accessibilityRole="alert" style={s.error}>
+              {error}
+            </Text>
+          )}
           {!catalogue.distributor?.Officer__r?.IsActive && (
-            <Text accessibilityRole="alert" style={s.error}>Review is unavailable until an active company officer is assigned in Salesforce.</Text>
+            <Text accessibilityRole="alert" style={s.error}>
+              Review is unavailable until an active company officer is assigned in Salesforce.
+            </Text>
           )}
         </>
       )}
@@ -329,6 +445,8 @@ const s = StyleSheet.create({
     color: colors.ink,
   },
   product: { borderTopWidth: 1, borderColor: colors.border, marginTop: 18, paddingTop: 18 },
+  schemePanel: { backgroundColor: "#F3FAF5", borderRadius: 12, padding: 14, marginTop: 8 },
+  scheme: { borderTopWidth: 1, borderColor: colors.border, marginTop: 6, paddingTop: 6 },
   button: {
     borderWidth: 1,
     borderColor: colors.brand,

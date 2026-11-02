@@ -6,6 +6,7 @@ import { Button, Card } from "../components/ui";
 import { colors } from "../constants/theme";
 import { logOut } from "../storage/session";
 import { flushQueue } from "../storage/syncQueue";
+import ServerConnectionButton from "../components/ServerConnectionButton";
 
 const modules = [
   ["Primary orders / returns", "Primary", "▤"],
@@ -98,6 +99,11 @@ export default function MoreScreen() {
                 </Card>
               </Pressable>
             ))}
+          <Card>
+            <Text style={s.name}>Connection</Text>
+            <ServerConnectionButton disabled={busy} onSaved={() => setMessage("Server connection checked and saved. Reopen your outlet to retry; your entries are unchanged.")} />
+            {!confirming && !!message && <Text accessibilityRole="alert" style={{ color: colors.ink, marginVertical: 12 }}>{message}</Text>}
+          </Card>
           <Card>
             <Text style={s.name}>Account</Text>
             {confirming ? (

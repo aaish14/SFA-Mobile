@@ -73,6 +73,51 @@ function fixture() {
   };
 }
 describe("isolated DMS distributor API", () => {
+  it("protects return review and validates order filters before reading Salesforce", async () => {
+    const f = fixture(), token = (await f.login()).body.data.token;
+    const get = (path: string) => request(f.app).get(`/api/dms${path}`).auth(token, { type: "bearer" });
+    expect((await request(f.app).get("/api/dms/returns/primary/a0X000000000001AAA")).status).toBe(401);
+    const missing = await get("/returns/primary/a0X000000000001AAA");
+    expect(missing.status).toBe(404);
+    expect(missing.headers["cache-control"]).toContain("no-store");
+    expect(f.queries.at(-1)).toContain(`Distributor__c='${distributorId}'`);
+    expect((await get("/returns/unknown/a0X000000000001AAA")).status).toBe(400);
+    expect((await get("/returns/secondary/not-an-id")).status).toBe(400);
+    expect((await get("/returns/secondary/catalogue?orderId=bad")).status).toBe(400);
+    expect((await get("/returns/secondary/catalogue?orderId=a0O000000000001AAA")).status).toBe(200);
+    expect(f.queries.some(q => q.includes("Sales_Order__c='a0O000000000001AAA'") && q.includes(distributorId))).toBe(true);
+  });
+  it("uses the signed-in distributor for whole-request decisions and requires rejection notes", async () => {
+    const f = fixture(), token = (await f.login()).body.data.token;
+    const send = (body: any) => request(f.app).post("/api/dms/transactions").auth(token, { type: "bearer" }).send(body);
+    const body = { action: "returnGroupDecision", recordId: "a0Y000000000001AAA", decision: "Rejected" };
+    expect((await send(body)).status).toBe(400);
+    expect((await send({ ...body, notes: "   " })).status).toBe(400);
+    expect((await send({ ...body, notes: "Return not eligible", distributorId: "foreign" })).status).toBe(200);
+    expect(f.commands).toEqual([{ ...body, notes: "Return not eligible", distributorId }]);
+    expect((await send({ ...body, decision: "Approved" })).status).toBe(200);
+    expect(f.commands.at(-1).decision).toBe("Approved");
+  });
+  it.each(["primary", "secondary"])("scopes %s returns to the session and validates all lines", async kind => {
+    const f = fixture(), token = (await f.login()).body.data.token;
+    const line = kind === "primary"
+      ? { receiptLineId: "a01000000000001AAA", cases: 1, reason: "Damaged" }
+      : { orderItemId: "a01000000000001AAA", pieces: 2, reason: "Damaged" };
+    const body = { requestKey: randomUUID(), lines: [line] };
+    const submit = (payload: any) => request(f.app).post(`/api/dms/returns/${kind}`).auth(token, { type: "bearer" }).send(payload);
+    expect((await submit(body)).status).toBe(200);
+    expect(f.commands[0]).toEqual({ ...body, distributorId, action: kind === "primary" ? "distributorPrimaryReturn" : "distributorSecondaryReturn" });
+    expect((await submit({ ...body, employeeId: distributorId })).status).toBe(400);
+    expect((await submit({ ...body, distributorId })).status).toBe(400);
+    expect((await submit({ ...body, lines: [line, line] })).status).toBe(400);
+    expect((await submit({ ...body, lines: [{ ...line, reason: "Other" }] })).status).toBe(400);
+    expect((await submit({ ...body, lines: [{ ...line, [kind === "primary" ? "cases" : "pieces"]: 0.5 }] })).status).toBe(400);
+    expect((await submit({ ...body, lines: [{ ...line, price: 1 }] })).status).toBe(400);
+    expect(f.commands).toHaveLength(1);
+    expect((await request(f.app).post(`/api/dms/returns/${kind}`).send(body)).status).toBe(401);
+    expect((await request(f.app).get(`/api/dms/returns/${kind}/catalogue`).auth(token, { type: "bearer" })).status).toBe(200);
+    expect(f.queries.slice(-2).every(query => query.includes(distributorId))).toBe(true);
+  });
   it("sends a different code on resend and rejects the old code", async () => {
     const clock = vi.spyOn(Date, "now");
     const start = Date.now();

@@ -31,6 +31,42 @@ describe.skipIf(!process.env.DMS_SIMULATION_URL)("DMS actual HTTP dependency sim
     category: "Delivery",
     description: "Missing shipment",
   });
+  it.each(["primary", "secondary"])("submits and retries %s returns through Salesforce HTTP", async kind => {
+    let code = "";
+    const app = express(); app.use(express.json());
+    app.use("/dms", createDmsRouter({ records: q => transport.records(q), command: b => transport.command(b), orgUrl: async () => "https://fixture.my.salesforce.com", sendCode: async (_, value) => { code=value; } }));
+    await request(app).post("/dms/auth/request-code").send({email:"test@example.invalid"});
+    const token=(await request(app).post("/dms/auth/verify-code").send({email:"test@example.invalid",code})).body.data.token;
+    const catalogue=await request(app).get(`/dms/returns/${kind}/catalogue`).auth(token,{type:"bearer"});
+    expect(catalogue.status).toBe(200);
+    expect(catalogue.body.data.items[0].available).toBe(kind==="primary"?3:10);
+    const orderId=catalogue.body.data.items[0].orderId;
+    expect(orderId).toBe(kind==="primary"?"a0O000000000001AAA":"a0O000000000002AAA");
+    const selected=await request(app).get(`/dms/returns/${kind}/catalogue?orderId=${orderId}`).auth(token,{type:"bearer"});
+    expect(selected.status).toBe(200);
+    const line=kind==="primary"?{receiptLineId:catalogue.body.data.items[0].id,cases:1,reason:"Damaged"}:{orderItemId:catalogue.body.data.items[0].id,pieces:2,reason:"No Demand"};
+    const body={requestKey:randomUUID(),lines:kind==="primary"?[line]:[line,{orderItemId:"a0L000000000002AAA",pieces:3,reason:"Damaged",notes:"Broken packaging"}]};
+    const submit=(payload:any)=>request(app).post(`/dms/returns/${kind}`).auth(token,{type:"bearer"}).send(payload);
+    const saved=await submit(body);
+    expect(saved.status).toBe(200); expect(saved.body.data.status).toBe(kind==="primary"?"Submitted":"Pending");
+    expect((await submit(body)).body.data).toEqual(saved.body.data);
+    expect((await submit({...body,lines:[{...line,reason:"Expired"}]})).status).toBe(400);
+    expect((await submit({...body,requestKey:randomUUID(),lines:[{...line,[kind==="primary"?"cases":"pieces"]:99}]})).status).toBe(400);
+    const review=await request(app).get(`/dms/returns/${kind}/${saved.body.data.id}`).auth(token,{type:"bearer"});
+    expect(review.status).toBe(200);
+    expect(review.body.data.lines).toHaveLength(body.lines.length);
+    expect(review.body.data.orderedLines).toHaveLength(kind==="primary"?1:2);
+    expect(review.body.data.lines[0].reason).toBe(line.reason);
+    expect(review.body.data.barcode.value).toBe(`R-${saved.body.data.id}`);
+    expect(review.body.data.salesforceUrl).toContain(`/apex/DmsReturnReview?id=${saved.body.data.id}`);
+    if(kind==="secondary") {
+      expect(review.body.data.lines[1].notes).toBe("Broken packaging");
+      const approved=await request(app).post("/dms/transactions").auth(token,{type:"bearer"}).send({action:"returnGroupDecision",recordId:saved.body.data.id,decision:"Approved"});
+      expect(approved.status).toBe(200); expect(approved.body.data.count).toBe(2);
+      const refreshed=await request(app).get(`/dms/returns/${kind}/${saved.body.data.id}`).auth(token,{type:"bearer"});
+      expect(refreshed.body.data.lines.every((item:any)=>item.status==="Approved")).toBe(true);
+    }
+  });
   it("runs distributor catalogue and submission routes through the real Salesforce HTTP transport", async () => {
     let code = "";
     const app = express();
@@ -56,6 +92,12 @@ describe.skipIf(!process.env.DMS_SIMULATION_URL)("DMS actual HTTP dependency sim
     const detail = await request(app).get("/dms/invoices/a0I000000000001AAA").auth(token, { type: "bearer" });
     expect(detail.status).toBe(200);
     expect(detail.body.data.lines[0].Cases__c).toBe(2);
+    expect(detail.body.data.barcode.value).toBe("I-a0I000000000001AAA");
+    expect(detail.body.data.lines[0].barcode.value).toBe("P-a0P000000000001AAA");
+    const scanned = await request(app).get("/dms/invoices/barcode/I-a0I000000000001AAA").auth(token, { type: "bearer" });
+    expect(scanned.status).toBe(200);
+    expect(scanned.body.data.Total_Amount__c).toBe(detail.body.data.Total_Amount__c);
+    expect((await request(app).get("/dms/invoices/barcode/I-a0I000000000001AAA")).status).toBe(401);
     const pdf = await request(app).get("/dms/invoices/a0I000000000001AAA/pdf").auth(token, { type: "bearer" });
     expect(pdf.status).toBe(200);
     expect(pdf.body.subarray(0, 4).toString()).toBe("%PDF");
@@ -66,6 +108,11 @@ describe.skipIf(!process.env.DMS_SIMULATION_URL)("DMS actual HTTP dependency sim
       .auth(token, { type: "bearer" });
     expect(catalogue.status).toBe(200);
     expect(catalogue.body.data.products[0].schemes).toHaveLength(1);
+    expect(catalogue.body.data.products[0].linkedSchemes).toHaveLength(2);
+    expect(catalogue.body.data.products[0].linkedSchemes[1]).toMatchObject({
+      Name: "Fixture legacy piece offer", applicableToPrimary: false,
+      unavailableReasons: ["Primary / Secondary is not set in Salesforce."],
+    });
     const body = {
       requestKey: randomUUID(),
       lines: [{ productId: "a01000000000001AAA", cases: 2, schemeId: "a02000000000001AAA" }],

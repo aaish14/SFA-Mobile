@@ -1,3 +1,47 @@
+type ReceiptPricingLine = {
+  receiptKind?: string;
+  Case_Price__c?: unknown;
+  Discount_Amount__c?: unknown;
+  Cases__c?: unknown;
+};
+
+/**
+ * Preview the receipt value using the approved order's price and allocated discount.
+ * Match Salesforce's two-decimal Case_Cost__c before multiplying received cases;
+ * receipt inventory cost excludes GST and free scheme cases carry zero cost.
+ * This is display-only: Salesforce recalculates the saved value independently.
+ */
+export function goodsReceiptAmount(line: ReceiptPricingLine, enteredCases: string) {
+  const free = line.receiptKind === "Free";
+  const quantity = Number(enteredCases);
+  const cases = Number.isInteger(quantity) && quantity > 0 && quantity <= 100000
+    ? quantity : null;
+  let pricePaise = 0;
+  let costPaise = 0;
+  if (!free) {
+    if (line.Case_Price__c == null || line.Case_Price__c === "") return null;
+    const price = Number(line.Case_Price__c);
+    const discount = Number(line.Discount_Amount__c ?? 0);
+    const orderedCases = Number(line.Cases__c);
+    if (!Number.isFinite(price) || price < 0 || !Number.isFinite(discount) || discount < 0 ||
+        !Number.isInteger(orderedCases) || orderedCases <= 0) return null;
+    pricePaise = Math.round((price + Number.EPSILON) * 100);
+    const discountPaise = Math.round((discount + Number.EPSILON) * 100);
+    const netOrderPaise = pricePaise * orderedCases - discountPaise;
+    if (!Number.isSafeInteger(netOrderPaise) || netOrderPaise < 0) return null;
+    costPaise = Math.round(netOrderPaise / orderedCases);
+  }
+  if (cases !== null && !Number.isSafeInteger(costPaise * cases)) return null;
+  return {
+    free,
+    cases,
+    casePrice: pricePaise / 100,
+    discountPerCase: (pricePaise - costPaise) / 100,
+    caseCost: costPaise / 100,
+    total: cases === null ? null : (costPaise * cases) / 100,
+  };
+}
+
 /** Accept the displayed ISO format and the unambiguous Indian day-first format. */
 export function receiptExpiry(value: string): string | null {
   const text = value.trim();

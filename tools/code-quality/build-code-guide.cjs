@@ -3,12 +3,17 @@ const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
 const ts = require('../../sales-rep-mobile/backend/node_modules/typescript');
-const { chapters, roles } = require('./guide-content.cjs');
+const { chapters, roles } = require('./guide-updates-20261028.cjs').applyUpdates(require('./guide-content.cjs'));
+const { analyze, renderMethods } = require('./method-handbook.cjs');
 const root = path.resolve(__dirname, '../..');
-const output = path.join(root, 'docs/sfa-dms-code-handbook');
+const snapshotDate = '2026-10-28';
+const output = path.join(root, process.env.HANDBOOK_DOCS || 'docs/sfa-dms-code-handbook-20261028');
+const baseline = JSON.parse(fs.readFileSync(path.join(root,'docs/sfa-dms-code-handbook/coverage.json'),'utf8'));
+const baselineFiles = new Map(baseline.files.map(entry => [entry.file,entry]));
+const sourcePaths = new Map();
 const fileOutput = path.join(output, 'files');
 fs.mkdirSync(fileOutput, { recursive: true });
-const extensions = new Set(['.cls', '.trigger', '.apex', '.ts', '.tsx', '.js', '.cjs', '.mjs', '.html', '.css', '.xml', '.json', '.ps1', '.cmd', '.yml', '.yaml']);
+const extensions = new Set(['.cls', '.trigger', '.apex', '.ts', '.tsx', '.js', '.cjs', '.mjs', '.html', '.page', '.component', '.css', '.xml', '.json', '.ps1', '.cmd', '.yml', '.yaml']);
 const excludedDirectories = new Set(['node_modules', 'dist', 'web-build', 'build', '.expo', '.sf', '.sfdx', '.git', '.runtime', 'backups', 'diagnostics', 'tmp', 'releases', 'output', 'android', 'ios']);
 const excludedFiles = [];
 const files = [];
@@ -27,17 +32,37 @@ for (const folder of ['force-app', 'sales-rep-mobile/backend/src', 'sales-rep-mo
 // Entrypoints, build configuration, tests and launchers that live outside src/.
 for (const folder of ['', 'sales-rep-mobile', 'sales-rep-mobile/backend', 'sales-rep-mobile/mobile', 'dms-mobile']) {
   for (const item of fs.readdirSync(path.join(root, folder), { withFileTypes: true })) {
-    if (!item.isFile() || item.name.startsWith('.') || /lock\.json$|tsbuildinfo/.test(item.name)) continue;
+    if (!item.isFile() || item.name.startsWith('.') || /lock\.json$|tsbuildinfo|^SFA-DMS-.*\.html$/.test(item.name)) continue;
     if (extensions.has(path.extname(item.name))) files.push(folder ? folder + '/' + item.name : item.name);
   }
 }
 if (fs.existsSync(path.join(root, 'dms-mobile/scripts'))) walk('dms-mobile/scripts');
+for (const folder of ['sales-rep-mobile/postman/mocks','sales-rep-mobile/postman/simulations'])
+  if (fs.existsSync(path.join(root,folder))) walk(folder);
+// Include the separate currently launched SFA copy as a clearly labelled supplement.
+// Never traverse its .env, logs, dependencies, archives or encrypted credential store.
+const runtimeRoot = 'C:/Users/aishw/Documents/Codex/sfa-mobile-local';
+function runtimeWalk(relative) {
+  for (const item of fs.readdirSync(path.join(runtimeRoot,relative),{withFileTypes:true})) {
+    const next=relative+'/'+item.name;
+    if(item.isDirectory()&&!excludedDirectories.has(item.name))runtimeWalk(next);
+    else if(item.isFile()&&extensions.has(path.extname(item.name))&&!item.name.startsWith('.')) {
+      const label='runtime-sfa/'+next; files.push(label); sourcePaths.set(label,path.join(runtimeRoot,next));
+    }
+  }
+}
+for(const folder of ['backend/src','mobile/src']) if(fs.existsSync(path.join(runtimeRoot,folder)))runtimeWalk(folder);
+for(const name of ['start-sfa.ps1','start-phone-connection.ps1','SfaMailSettings.ps1','serve-web.cjs']) {
+  const original=path.join(runtimeRoot,name);
+  if(fs.existsSync(original)){const label='runtime-sfa/'+name;files.push(label);sourcePaths.set(label,original);}
+}
 const uniqueFiles = [...new Set(files)].sort();
 const escape = value => String(value).replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]);
 const hash = value => crypto.createHash('sha256').update(value).digest('hex');
 const short = value => value.replace(/\s+/g, ' ').slice(0, 200);
 const words = value => value.replace(/__c|__r/g, '').replace(/([a-z])([A-Z])/g, '$1 $2').replace(/[_-]/g, ' ');
 function group(file) {
+  if (file.startsWith('runtime-sfa/')) return 'SFA local runtime supplement';
   if (file.includes('/classes/')) return 'Apex classes & tests';
   if (file.includes('/triggers/')) return 'Apex triggers';
   if (file.includes('/lwc/')) return 'Lightning components';
@@ -187,12 +212,13 @@ const stylesheet = `:root{--ink:#173e32;--green:#16744e;--line:#d3e3db;--pale:#f
 fs.writeFileSync(path.join(output, 'style.css'), stylesheet);
 function page(title, body, nested = false) {
   const prefix = nested ? '../' : '';
-  return '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>' + escape(title) + '</title><link rel="stylesheet" href="' + prefix + 'style.css"></head><body><header><div class="muted">SFA + DMS • Code review handbook • 26 October 2026</div><h1>' + escape(title) + '</h1><div class="toolbar no-print"><a class="button" href="' + prefix + 'index.html">Handbook home</a><a href="' + prefix + 'index.html#files">Find a file</a><button onclick="window.print()">Print / save as PDF</button></div></header><main>' + body + '</main><footer>Local source snapshot. No business records, emails or approvals were created to generate this documentation. Keep this internal: it contains project implementation details.</footer></body></html>';
+  return '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>' + escape(title) + '</title><link rel="stylesheet" href="' + prefix + 'style.css"></head><body><header><div class="muted">SFA + DMS • Code review handbook • 28 October 2026</div><h1>' + escape(title) + '</h1><div class="toolbar no-print"><a class="button" href="' + prefix + 'index.html">Handbook home</a><a href="' + prefix + 'index.html#files">Find a file</a><button onclick="window.print()">Print / save as PDF</button></div></header><main>' + body + '</main><footer>Local source snapshot. No business records, emails or approvals were created to generate this documentation. Keep this internal: it contains project implementation details.</footer></body></html>';
 }
 const manifest = [];
 for (let index = 0; index < uniqueFiles.length; index++) {
   const file = uniqueFiles[index];
-  const bytes = fs.readFileSync(path.join(root, file));
+  const sourcePath = sourcePaths.get(file) || path.join(root,file);
+  const bytes = fs.readFileSync(sourcePath);
   const source = bytes.toString('utf8').replace(/\r\n/g, '\n');
   // Stop instead of copying high-confidence credential material into a shareable guide.
   if (/-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----|AKIA[0-9A-Z]{16}|gh[pousr]_[A-Za-z0-9]{30,}|00D[A-Za-z0-9]{12,15}![A-Za-z0-9._-]{40,}/.test(source)) {
@@ -200,7 +226,7 @@ for (let index = 0; index < uniqueFiles.length; index++) {
   }
   const lines = source.split('\n');
   if (lines.at(-1) === '') lines.pop();
-  const symbols = symbolsFor(file, source);
+  const { symbols, methods } = analyze(file, source);
   const name = String(index + 1).padStart(4, '0') + '-' + path.basename(file).replace(/[^a-zA-Z0-9._-]/g, '_') + '.html';
   const description = describe(file, source);
   const category = group(file);
@@ -208,20 +234,22 @@ for (let index = 0; index < uniqueFiles.length; index++) {
   const table = lines.map((line, i) => '<tr id="L' + (i + 1) + '"><td><a href="#L' + (i + 1) + '">' + (i + 1) + '</a></td><td><code>' + escape(line || ' ') + '</code></td><td>' + escape(explain(line, file, lines[i-1], commentState)) + '</td></tr>').join('\n');
   const outline = symbols.length ? '<h2>Symbol and route outline</h2><ul class="outline">' + symbols.map(s => '<li><a href="#L' + s.line + '">' + escape(s.name) + '</a> <span class="muted">L' + s.line + ' · ' + escape(s.kind) + '</span></li>').join('') + '</ul>' : '';
   const objects = [...new Set(source.match(/\b[A-Za-z]\w*__c\b/g) || [])];
-  const body = '<section><p><span class="tag">' + escape(category) + '</span></p><h2>' + escape(file) + '</h2><p>' + escape(description) + '</p><p class="muted">' + lines.length + ' source lines · SHA-256 ' + hash(bytes) + '</p>' + outline + (objects.length ? '<details><summary>Referenced Salesforce API names</summary><p>' + escape(objects.join(', ')) + '</p></details>' : '') + '</section><p class="warning">Line notes explain local syntax/operations, not a separate manual proof for each line. Read multi-line expressions as a block and use the workflow chapters for business meaning. Tests and checks are listed separately in the handbook.</p><table class="source"><thead><tr><th>Line</th><th>Exact local source</th><th>Explanation / reading note</th></tr></thead><tbody>' + table + '</tbody></table>';
+  const state = file.startsWith('runtime-sfa/') ? 'Runtime supplement' : !baselineFiles.has(file) ? 'Added since 26 October' : baselineFiles.get(file).sha256!==hash(bytes) ? 'Updated since 26 October' : 'Unchanged since 26 October';
+  const body = '<section><p><span class="tag">' + escape(category) + '</span> <span class="tag">'+state+'</span></p><h2>' + escape(file) + '</h2><p>' + escape(description) + '</p><p class="muted">' + lines.length + ' source lines · SHA-256 ' + hash(bytes) + '</p>' + outline + (objects.length ? '<details><summary>Referenced Salesforce API names</summary><p>' + escape(objects.join(', ')) + '</p></details>' : '') + '</section>'+renderMethods(methods,escape)+'<p class="warning">Line notes explain local syntax/operations, not a separate manual proof for each line. Read multi-line expressions as a block and use the workflow chapters for business meaning. Tests and checks are listed separately in the handbook.</p><table class="source"><thead><tr><th>Line</th><th>Exact local source</th><th>Explanation / reading note</th></tr></thead><tbody>' + table + '</tbody></table>';
   fs.writeFileSync(path.join(fileOutput, name), page(path.basename(file), body, true));
-  manifest.push({ file, category, lines: lines.length, sha256: hash(bytes), page: 'files/' + name, description, symbols });
+  manifest.push({ file, ...(sourcePaths.has(file)?{sourcePath}:{}), category, state, lines: lines.length, sha256: hash(bytes), page: 'files/' + name, description, symbols, methods:methods.map(m=>({name:m.name,line:m.line,endLine:m.endLine,purpose:m.purpose})) });
 }
 const totals = {};
 for (const file of manifest) { totals[file.category] ||= {files:0,lines:0}; totals[file.category].files++; totals[file.category].lines += file.lines; }
 const totalLines = manifest.reduce((n, f) => n + f.lines, 0);
-const verification = `<section id="verification"><h2>Verification and change boundaries</h2><table><tr><th>Check</th><th>Observed result on 26 October 2026</th></tr><tr><td>Salesforce check-only deployment</td><td>0AfjV000004xhxuSAA · Succeeded · 50 tests completed, 0 failures. Classes and triggers validated against sfaNewOrg. Check-only: no deployed code change.</td></tr><tr><td>Backend</td><td>39 tests passed; 8 skipped; TypeScript build passed. Local fixtures/mocks, not end-to-end email delivery.</td></tr><tr><td>SFA mobile</td><td>26 tests passed; TypeScript check passed.</td></tr><tr><td>DMS</td><td>UI, desktop/native navigation, logout, account-isolation and rejected-receipt correction scripts passed; TypeScript check passed. No real network calls in UI scripts.</td></tr><tr><td>Formatter</td><td>Apex debug-check passed before write. TS/LWC debug-check passed except visitRecovery.test.ts (formatter layout instability); that test was left unchanged.</td></tr></table><p>Backups: backups/code-readability-20261026. No actual metadata deployment, record creation, approval, email sending, APK release or Git push was performed for this explanation task. Newly added handler classes/trigger dispatch changes must be deployed together after review.</p><p>Runtime code changes were limited to extracting three existing trigger rules and repairing the identified Apex compilation errors. Other changes are formatting. No wholesale claim of production/security compliance is made.</p></section>`;
+const verification = `<section id="verification"><h2>Evidence and limits of this edition</h2><p>Snapshot: 28 October 2026, India time. This task reads code and builds documentation only; it does not deploy Salesforce metadata, restart services, approve transactions, send email or change application behavior.</p><table><tr><th>Earlier implementation check</th><th>Recorded evidence</th></tr><tr><td>Order-based returns, 27 October</td><td>Salesforce validation and deployment each passed 22 Apex tests. Local focused checks covered order grouping, quantities, replay and barcode review.</td></tr><tr><td>Product scheme visibility, 28 October</td><td>13 focused catalogue/transport checks passed. Read-only org inspection distinguished linked legacy offers from selectable Primary offers.</td></tr><tr><td>Manager SFA login, 28 October</td><td>20 SFA checks and 11 repository email checks passed. Public health and protected-route responses were checked. The user confirmed receiving a code and signing in.</td></tr><tr><td>This handbook</td><td>The download is checked for source hash/line agreement, internal links, inline expansion and filters. Earlier application tests are evidence from those tasks, not newly rerun by generating this file.</td></tr></table><p>Runtime supplement entries identify the separate local SFA launch copy. The source snapshot is not proof that every local file is deployed or included in the manager’s installed APK. Dependencies, secrets, build output, old documentation and real data exports are excluded.</p></section>`;
+
 const inventory = '<section id="coverage"><h2>Coverage</h2><p><strong>' + manifest.length + ' first-party text files · ' + totalLines.toLocaleString('en-IN') + ' numbered source lines</strong></p><table><tr><th>Area</th><th>Files</th><th>Lines</th></tr>' + Object.entries(totals).map(([name, count]) => '<tr><td>' + escape(name) + '</td><td>' + count.files + '</td><td>' + count.lines + '</td></tr>').join('') + '</table><p><a href="coverage.json">Exact coverage manifest and source hashes</a> · <a href="changes.json">Backup comparison</a></p><p>Use the ZIP to keep all chapters, styles and source pages together. Open index.html after extraction. Print the handbook or any individual source page to PDF when needed; printing every metadata page at once would be unwieldy.</p></section>';
 const toc = '<section><h2>Contents</h2><ol>' + chapters.map((c,i) => '<li><a href="#chapter-' + i + '">' + escape(c[0]) + '</a></li>').join('') + '<li><a href="#verification">Verification / boundaries</a></li><li><a href="#files">Every-file explorer</a></li></ol></section>';
 const explorer = '<section id="files"><h2>Every-file explorer</h2><p>Search by filename, responsibility or symbol. For a specific line, open the file and use its L-number link. Search source text inside a file with Ctrl+F.</p><div class="toolbar"><input id="search" aria-label="Search files" placeholder="Example: receiveGoods, VisitScreen, PJP" size="48"><select id="category" aria-label="Filter area"><option value="">All areas</option>' + Object.keys(totals).map(name => '<option>' + escape(name) + '</option>').join('') + '</select><span id="count"></span></div><table><thead><tr><th>File / source page</th><th>Purpose</th><th>Lines</th></tr></thead><tbody id="fileRows">' + manifest.map(file => '<tr data-category="' + escape(file.category) + '" data-search="' + escape((file.file + ' ' + file.description + ' ' + file.symbols.map(s=>s.name).join(' ')).toLowerCase()) + '"><td><a href="' + file.page + '">' + escape(file.file) + '</a><br><span class="tag">' + escape(file.category) + '</span></td><td>' + escape(file.description) + '</td><td>' + file.lines + '</td></tr>').join('') + '</tbody></table></section><script>const rows=[...document.querySelectorAll("#fileRows tr")];function filter(){const q=document.getElementById("search").value.toLowerCase();const category=document.getElementById("category").value;let n=0;for(const row of rows){row.hidden=!(row.dataset.search.includes(q)&&(!category||row.dataset.category===category));if(!row.hidden)n++;}document.getElementById("count").textContent=n+" files";}document.getElementById("search").addEventListener("input",filter);document.getElementById("category").addEventListener("change",filter);filter();</script>';
 fs.writeFileSync(path.join(output, 'index.html'), page('SFA Mobile & DMS — Process, Logic and Code', toc + inventory + chapters.map((chapter,i) => '<section id="chapter-' + i + '"><h2>' + escape(chapter[0]) + '</h2>' + chapter[1] + '</section>').join('') + verification + explorer));
 fs.writeFileSync(path.join(output, 'Manager-Explanation.html'), page('SFA & DMS — Manager Walkthrough', '<p><a href="index.html#files">Open the full line-by-line file explorer</a></p>' + toc + chapters.map((chapter,i) => '<section id="chapter-' + i + '"><h2>' + escape(chapter[0]) + '</h2>' + chapter[1] + '</section>').join('') + verification + '<section id="files"><h2>Detailed source explanations</h2><p><a href="index.html#files">Open the searchable file explorer</a> for all numbered source pages.</p></section>'));
-fs.writeFileSync(path.join(output, 'coverage.json'), JSON.stringify({ created:'2026-10-26',root,totalFiles:manifest.length,totalLines,totals,excludedDirectories:[...excludedDirectories],excludedFiles,files:manifest },null,2));
+fs.writeFileSync(path.join(output, 'coverage.json'), JSON.stringify({ created:snapshotDate,root,totalFiles:manifest.length,totalLines,totals,excludedDirectories:[...excludedDirectories],excludedFiles,files:manifest },null,2));
 const backup = path.join(root, 'backups/code-readability-20261026');
 const changes = [];
 for (const file of manifest) {

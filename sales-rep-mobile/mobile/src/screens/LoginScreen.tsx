@@ -14,6 +14,7 @@ import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { post } from "../api/client";
 import { Button } from "../components/ui";
 import BrandLogo from "../components/BrandLogo";
+import ServerConnectionButton from "../components/ServerConnectionButton";
 import { colors } from "../constants/theme";
 import type { RootStack } from "../types";
 
@@ -180,6 +181,7 @@ export default function LoginScreen({ navigation }: NativeStackScreenProps<RootS
               </Text>
             </>
           )}
+          <ServerConnectionButton disabled={busy} onSaved={() => setError("")} />
           <Text style={styles.securityNote}>
             🔒 Your login determines exactly which beat and outlets you can access. Passwords are
             never stored in this application.

@@ -20,7 +20,7 @@ function fixture(options: { missing?: boolean; fail?: boolean; noScope?: boolean
     queries.push(query);
     if (options.fail) throw new Error("private Salesforce diagnostic must not leak");
     if (options.missing) return [];
-    if (query.includes("FROM DMS_Invoice_Line__c")) return [{ Id: "line", Product_Name__c: "Product", Quantity_Pieces__c: 10, Unit_Price__c: 10, Gross_Amount__c: 100, Discount_Amount__c: 10, Tax_Amount__c: 4.5, Total_Amount__c: 94.5 }];
+    if (query.includes("FROM DMS_Invoice_Line__c")) return [{ Id: "line", Product__c: "a0P000000000001AAA", Product__r: { Product_Code__c: "TEST-SKU", Brand__c: "Test brand", Sub_Brand__c: "Test sub-brand", Brand_Alias__c: "Test alias" }, Product_Name__c: "Product", Quantity_Pieces__c: 10, Unit_Price__c: 10, Gross_Amount__c: 100, Discount_Amount__c: 10, Tax_Amount__c: 4.5, Total_Amount__c: 94.5 }];
     return Array.from({length: options.count || 1}, () => ({...sample}));
   };
   const app = express();
@@ -28,6 +28,30 @@ function fixture(options: { missing?: boolean; fail?: boolean; noScope?: boolean
   return { app, queries };
 }
 describe("authorized invoice reader", () => {
+  it("resolves invoice barcodes through the same owner scope without changing saved discounts", async () => {
+    const f = fixture();
+    const res = await request(f.app).get(`/invoices/barcode/I-${id}`);
+    expect(res.status).toBe(200);
+    expect(res.body.data.barcode.value).toBe(`I-${id}`);
+    expect(res.body.data.barcode.image).toMatch(/^data:image\/png;base64,/);
+    expect(res.body.data.lines[0].barcode.value).toBe("P-a0P000000000001AAA");
+    expect(res.body.data.lines[0].Discount_Amount__c).toBe(10);
+    expect(res.body.data.lines[0].Product__r.Brand__c).toBe("Test brand");
+    expect(f.queries[0]).toContain(`Distributor__c='${distributor}'`);
+    expect(res.headers["cache-control"]).toBe("private, no-store");
+  });
+  it("rejects arbitrary barcode payloads before querying and hides inaccessible scanned invoices", async () => {
+    const f = fixture();
+    for (const code of ["P-a0P000000000001AAA", "I-bad", "https://evil.invalid", "I-'OR'1"])
+      expect((await request(f.app).get(`/invoices/barcode/${encodeURIComponent(code)}`)).status).toBe(400);
+    expect(f.queries).toHaveLength(0);
+    const hidden = fixture({missing:true});
+    expect((await request(hidden.app).get(`/invoices/barcode/I-${id}`)).status).toBe(404);
+    expect(hidden.queries).toHaveLength(1);
+    const denied = fixture({noScope:true});
+    expect((await request(denied.app).get(`/invoices/barcode/I-${id}`)).status).toBe(403);
+    expect(denied.queries).toHaveLength(0);
+  });
   it("scopes every header query to issued invoices and the authenticated distributor", async () => {
     const f = fixture();
     const res = await request(f.app).get("/invoices");

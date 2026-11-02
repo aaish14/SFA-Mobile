@@ -3,13 +3,13 @@ const path = require('node:path');
 const assert = require('node:assert/strict');
 const { JSDOM } = require('../../tmp/handbook-dom-check/node_modules/jsdom');
 const root = path.resolve(__dirname,'../..');
-const source = fs.readFileSync(path.join(root,'SFA-DMS-Single-Page-Handbook.html'),'utf8');
-const manifest = JSON.parse(fs.readFileSync(path.join(root,'docs/sfa-dms-code-handbook/coverage.json'),'utf8'));
+const source = fs.readFileSync(path.join(root,process.env.HANDBOOK_FILE || 'output/handbooks/SFA-DMS-Updated-Code-Handbook-2026-10-28.html'),'utf8');
+const manifest = JSON.parse(fs.readFileSync(path.join(root,process.env.HANDBOOK_DOCS || 'docs/sfa-dms-code-handbook-20261028','coverage.json'),'utf8'));
 const dom = new JSDOM(source,{runScripts:'dangerously',url:'https://handbook.invalid/single.html'});
 const {document,Event,MouseEvent}=dom.window;
 async function check(){
   const entries=[...document.querySelectorAll('details.entry')];
-  assert.equal(entries.length,1048);
+  assert.equal(entries.length,manifest.totalFiles);
   assert.equal(document.querySelectorAll('script[src],link[href],img[src]').length,0);
   const ids=new Set([...document.querySelectorAll('[id]')].map(node=>node.id));
   const links=[...document.querySelectorAll('a[href]')];
@@ -22,7 +22,7 @@ async function check(){
     assert.equal(rows.length,manifest.files[Number(entry.id.slice(5))].lines);
     lines+=rows.length;
   });
-  assert.equal(lines,34517);
+  assert.equal(lines,manifest.totalLines);
   links.forEach(link=>{const href=link.getAttribute('href');assert(href.startsWith('#'));assert(ids.has(decodeURIComponent(href.slice(1))),href);});
   const search=document.getElementById('search');
   search.value='BeatOutletSelectorController.cls';search.dispatchEvent(new Event('input'));
@@ -40,7 +40,7 @@ async function check(){
   assert(entry.open);assert.equal(dom.window.location.pathname,'/single.html');
   document.getElementById('category').value='DMS portal & mobile';
   document.getElementById('category').dispatchEvent(new Event('change'));
-  assert.equal(entries.filter(item=>!item.hidden).length,12);
+  assert.equal(entries.filter(item=>!item.hidden).length,manifest.files.filter(file=>file.category==='DMS portal & mobile').length);
   search.value='this-file-does-not-exist';search.dispatchEvent(new Event('input'));
   assert.equal(entries.filter(item=>!item.hidden).length,0);
   document.getElementById('collapse').click();assert(entries.every(item=>!item.open));

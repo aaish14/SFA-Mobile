@@ -3,14 +3,14 @@ const path = require('node:path');
 const crypto = require('node:crypto');
 const assert = require('node:assert/strict');
 const root = path.resolve(__dirname, '../..');
-const output = path.join(root, 'docs/sfa-dms-code-handbook');
+const output = path.join(root, process.env.HANDBOOK_DOCS || 'docs/sfa-dms-code-handbook-20261028');
 const manifest = JSON.parse(fs.readFileSync(path.join(output, 'coverage.json'), 'utf8'));
 let checkedLines = 0, checkedLinks = 0;
 function unescape(text) {
   return text.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&amp;/g, '&');
 }
 for (const entry of manifest.files) {
-  const source = fs.readFileSync(path.join(root, entry.file));
+  const source = fs.readFileSync(entry.sourcePath || path.join(root, entry.file));
   assert.equal(crypto.createHash('sha256').update(source).digest('hex'), entry.sha256, 'Source changed: ' + entry.file);
   const html = fs.readFileSync(path.join(output, entry.page), 'utf8');
   const lines = source.toString('utf8').replace(/\r\n/g, '\n').split('\n');

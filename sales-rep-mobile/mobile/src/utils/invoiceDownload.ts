@@ -2,6 +2,7 @@ import { Platform } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as FileSystem from "expo-file-system/legacy";
 import * as Sharing from "expo-sharing";
+import { getApiBaseUrl } from "../api/connection";
 
 /**
  * Download an issued invoice through the authenticated API and hand the PDF to the appropriate
@@ -10,7 +11,7 @@ import * as Sharing from "expo-sharing";
 export async function downloadInvoice(id: string, name: string) {
   const token = await AsyncStorage.getItem("token");
   if (!token) throw new Error("Please sign in again.");
-  const base = process.env.EXPO_PUBLIC_API_URL || "http://localhost:4000/api";
+  const base = await getApiBaseUrl();
   const url = `${base}/invoices/${encodeURIComponent(id)}/pdf`;
   const filename = `${name.replace(/[^a-z0-9_-]/gi, "-")}.pdf`;
   if (Platform.OS === "web") {

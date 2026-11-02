@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Order_Item__c</fullName><deleteConstraint>Restrict</deleteConstraint>
+    <description>Original secondary order line selected when creating a return in DMS.</description>
+    <label>Original Order Item</label><referenceTo>Order_Item__c</referenceTo>
+    <relationshipName>DMS_Returns</relationshipName><relationshipLabel>DMS Returns</relationshipLabel>
+    <required>false</required><type>Lookup</type>
+</CustomField>

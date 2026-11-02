@@ -16,6 +16,7 @@ import { Card, Money } from "../components/ui";
 import { colors } from "../constants/theme";
 import type { Product } from "../types";
 import ProductIdentityFields from "../components/ProductIdentityFields";
+import RecordBarcode from "../components/RecordBarcode";
 
 /**
  * Display and search the product catalogue and its identity/pricing details.
@@ -43,7 +44,7 @@ export default function ProductsScreen() {
    */
   const visible = useMemo(
     () =>
-      products.filter((p) => `${p.name} ${p.code}`.toLowerCase().includes(search.toLowerCase())),
+      products.filter((p) => `${p.name} ${p.code} ${p.barcode?.value || ""}`.toLowerCase().includes(search.trim().toLowerCase())),
     [products, search],
   );
   return (
@@ -57,7 +58,9 @@ export default function ProductsScreen() {
         <TextInput
           style={[s.search, { color: colors.ink }]}
           placeholderTextColor="#627873"
-          placeholder="Search product or SKU"
+          placeholder="Search product, SKU or P- barcode"
+          autoCapitalize="none"
+          autoCorrect={false}
           value={search}
           onChangeText={setSearch}
         />
@@ -86,6 +89,14 @@ export default function ProductsScreen() {
                   <View style={s.details}>
                     <Text style={s.name}>{p.name}</Text>
                     <ProductIdentityFields product={p} />
+                    <RecordBarcode barcode={p.barcode} label={`Product barcode: ${p.name}`}>
+                      <Text style={s.name}>{p.name}</Text>
+                      <Text style={s.code}>SKU: {p.code || "Not configured"}</Text>
+                      <ProductIdentityFields product={p} />
+                      <Text style={s.code}>Pieces per case: {p.unitsPerCase ?? "Not configured"}</Text>
+                      <Text style={s.code}>Unit price: ₹{Number(p.price || 0).toFixed(2)} · GST {p.gstPercent || 0}%</Text>
+                      <Text style={s.code}>Catalogue stock: {p.stock} pieces</Text>
+                    </RecordBarcode>
                     <Text style={s.code}>
                       {p.code} {p.brand ? `• ${p.brand}` : ""}
                     </Text>

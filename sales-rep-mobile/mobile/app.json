@@ -15,7 +15,7 @@
     ],
     "android": {
       "package": "com.aishwarya.sfafieldsales",
-      "versionCode": 11,
+      "versionCode": 13,
       "usesCleartextTraffic": true,
       "permissions": ["ACCESS_FINE_LOCATION"]
     },

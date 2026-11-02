@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
-import { ActivityIndicator, Pressable, Text, View, StyleSheet } from "react-native";
+import { ActivityIndicator, Pressable, Text, TextInput, View, StyleSheet } from "react-native";
+import RecordBarcode from "./RecordBarcode";
 
 type Props = {
   owner: string;
@@ -17,6 +18,7 @@ export default function InvoiceList({ owner, load, download, channel }: Props) {
   const [rows, setRows] = useState<any[]>([]), [detail, setDetail] = useState<any>(null);
   const [error, setError] = useState(""), [busy, setBusy] = useState(false), [more, setMore] = useState(false);
   const version = useRef(0);
+  const [scannedCode, setScannedCode] = useState("");
   /**
    * Refresh invoice summaries and ignore results belonging to an earlier owner generation.
    */
@@ -30,7 +32,7 @@ export default function InvoiceList({ owner, load, download, channel }: Props) {
   }
   useEffect(() => {
     version.current++;
-    setRows([]); setDetail(null); setError("");
+    setRows([]); setDetail(null); setError(""); setScannedCode("");
     void refresh();
     const timer = setInterval(() => void refresh(), 20000);
     return () => { version.current++; clearInterval(timer); };
@@ -39,11 +41,15 @@ export default function InvoiceList({ owner, load, download, channel }: Props) {
    * Load one saved invoice detail while preventing an earlier owner response from replacing the
    * current view.
    */
-  async function view(id: string) {
+  async function view(id: string, scanned = false) {
+    if (scanned && !/^I-[A-Za-z0-9]{18}$/.test(id.trim())) {
+      setError("Enter the complete invoice barcode beginning I-. Product codes begin P- and can be searched in Products.");
+      return;
+    }
     const current = version.current;
     setBusy(true); setError("");
     try {
-      const result = await load(`/invoices/${id}`);
+      const result = await load(scanned ? `/invoices/barcode/${encodeURIComponent(id.trim())}` : `/invoices/${id}`);
       if (current === version.current) setDetail(result);
     } catch (e: any) { if (current === version.current) setError(e.message); }
     finally { if (current === version.current) setBusy(false); }
@@ -62,17 +68,27 @@ export default function InvoiceList({ owner, load, download, channel }: Props) {
   return <View style={s.container}>
     <Text style={s.heading}>Issued invoices</Text>
     <Text style={s.copy}>Generated automatically after confirmed order approval. Pending approval and offline orders do not have a final invoice yet.</Text>
+    <Text style={s.title}>Find invoice by barcode</Text>
+    <Text style={s.copy}>Use a keyboard barcode scanner or paste the printed I- reference. Sign-in and account access are still required.</Text>
+    <TextInput accessibilityLabel="Invoice barcode" placeholder="I- followed by the invoice reference"
+      placeholderTextColor="#607970" autoCapitalize="none" autoCorrect={false}
+      value={scannedCode} onChangeText={setScannedCode} style={s.outline}
+      onSubmitEditing={() => { if (!busy) void view(scannedCode, true); }} />
+    <Pressable accessibilityRole="button" disabled={busy || !scannedCode.trim()}
+      onPress={() => void view(scannedCode, true)} style={s.outline}><Text style={s.link}>Open scanned invoice</Text></Pressable>
     <Pressable accessibilityRole="button" onPress={() => void refresh()} style={s.outline}><Text style={s.link}>Refresh invoices</Text></Pressable>
     {!!error && <Text accessibilityRole="alert" style={s.error}>{error} Previously loaded data may be out of date.</Text>}
     {busy && <ActivityIndicator />}
     {!visible.length && !error && <Text style={s.copy}>No issued invoices in the latest download.</Text>}
     {more && <Text style={s.copy}>Showing the latest 200 invoices. Older invoices remain in Salesforce.</Text>}
-    {visible.map(row => <Pressable accessibilityRole="button" key={row.Id} onPress={() => void view(row.Id)} disabled={busy} style={s.card}>
+    {!detail && visible.map(row => <View key={row.Id} style={s.card}>
       <Text style={s.title}>{row.Name} · {row.Primary_Order__c ? "Primary" : "Secondary"}</Text>
       <Text style={s.copy}>{row.Bill_To_Name__c || row.Outlet__r?.Name || row.Distributor__r?.Name} · {row.Invoice_Date__c}</Text>
       <Text style={s.copy}>Order: {row.Primary_Order__r?.Name || row.Sales_Order__r?.Name} · {money(row.Total_Amount__c)}</Text>
-      <Text style={s.link}>View products and download invoice</Text>
-    </Pressable>)}
+      <Text style={s.copy}>Discount: {money(row.Discount_Amount__c)} · Final total: {money(row.Total_Amount__c)}</Text>
+      <RecordBarcode barcode={row.barcode} label={`Invoice barcode: ${row.Name}`} disabled={busy} onPress={() => void view(row.Id)} />
+      <Pressable accessibilityRole="button" disabled={busy} onPress={() => void view(row.Id)}><Text style={s.link}>View products and download invoice</Text></Pressable>
+    </View>)}
     {detail && <View style={s.card}>
       <Text style={s.heading}>{detail.Name}</Text>
       <Text style={s.copy}>Supplier: {detail.Supplier_Name__c || detail.Distributor__r?.Name}</Text>
@@ -83,8 +99,22 @@ export default function InvoiceList({ owner, load, download, channel }: Props) {
         <Text style={s.copy}>Discount {money(line.Discount_Amount__c)} · Tax {money(line.Tax_Amount__c)} · Total {money(line.Total_Amount__c)}</Text>
         {!!line.Scheme_Name__c && <Text style={s.copy}>Scheme: {line.Scheme_Name__c}</Text>}
         {!!line.Bonus_Details__c && <Text style={s.copy}>{line.Bonus_Details__c}</Text>}
+        <RecordBarcode barcode={line.barcode} label={`Product barcode: ${line.Product_Name__c || line.Product__r?.Name}`}>
+          <Text style={s.title}>{line.Product_Name__c || line.Product__r?.Name}</Text>
+          <Text style={s.copy}>SKU: {line.Product__r?.Product_Code__c || "Not configured"}</Text>
+          <Text style={s.copy}>Brand: {line.Product__r?.Brand__c || "Not configured"}</Text>
+          <Text style={s.copy}>Sub-brand: {line.Product__r?.Sub_Brand__c || "Not configured"}</Text>
+          <Text style={s.copy}>Alias: {line.Product__r?.Brand_Alias__c || "Not configured"}</Text>
+          <Text style={s.copy}>In this invoice: {line.Quantity_Pieces__c} pieces{line.Cases__c != null ? ` (${line.Cases__c} cases)` : ""}</Text>
+          <Text style={s.copy}>Saved gross {money(line.Gross_Amount__c)} · Discount {money(line.Discount_Amount__c)} · Tax {money(line.Tax_Amount__c)} · Total {money(line.Total_Amount__c)}</Text>
+          <Text style={s.copy}>Financial values are saved invoice amounts. Brand/SKU details reflect the linked product catalogue.</Text>
+        </RecordBarcode>
       </View>)}
-      <Text style={s.title}>Total {money(detail.Total_Amount__c)}</Text>
+      <Text style={s.heading}>Invoice summary</Text>
+      <Text style={s.copy}>Gross amount: {money(detail.Gross_Amount__c)}</Text>
+      <Text style={s.copy}>Discount amount: -{money(detail.Discount_Amount__c)}</Text>
+      <Text style={s.copy}>Tax amount: {money(detail.Tax_Amount__c)}</Text>
+      <Text style={s.title}>Final invoice total: {money(detail.Total_Amount__c)}</Text>
       <Text style={s.copy}>Paid {money(detail.Paid_Amount__c)} · Balance due {money(detail.Balance_Due__c)}</Text>
       <Pressable accessibilityRole="button" disabled={busy} onPress={() => void save()} style={s.button}><Text style={s.buttonText}>Download / share invoice PDF</Text></Pressable>
       <Pressable accessibilityRole="button" onPress={() => setDetail(null)} style={s.outline}><Text style={s.link}>Close invoice details</Text></Pressable>

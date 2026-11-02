@@ -79,6 +79,37 @@ const flush = () => new Promise(resolve => setImmediate(resolve));
 function deferred() { let resolve, reject; const promise = new Promise((yes, no) => { resolve=yes; reject=no; }); return {promise, resolve, reject}; }
 async function logout() { button(render(), 'Log out').props.onPress(); await flush(); }
 (async () => {
+  // Exercise receipt quantity handlers against approved order pricing without saving data.
+  const {goodsReceiptAmount} = load(path.join(root, 'src/goodsReceipt.ts'));
+  const paidLine = {Id: 'receipt-price-test', receiptKind: 'Paid', Cases__c: 3,
+    Case_Price__c: 918, Discount_Amount__c: 0, Product__r: {Name: 'Fixture product'}};
+  const totalText = tree => React.Children.toArray(find(tree,
+    node => node.props?.accessibilityLiveRegion === 'polite').props.children).join('');
+  reset();
+  states[2] = []; states[3] = 'Primary'; states[14] = paidLine;
+  let receiptTree = render();
+  assert.equal(totalText(receiptTree), 'Total receipt amount: —');
+  for (const [quantity, expected] of [['1', '₹918.00'], ['2', '₹1836.00'], ['01', '₹918.00'], ['', '—'], ['1.5', '—']]) {
+    find(receiptTree, node => node.props?.label === 'Received cases — whole number').props.onChange(quantity);
+    receiptTree = render();
+    assert.equal(totalText(receiptTree), `Total receipt amount: ${expected}`);
+  }
+  states[14] = {...paidLine, Case_Price__c: 100, Discount_Amount__c: 1};
+  states[15] = '2'; states[16] = 'fixture-batch'; states[17] = '2030-12-14';
+  receiptTree = render();
+  assert.equal(totalText(receiptTree), 'Total receipt amount: ₹199.34', 'Round per-case cost as Salesforce does before multiplying');
+  button(receiptTree, 'Review goods receipt').props.onPress();
+  assert.match(states[18].label, /Receipt amount ₹199.34 \(excluding GST\)/);
+  assert.deepEqual(states[18].body, {action: 'receiveGoods', receiptKind: 'Paid',
+    recordId: paidLine.Id, cases: 2, batch: 'fixture-batch', expiry: '2030-12-14'});
+  states[14] = {...paidLine, receiptKind: 'Free'};
+  assert.equal(totalText(render()), 'Total receipt amount: ₹0.00', 'Free cases must never use the paid case price');
+  assert.equal(goodsReceiptAmount({...paidLine, Case_Price__c: 280}, '2').total, 560, 'Changing the selected product changes its price');
+  for (const missing of [null, undefined, '']) assert.equal(goodsReceiptAmount({...paidLine, Case_Price__c: missing}, '1'), null);
+  assert.equal(goodsReceiptAmount({...paidLine, Discount_Amount__c: 3000}, '1'), null);
+  for (const quantity of ['0', '-1', 'text', '100001']) assert.equal(goodsReceiptAmount(paidLine, quantity).total, null);
+  assert.equal(calls.length, 0, 'Changing quantity or reviewing does not create a receipt or call Salesforce');
+  console.log('PASS: live receipt totals for 1/2 cases, per-case discount rounding, product changes, free cases, invalid input and unchanged save payload.');
   reset();
   states[3] = 'Primary'; states[19] = true; states[7] = true;
   let orderTree = render();

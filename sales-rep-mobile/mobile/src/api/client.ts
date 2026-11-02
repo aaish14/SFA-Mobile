@@ -1,5 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-const base = process.env.EXPO_PUBLIC_API_URL || "http://localhost:4000/api";
+import { getApiBaseUrl } from "./connection";
 
 const CACHE_PREFIX = "sfa-api-cache:";
 export class ApiError extends Error {
@@ -27,8 +27,9 @@ function isReadRequest(options: RequestInit) {
  * expired-session handling. Failed writes are not reported as saved.
  */
 export async function api<T>(path: string, options: RequestInit = {}) {
+  const base = await getApiBaseUrl();
   const token = await AsyncStorage.getItem("token");
-  const cacheKey = `${CACHE_PREFIX}${token || "public"}:${path}`;
+  const cacheKey = `${CACHE_PREFIX}${base}:${token || "public"}:${path}`;
   let response: Response;
 
   try {
@@ -46,7 +47,7 @@ export async function api<T>(path: string, options: RequestInit = {}) {
       if (cachedValue !== null) return JSON.parse(cachedValue) as T;
     }
     throw new ApiError(
-      "Cannot reach the server. Your entries are unchanged. Check your connection and try again.",
+      "Cannot reach the server. Your entries are unchanged. Check your internet, or open More > Server connection and use the current address from your administrator.",
       0,
       true,
     );

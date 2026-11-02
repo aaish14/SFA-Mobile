@@ -1,0 +1,5 @@
+simulation: sfa-connection
+routing: path
+mocks:
+  - routeKey: sfa
+    path: ../mocks/sfa-connection/config.yaml

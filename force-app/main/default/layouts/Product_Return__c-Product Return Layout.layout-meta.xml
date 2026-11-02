@@ -8,6 +8,8 @@
         </layoutColumns>
         <layoutColumns>
             <layoutItems><behavior>Edit</behavior><field>Invoice_Line__c</field></layoutItems>
+            <layoutItems><behavior>Readonly</behavior><field>Order_Item__c</field></layoutItems>
+            <layoutItems><behavior>Edit</behavior><field>Return_Notes__c</field></layoutItems>
             <layoutItems><behavior>Edit</behavior><field>DMS_Decision_Notes__c</field></layoutItems>
         </layoutColumns>
         <style>TwoColumnsTopToBottom</style>
@@ -60,7 +62,10 @@
         <layoutColumns/>
         <style>CustomLinks</style>
     </layoutSections>
-        <relatedLists><fields>NAME</fields><fields>Status__c</fields><fields>Total_Amount__c</fields><relatedList>DMS_Credit_Note__c.Secondary_Return__c</relatedList></relatedLists>
+        <layoutSections><customLabel>true</customLabel><detailHeading>true</detailHeading><editHeading>false</editHeading><label>Return barcode and review</label>
+        <layoutColumns><layoutItems><height>205</height><page>DmsSecondaryReturnBarcode</page><showLabel>false</showLabel><showScrollbars>false</showScrollbars><width>100%</width></layoutItems>
+        <layoutItems><behavior>Readonly</behavior><field>Return_Review__c</field></layoutItems></layoutColumns><style>OneColumn</style></layoutSections>
+    <relatedLists><fields>NAME</fields><fields>Status__c</fields><fields>Total_Amount__c</fields><relatedList>DMS_Credit_Note__c.Secondary_Return__c</relatedList></relatedLists>
     <showEmailCheckbox>false</showEmailCheckbox>
     <showHighlightsPanel>true</showHighlightsPanel>
     <showInteractionLogPanel>false</showInteractionLogPanel>

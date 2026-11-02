@@ -26,6 +26,10 @@ credentials.json
 *.keystore
 .expo/
 .runtime/
+logs/
+local-logs/
+*.dpapi
+*.pid
 node_modules.incomplete/
 diagnostics/
 releases/

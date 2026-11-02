@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Package xmlns="http://soap.sforce.com/2006/04/metadata">
+  <types><members>DmsPortalApi</members><members>DmsEmployeeTransactions</members><members>DmsPrimaryWorkflow</members><members>DmsDistributorReturns</members><members>DmsDistributorReturnsTest</members><name>ApexClass</name></types>
+  <types><members>DMS_Primary_Return__c.Employee__c</members><members>DMS_Primary_Return__c.Return_Source__c</members><members>Product_Return__c.Order_Item__c</members><members>Product_Return__c.DMS_Request_Hash__c</members><members>Product_Return__c.Return_Notes__c</members><name>CustomField</name></types>
+  <types><members>DMS_Primary_Return__c-Primary Return Layout</members><members>Product_Return__c-Product Return Layout</members><name>Layout</name></types>
+  <types><members>DMS_Backend_Transactions</members><members>DMS_Distributor_Officer</members><name>PermissionSet</name></types>
+  <version>65.0</version>
+</Package>

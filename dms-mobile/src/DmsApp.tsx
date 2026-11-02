@@ -15,10 +15,12 @@ import * as Crypto from "expo-crypto";
 import { request, ApiError, downloadInvoice } from "./api";
 import InvoiceList from "./components/InvoiceList";
 import { colors } from "./theme";
-import { validateGoodsReceipt } from "./goodsReceipt";
+import { goodsReceiptAmount, validateGoodsReceipt } from "./goodsReceipt";
 import PurchasesSalesDashboard from "./components/PurchasesSalesDashboard";
 import ManagementReports from "./components/ManagementReports";
 import PrimaryOrderForm from "./components/PrimaryOrderForm";
+import ReturnForm from "./components/ReturnForm";
+import ReturnBarcode from "./components/ReturnBarcode";
 import PortalFrame from "./components/PortalFrame";
 import BrandLogo from "./components/BrandLogo";
 import { MetricCard, MenuItem } from "./components/Workspace";
@@ -156,10 +158,13 @@ export default function DmsApp() {
   const [savedReceiptId, setSavedReceiptId] = useState("");
   const [loggingOut, setLoggingOut] = useState(false);
   const [returnType, setReturnType] = useState<"Primary" | "Secondary">("Primary");
+  const [creatingReturn, setCreatingReturn] = useState(false);
   // Ignore late UI results from a session that has been signed out/replaced.
   const sessionGeneration = useRef(0);
   const logoutLock = useRef(false);
   const showSignIn = !session || needsSignIn;
+  // Derive from the current input on every render, including corrected receipts.
+  const receiptAmount = receipt ? goodsReceiptAmount(receipt, cases) : null;
   useEffect(() => {
     if (!resendSeconds) return;
     const timer = setTimeout(() => setResendSeconds((value) => Math.max(0, value - 1)), 1000);
@@ -169,7 +174,7 @@ export default function DmsApp() {
   // Do not repeatedly lock the outbox while the user is preparing/reviewing an order.
   // Manual refresh and the sync after an explicit confirmation still use the same lock.
   const editingPrimary = useRef(false);
-  editingPrimary.current = placingOrder || confirm?.path === "/primary/orders";
+  editingPrimary.current = placingOrder || creatingReturn || confirm?.path === "/primary/orders" || !!confirm?.path.startsWith("/returns/");
 
   useEffect(() => {
     void readSession()
@@ -303,7 +308,7 @@ export default function DmsApp() {
         setCode("");
         setResendSeconds(60);
         setNotice(
-          "Code requested. If this email matches an active distributor, Salesforce has accepted a new code email. Check Inbox and Spam. Use only the latest code; it expires in 10 minutes.",
+          "Code requested. If this email matches an active distributor, the mail service has accepted a new code email. Check Inbox and Spam. Use only the latest code; it expires in 10 minutes.",
         );
       } else {
         const result = await request("/auth/verify-code", "", { email, code });
@@ -379,6 +384,7 @@ export default function DmsApp() {
       setConfirm(null);
       setReceipt(null);
       if (confirm.path === "/primary/orders") setPlacingOrder(false);
+      if (confirm.path.startsWith("/returns/")) setCreatingReturn(false);
       if (confirm.path === "/tickets") {
         setSubject("");
         setDescription("");
@@ -427,6 +433,7 @@ export default function DmsApp() {
       setCategory("Product");
       setNotes({});
       setPlacingOrder(false);
+      setCreatingReturn(false);
       setTab("Home");
       setOffline(false);
       setNotice(
@@ -764,7 +771,7 @@ export default function DmsApp() {
                     Salesforce.
                   </Text>
                 )}
-              {confirm && confirm.path !== "/primary/orders" && (
+              {confirm && confirm.path !== "/primary/orders" && !confirm.path.startsWith("/returns/") && (
                 <Card>
                   <Text style={styles.heading}>Confirm: {confirm.label}</Text>
                   <Text>
@@ -989,6 +996,44 @@ export default function DmsApp() {
                           onChange={setCases}
                           numeric
                         />
+                        <View style={styles.receiptPricing}>
+                          <Text style={styles.label}>Receipt amount</Text>
+                          {receiptAmount ? (
+                            <>
+                              <Text style={styles.receiptPriceCopy}>
+                                {receiptAmount.free ? "Free scheme case price" : "Approved case price"}: {money(receiptAmount.casePrice)}
+                              </Text>
+                              {receiptAmount.discountPerCase > 0 && (
+                                <Text style={styles.receiptPriceCopy}>
+                                  Discount per case: {money(receiptAmount.discountPerCase)}
+                                </Text>
+                              )}
+                              <Text style={styles.receiptPriceCopy}>
+                                Receipt price per case: {money(receiptAmount.caseCost)}
+                              </Text>
+                              {receiptAmount.cases !== null && (
+                                <Text style={styles.receiptPriceCopy}>
+                                  {receiptAmount.cases} case(s) × {money(receiptAmount.caseCost)}
+                                </Text>
+                              )}
+                              <Text accessibilityLiveRegion="polite" style={styles.receiptTotal}>
+                                Total receipt amount: {receiptAmount.total === null ? "—" : money(receiptAmount.total)}
+                              </Text>
+                              <Text style={styles.receiptPriceCopy}>
+                                {receiptAmount.cases === null
+                                  ? "Enter a positive whole number of cases to see the total. "
+                                  : ""}
+                                {receiptAmount.free
+                                  ? "Free cases increase stock at no charge."
+                                  : "After the order discount, excluding GST. Salesforce confirms the value when saved."}
+                              </Text>
+                            </>
+                          ) : (
+                            <Text style={styles.receiptPriceCopy}>
+                              Receipt pricing is unavailable. Refresh the order to load its approved price.
+                            </Text>
+                          )}
+                        </View>
                         <Field label="Batch number" value={batch} onChange={setBatch} />
                         <Field
                           label="Expiry date (YYYY-MM-DD or DD-MM-YYYY)"
@@ -1025,7 +1070,7 @@ export default function DmsApp() {
                             setReceiptError("");
                             setExpiry(validated.value.expiry);
                             setConfirm({
-                              label: `Receive ${validated.value.cases} case(s), batch ${validated.value.batch}, expiry ${validated.value.expiry} and increase stock`,
+                              label: `Receive ${validated.value.cases} case(s)${receiptAmount?.total != null ? ` · Receipt amount ${money(receiptAmount.total)} (excluding GST)` : ""}, batch ${validated.value.batch}, expiry ${validated.value.expiry} and increase stock`,
                               path: "/transactions",
                               replacesKey: receipt.correctionKey,
                               body: {
@@ -1097,7 +1142,7 @@ export default function DmsApp() {
                         accessibilityRole="button"
                         accessibilityLabel={kind + " returns"}
                         accessibilityState={{ selected: returnType === kind }}
-                        onPress={() => setReturnType(kind)}
+                        onPress={() => { setReturnType(kind); setCreatingReturn(false); }}
                         style={[styles.tab, returnType === kind && styles.selected]}
                       >
                         <Text style={{ color: returnType === kind ? "white" : "#19463e" }}>
@@ -1106,6 +1151,21 @@ export default function DmsApp() {
                       </Pressable>
                     ))}
                   </View>
+                  <Button title={creatingReturn ? "Close return form" : `Create ${returnType.toLowerCase()} return`}
+                    disabled={loggingOut || !!confirm || pending.some(item => item.path.startsWith("/returns/"))}
+                    onPress={() => setCreatingReturn(!creatingReturn)} />
+                  {pending.some(item => item.path.startsWith("/returns/")) && <Text style={styles.notice}>A return is awaiting synchronization. Review it in Sync centre before submitting another.</Text>}
+                  {creatingReturn && <ReturnForm key={returnType} token={session.token} kind={returnType === "Primary" ? "primary" : "secondary"}
+                    disabled={loggingOut || !!confirm} onSignIn={() => setNeedsSignIn(true)}
+                    primaryOrders={rows("primaryOrders").map(row => ({ id: row.Id, name: row.Name, status: row.Status__c,
+                      products: (row.Order_Lines__r?.records || []).map((line: Row) => line.Product__r?.Name || "Unnamed product") }))}
+                    onOpenPrimaryOrders={() => { setCreatingReturn(false); setPlacingOrder(false); setTab("Primary"); }}
+                    onReview={(body, summary) => setConfirm({
+                      label: returnType === "Primary"
+                        ? `Submit return to ${data?.distributor.Officer__r?.Name || "company officer"}: ${summary}`
+                        : `Submit secondary return for distributor approval: ${summary}`,
+                      path: `/returns/${returnType.toLowerCase()}`, body,
+                    })} />}
                   {returnType === "Secondary" && (
                     <>
                       <Text style={styles.heading}>Secondary returns — outlets to distributor</Text>
@@ -1118,18 +1178,19 @@ export default function DmsApp() {
                           distributor.
                         </Text>
                       )}
-                      {rows("returns").map((row) => (
+                      {(data?.returnRequests || rows("returns").map(row => ({ ...row, lines: [row] }))).map((row: Row) => (
                         <Card key={row.Id}>
-                          <Text style={styles.heading}>
-                            {row.Name} · {row.DMS_Status__c}
-                          </Text>
-                          <Text>
-                            {row.Outlet__r?.Name} · {row.Product__r?.Name} · {row.Quantity__c}{" "}
-                            pieces
-                          </Text>
-                          <Text>{row.Return_Reason__c}</Text>
-                          {(!row.DMS_Status__c || row.DMS_Status__c === "Pending") &&
-                            decisionButtons(row, "returnDecision")}
+                          <Text style={styles.heading}>{row.Name} · {row.DMS_Status__c || "Pending"}</Text>
+                          <Text>Order: {row.Order_Item__r?.Sales_Order__r?.Name || "Not recorded"} · {row.Outlet__r?.Name}</Text>
+                          <Text>{row.lines?.length || 1} returned products in this request</Text>
+                          {(row.lines || [row]).map((line: Row) => <View key={line.Id} style={{ marginTop: 10 }}>
+                            <Text style={styles.label}>{line.Product__r?.Name} · {line.Quantity__c} pieces · {line.Return_Reason__c}</Text>
+                            {!!line.Return_Notes__c && <Text>{line.Return_Notes__c}</Text>}
+                            {!!line.DMS_Decision_Notes__c && <Text>Decision: {line.DMS_Decision_Notes__c}</Text>}
+                          </View>)}
+                          <ReturnBarcode id={row.Id} kind="secondary" barcode={row.barcode} token={session.token} onSignIn={() => setNeedsSignIn(true)} />
+                          {data?.truncatedLists?.includes("returns") ? <Text>Refresh the complete return in Salesforce before making a decision.</Text> :
+                            ((!row.DMS_Status__c || row.DMS_Status__c === "Pending") && decisionButtons(row, "returnGroupDecision"))}
                         </Card>
                       ))}
                     </>
@@ -1152,9 +1213,17 @@ export default function DmsApp() {
                             {row.Name} · {row.Status__c}
                           </Text>
                           <Text>
-                            {row.Employee__r?.Name} · {row.Total_Cases__c} cases ·{" "}
+                            {row.Return_Source__c === "Distributor DMS" ? "Submitted by distributor" : row.Employee__r?.Name} · {row.Total_Cases__c} cases ·{" "}
                             {money(row.Total_Amount__c)}
                           </Text>
+                          <Text>Company officer: {row.Officer__r?.Name || "Not assigned"}</Text>
+                          <ReturnBarcode id={row.Id} kind="primary" barcode={row.barcode} token={session.token} onSignIn={() => setNeedsSignIn(true)} />
+                          {(row.Return_Lines__r?.records || []).map((line: Row) => <View key={line.Id} style={{ marginTop: 12 }}>
+                            <Text style={styles.label}>{line.Product__r?.Name} · {line.Cases__c} cases · {line.Reason__c}</Text>
+                            <Text>{line.Receipt_Line__r?.Goods_Receipt__r?.Primary_Order__r?.Name || ""}{line.Batch_Number__c ? ` · Batch ${line.Batch_Number__c}` : ""}</Text>
+                            {!!line.Notes__c && <Text>{line.Notes__c}</Text>}
+                          </View>)}
+                          {!!row.Rejection_Reason__c && <Text>Decision: {row.Rejection_Reason__c}</Text>}
                         </Card>
                       ))}
                     </>
@@ -1341,7 +1410,7 @@ export default function DmsApp() {
         </ScrollView>
       </PortalFrame>
       <Modal
-        visible={!showSignIn && confirm?.path === "/primary/orders"}
+        visible={!showSignIn && (confirm?.path === "/primary/orders" || !!confirm?.path.startsWith("/returns/"))}
         transparent
         animationType="fade"
         onRequestClose={() => { if (!busy) setConfirm(null); }}
@@ -1349,15 +1418,15 @@ export default function DmsApp() {
         <View style={styles.reviewOverlay}>
           <View style={styles.reviewDialog} accessibilityViewIsModal>
             <ScrollView contentContainerStyle={{ padding: 24 }} keyboardShouldPersistTaps="handled">
-              <Text accessibilityRole="header" style={styles.heading}>Review primary order</Text>
+              <Text accessibilityRole="header" style={styles.heading}>{confirm?.path.startsWith("/returns/") ? "Review return" : "Review primary order"}</Text>
               <Text style={styles.copy}>{confirm?.label}</Text>
               <Text style={styles.copy}>
                 Confirm to save this request and send it to Salesforce for approval.
-                Your final invoice is generated only after approval. Stock is unchanged.
+                {confirm?.path.startsWith("/returns/") ? "The saved return will show its approval status. Submission does not move stock." : "Your final invoice is generated only after approval. Stock is unchanged."}
               </Text>
               {busy && <Text accessibilityRole="alert" style={styles.notice}>Finishing the current sync. Your selection is kept; confirmation will be available shortly.</Text>}
               <Button title={busy ? "Waiting for current sync…" : "Confirm and save"} disabled={busy || loggingOut} onPress={() => void enqueue()} />
-              <Button title="Back to edit order" secondary disabled={busy || loggingOut} onPress={() => setConfirm(null)} />
+              <Button title={confirm?.path.startsWith("/returns/") ? "Back to edit return" : "Back to edit order"} secondary disabled={busy || loggingOut} onPress={() => setConfirm(null)} />
             </ScrollView>
           </View>
         </View>
@@ -1528,6 +1597,16 @@ const styles = StyleSheet.create({
     minHeight: 52,
     backgroundColor: "white",
   },
+  receiptPricing: {
+    backgroundColor: colors.mint,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingBottom: 16,
+    marginTop: 12,
+    gap: 6,
+  },
+  receiptPriceCopy: { color: colors.muted, fontSize: 14, lineHeight: 21 },
+  receiptTotal: { color: colors.brand, fontSize: 22, fontWeight: "800", marginVertical: 6 },
   button: {
     padding: 15,
     minHeight: 48,

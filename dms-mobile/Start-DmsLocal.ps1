@@ -107,6 +107,9 @@ if (-not $backendRunning -or $RestartBackend) {
             if ($LASTEXITCODE -ne 0) { throw 'Backend build failed.' }
         }
     } finally { Pop-Location }
+    # Read and decrypt before stopping the current backend, so a settings error leaves it running.
+    . (Join-Path $dmsFolder 'DmsMailSettings.ps1')
+    $gmailSettings = Get-DmsGmailSettings
     if ($backendRunning) {
         # Recheck ownership immediately before stopping only this launcher's DMS backend.
         $recordedBackend = Get-Content -LiteralPath (Join-Path $runtimeFolder 'backend.pid') -Raw | ConvertFrom-Json
@@ -120,7 +123,21 @@ if (-not $backendRunning -or $RestartBackend) {
         Stop-Process -InputObject $backendProcess -ErrorAction Stop
         Wait-Process -Id $recordedBackend.Id -Timeout 10 -ErrorAction SilentlyContinue
     }
-    Start-DmsProcess 'backend' $backendFolder @('dist/server.js')
+    try {
+        if ($gmailSettings) {
+            $env:DMS_MAIL_PROVIDER = 'gmail'
+            $env:DMS_GMAIL_USER = $gmailSettings.User
+            $env:DMS_GMAIL_APP_PASSWORD = $gmailSettings.Password
+        } else {
+            $env:DMS_MAIL_PROVIDER = 'salesforce'
+            Remove-Item Env:DMS_GMAIL_USER,Env:DMS_GMAIL_APP_PASSWORD -ErrorAction SilentlyContinue
+        }
+        Start-DmsProcess 'backend' $backendFolder @('dist/server.js')
+    } finally {
+        # The web/Expo process must never inherit the backend's Gmail credentials.
+        Remove-Item Env:DMS_MAIL_PROVIDER,Env:DMS_GMAIL_USER,Env:DMS_GMAIL_APP_PASSWORD -ErrorAction SilentlyContinue
+        $gmailSettings = $null
+    }
 }
 Wait-ForHttp 'http://localhost:4001/api/health'
 $health = Invoke-RestMethod 'http://localhost:4001/api/health' -TimeoutSec 5

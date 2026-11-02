@@ -28,15 +28,30 @@ async function sendEmail(recipient: string, subject: string, text: string, html:
       port: env.SMTP_PORT,
       secure: env.SMTP_SECURE,
       auth: { user: env.SMTP_USER, pass: env.SMTP_PASSWORD },
+      tls: { minVersion: "TLSv1.2", rejectUnauthorized: true },
+      connectionTimeout: 10_000,
+      greetingTimeout: 10_000,
+      socketTimeout: 15_000,
+      logger: false,
+      debug: false,
     });
 
-    await transport.sendMail({
-      from: env.EMAIL_FROM,
-      to: recipient,
-      subject,
-      text,
-      html,
-    });
+    try {
+      const result = await transport.sendMail({
+        from: env.EMAIL_FROM,
+        to: [{ address: recipient, name: "" }],
+        subject,
+        text,
+        html,
+        disableFileAccess: true,
+        disableUrlAccess: true,
+      });
+      const accepted = result.accepted.map(value => value.toLowerCase());
+      if (!accepted.includes(recipient.toLowerCase()) || result.rejected.length)
+        throw new Error("The email service did not accept the recipient");
+    } finally {
+      transport.close();
+    }
     return;
   }
 
@@ -46,7 +61,7 @@ async function sendEmail(recipient: string, subject: string, text: string, html:
 
   const results = await salesforce.invokeStandardAction("emailSimple", [
     {
-      recipientAddresses: [recipient],
+      emailAddressesArray: [recipient],
       emailSubject: subject,
       emailBody: html,
       sendRichBody: true,
@@ -67,7 +82,7 @@ async function sendEmail(recipient: string, subject: string, text: string, html:
 export async function sendEmployeeLoginCode(recipient: string, employeeName: string, code: string) {
   await sendEmail(
     recipient,
-    "Your SFA Mobile sign-in code",
+    `Your SFA Mobile sign-in code [${new Date().toISOString()}]`,
     `Hello ${employeeName},\n\nYour SFA Mobile sign-in code is ${code}. It expires in ${env.AUTH_CODE_TTL_MINUTES} minutes.\n\nIf you did not request this code, you can ignore this email.`,
     `<p>Hello ${employeeName},</p><p>Your SFA Mobile sign-in code is:</p><p style="font-size:28px;font-weight:700;letter-spacing:6px">${code}</p><p>This code expires in ${env.AUTH_CODE_TTL_MINUTES} minutes. If you did not request it, you can ignore this email.</p>`,
   );

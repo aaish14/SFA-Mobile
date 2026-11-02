@@ -1,7 +1,9 @@
 import PDFDocument from "pdfkit";
+import { decorateInvoice } from "./barcode.js";
 
 /** Render the stored Salesforce snapshot, never client selections or current catalogue prices. */
-export function createInvoicePdf(invoice: Record<string, any>): Promise<Buffer> {
+export async function createInvoicePdf(saved: Record<string, any>): Promise<Buffer> {
+  const invoice = await decorateInvoice(saved);
   return new Promise((resolve, reject) => {
     const doc = new PDFDocument({ size: "A4", margin: 42, bufferPages: true });
     const chunks: Buffer[] = [];
@@ -21,6 +23,18 @@ export function createInvoicePdf(invoice: Record<string, any>): Promise<Buffer> 
      * Start a new PDF page when the next block would exceed the remaining printable height.
      */
     function room(height: number) { if (doc.y + height > doc.page.height - 65) doc.addPage(); }
+    /** Keep identifier bars at a readable width, preserving their quiet zones and aspect ratio. */
+    function barcode(code: any, label: string) {
+      if (!code) return;
+      const imageWidth = Math.min(width, code.width * 0.72);
+      const imageHeight = imageWidth * code.height / code.width;
+      room(imageHeight + 35);
+      doc.font("Helvetica").fontSize(8).fillColor("#173e32").text(label);
+      const y = doc.y + 4;
+      doc.image(Buffer.from(code.image.split(",")[1], "base64"), 42, y, { width: imageWidth });
+      doc.y = y + imageHeight + 10;
+      doc.x = 42;
+    }
     doc.fillColor("#16744e").font("Helvetica-Bold").fontSize(23).text("INVOICE");
     doc.fillColor("#173e32").fontSize(12).text(text(invoice.Name));
     doc.font("Helvetica").fontSize(10).moveDown();
@@ -28,12 +42,14 @@ export function createInvoicePdf(invoice: Record<string, any>): Promise<Buffer> 
     doc.text(`Invoice date: ${text(invoice.Invoice_Date__c)} | Status: ${text(invoice.Status__c)}`);
     doc.text(`Supplier: ${text(invoice.Supplier_Name__c || invoice.Distributor__r?.Name)}`);
     doc.text(`Bill to: ${text(invoice.Bill_To_Name__c || invoice.Outlet__r?.Name)}`);
+    barcode(invoice.barcode, "Invoice barcode - look up this reference after signing in");
     doc.moveDown();
     for (const [index, line] of (invoice.lines || []).entries()) {
       const name = `${index + 1}. ${text(line.Product_Name__c || line.Product__r?.Name)}`;
       const extra = [line.Scheme_Name__c ? `Scheme: ${text(line.Scheme_Name__c)}` : "", line.Bonus_Details__c ? text(line.Bonus_Details__c) : ""].filter(Boolean).join("\n");
       doc.font("Helvetica").fontSize(10);
-      const height = doc.heightOfString(name, { width }) + doc.heightOfString(extra || " ", { width }) + 85;
+      const barcodeHeight = line.barcode ? Math.min(width, line.barcode.width * 0.72) * line.barcode.height / line.barcode.width + 35 : 0;
+      const height = doc.heightOfString(name, { width }) + doc.heightOfString(extra || " ", { width }) + 85 + barcodeHeight;
       room(height);
       doc.font("Helvetica-Bold").text(name, { width });
       doc.font("Helvetica").text(line.Cases__c != null
@@ -42,13 +58,14 @@ export function createInvoicePdf(invoice: Record<string, any>): Promise<Buffer> 
       doc.text(`Gross ${money(line.Gross_Amount__c)} | Discount ${money(line.Discount_Amount__c)} | Tax ${money(line.Tax_Amount__c)}`);
       doc.text(`Line total: ${money(line.Total_Amount__c)}`);
       if (extra) doc.fontSize(9).text(extra, { width });
+      barcode(line.barcode, "Product barcode");
       doc.moveDown(.7);
       doc.moveTo(42, doc.y).lineTo(42 + width, doc.y).strokeColor("#c6ddcf").stroke();
       doc.moveDown(.7);
     }
     room(170);
     doc.fontSize(11).font("Helvetica");
-    for (const [label, field] of [["Gross", "Gross_Amount__c"], ["Discount", "Discount_Amount__c"], ["Tax", "Tax_Amount__c"], ["Total", "Total_Amount__c"], ["Paid", "Paid_Amount__c"], ["Balance due", "Balance_Due__c"]]) {
+    for (const [label, field] of [["Gross amount", "Gross_Amount__c"], ["Discount amount", "Discount_Amount__c"], ["Tax", "Tax_Amount__c"], ["Final invoice total", "Total_Amount__c"], ["Paid", "Paid_Amount__c"], ["Balance due", "Balance_Due__c"]]) {
       doc.text(`${label}: ${money(invoice[field])}`, { align: "right" });
     }
     doc.moveDown().fontSize(8).text("Generated from the saved Salesforce invoice. Issuing this document does not record payment, dispatch or stock receipt. Statutory tax identifiers and legal invoice configuration require company review.", { width });
